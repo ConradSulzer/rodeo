@@ -1,4 +1,4 @@
-import { sortEventsByTime } from '../tournaments/events'
+import { sortEventsByTime } from './events'
 import { getOrCreatePlayerItems } from '../tournaments/results'
 import { EventId, RodeoEvent } from '../types/events'
 import { Results } from '../types/Tournament'

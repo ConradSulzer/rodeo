@@ -31,6 +31,8 @@ export interface ItemVoided extends BaseEvent {
 
 export type RodeoEvent = ItemScored | ItemCorrected | ItemVoided
 
-export const isMeasured = (e: RodeoEvent): e is ItemScored => e.type === 'ItemScored'
-export const isCorrected = (e: RodeoEvent): e is ItemCorrected => e.type === 'ItemCorrected'
-export const isVoided = (e: RodeoEvent): e is ItemVoided => e.type === 'ItemVoided'
+export interface EventStore {
+  append(events: RodeoEvent[]): void
+  resolve(id: EventId): RodeoEvent | undefined
+  loadAll(): RodeoEvent[]
+}
