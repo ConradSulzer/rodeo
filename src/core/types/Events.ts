@@ -13,8 +13,8 @@ export interface BaseEvent {
   note?: string
 }
 
-export interface ItemMeasured extends BaseEvent {
-  type: 'ItemMeasured'
+export interface ItemScored extends BaseEvent {
+  type: 'ItemScored'
   value: number
 }
 
@@ -29,8 +29,8 @@ export interface ItemVoided extends BaseEvent {
   priorEventId: EventId
 }
 
-export type RodeoEvent = ItemMeasured | ItemCorrected | ItemVoided
+export type RodeoEvent = ItemScored | ItemCorrected | ItemVoided
 
-export const isMeasured = (e: RodeoEvent): e is ItemMeasured => e.type === 'ItemMeasured'
+export const isMeasured = (e: RodeoEvent): e is ItemScored => e.type === 'ItemScored'
 export const isCorrected = (e: RodeoEvent): e is ItemCorrected => e.type === 'ItemCorrected'
 export const isVoided = (e: RodeoEvent): e is ItemVoided => e.type === 'ItemVoided'

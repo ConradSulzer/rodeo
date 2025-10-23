@@ -20,7 +20,7 @@ function score({
   value?: number
   name?: string
 }): RodeoEvent {
-  return { id: rid() as EventId, type: 'ItemMeasured', playerId, itemId, value, ts, itemName: name }
+  return { id: rid() as EventId, type: 'ItemScored', playerId, itemId, value, ts, itemName: name }
 }
 
 function correct(
