@@ -1,14 +1,5 @@
-import { EventId } from './events'
-import { ULID } from './Ids'
-
-export type Timestamp = number
-
-export interface Tournament {
-  id: ULID
-  name: string
-  createdAt: Timestamp
-  updatedAt: Timestamp
-}
+import { ULID } from 'ulid'
+import { Timestamp } from './Shared'
 
 export interface Player {
   id: ULID
@@ -20,7 +11,7 @@ export interface Player {
   updatedAt: Timestamp
 }
 
-export interface ScoreableItem {
+export interface Scoreable {
   id: ULID
   name: string
   unit: string
@@ -43,18 +34,6 @@ export interface Division {
   id: ULID
   name: string
   categoryIds: ULID[]
-  createdAt: Timestamp
-  updatedAt: Timestamp
-}
-
-export type PlayerItems = Map<ULID, ItemResult>
-
-export type Results = Map<ULID, PlayerItems> // playerId -> itemId -> ItemResult
-
-export type ItemResult = {
-  name: string
-  value: number
-  srcEventId: EventId // last event responsible for this value
   createdAt: Timestamp
   updatedAt: Timestamp
 }

@@ -1,5 +1,18 @@
-import { ULID } from '../types/Ids'
-import { ItemResult, Results } from '../types/Tournament'
+import { Timestamp } from '@core/types/Shared'
+
+import type { ULID } from 'ulid'
+import { EventId } from '@core/types/events'
+
+export type ItemResult = {
+  name: string
+  value: number
+  srcEventId: EventId // last event responsible for this value
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+export type PlayerItems = Map<ULID, ItemResult>
+export type Results = Map<ULID, PlayerItems> // playerId -> itemId -> ItemResult
 
 /**
  * Add a player to a results map and set items to empty map.

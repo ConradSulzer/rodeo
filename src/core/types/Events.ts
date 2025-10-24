@@ -1,7 +1,8 @@
-import { ULID } from './Ids'
-import { Timestamp } from './Tournament'
+import { ULID } from 'ulid'
+import { Timestamp } from './Shared'
 
 export type EventId = ULID
+
 export type EventType = 'ItemMeasured' | 'ItemCorrected' | 'ItemVoided'
 
 export interface BaseEvent {
