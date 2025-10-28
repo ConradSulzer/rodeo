@@ -1,14 +1,27 @@
 import path from 'node:path'
 import Database from 'better-sqlite3'
-import { fileURLToPath } from 'node:url'
 import { type BetterSQLite3Database, drizzle } from 'drizzle-orm/better-sqlite3'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
+import fs from 'node:fs'
 
 export function migrationsPath() {
-  const __filename = fileURLToPath(import.meta.url)
-  const __dirname = path.dirname(__filename)
+  const candidates = [
+    // DEV: source folder
+    path.resolve(process.cwd(), 'src/core/db/migrations'),
+    // DEV alt: if running from compiled out/main
+    path.resolve(process.cwd(), 'dist/core/db/migrations'),
+    // PROD: packaged app resources (you’ll copy migrations here later)
+    path.resolve(process.resourcesPath ?? process.cwd(), 'migrations')
+  ]
 
-  return path.resolve(__dirname, './migrations')
+  for (const dir of candidates) {
+    if (fs.existsSync(path.join(dir, 'meta', '_journal.json'))) return dir
+  }
+
+  throw new Error(
+    `Drizzle migrations not found. Looked in:\n${candidates.join('\n')}\n` +
+      `Did you run "npm run db:gen"?`
+  )
 }
 
 export type OpenDb = {

@@ -5,13 +5,11 @@ import { ulid } from 'ulid'
 
 export type Player = typeof pl.$inferSelect
 export type NewPlayer = typeof pl.$inferInsert
+export type PlayerCreate = Omit<NewPlayer, 'id' | 'createdAt' | 'updatedAt'>
 
 const now = () => Date.now()
 
-export function createPlayer(
-  db: BetterSQLite3Database,
-  data: Omit<NewPlayer, 'id' | 'createdAt' | 'updatedAt'>
-): string {
+export function createPlayer(db: BetterSQLite3Database, data: PlayerCreate): string {
   const id = ulid()
   const t = now()
   db.insert(pl)

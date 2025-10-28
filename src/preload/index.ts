@@ -1,8 +1,18 @@
-import { contextBridge } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
+import { PlayerCreate } from '@core/players/players'
 
 // Custom APIs for renderer
-const api = {}
+const api = {
+  players: {
+    create: (data: PlayerCreate) => ipcRenderer.invoke('players:create', data),
+    list: () => ipcRenderer.invoke('players:list')
+  },
+  tournaments: {
+    open: (filePath: string) => ipcRenderer.invoke('tournaments:open', filePath),
+    close: () => ipcRenderer.invoke('tournaments:close')
+  }
+}
 
 // Use `contextBridge` APIs to expose Electron APIs to
 // renderer only if context isolation is enabled, otherwise
