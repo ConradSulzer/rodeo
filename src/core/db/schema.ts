@@ -5,7 +5,8 @@ import {
   real,
   index,
   foreignKey,
-  uniqueIndex
+  uniqueIndex,
+  primaryKey
 } from 'drizzle-orm/sqlite-core'
 
 export const player = sqliteTable(
@@ -32,6 +33,61 @@ export const scoreable = sqliteTable(
     updatedAt: integer('updated_at', { mode: 'number' }).notNull()
   },
   (t) => [uniqueIndex('uniq_scoreable_label').on(t.label)]
+)
+
+export const category = sqliteTable(
+  'category',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    direction: text('direction', { enum: ['asc', 'desc'] }).notNull(),
+    createdAt: integer('created_at', { mode: 'number' }).notNull(),
+    updatedAt: integer('updated_at', { mode: 'number' }).notNull()
+  },
+  (t) => [uniqueIndex('uniq_category_name').on(t.name)]
+)
+
+export const division = sqliteTable(
+  'division',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    createdAt: integer('created_at', { mode: 'number' }).notNull(),
+    updatedAt: integer('updated_at', { mode: 'number' }).notNull()
+  },
+  (t) => [uniqueIndex('uniq_division_name').on(t.name)]
+)
+
+export const categoryScoreable = sqliteTable(
+  'category_scoreable',
+  {
+    categoryId: text('category_id')
+      .notNull()
+      .references(() => category.id, { onUpdate: 'cascade', onDelete: 'cascade' }),
+    scoreableId: text('scoreable_id')
+      .notNull()
+      .references(() => scoreable.id, { onUpdate: 'cascade', onDelete: 'cascade' })
+  },
+  (t) => [
+    primaryKey({ columns: [t.categoryId, t.scoreableId], name: 'category_scoreable_pk' }),
+    index('category_scoreable_scoreable').on(t.scoreableId)
+  ]
+)
+
+export const divisionCategory = sqliteTable(
+  'division_category',
+  {
+    divisionId: text('division_id')
+      .notNull()
+      .references(() => division.id, { onUpdate: 'cascade', onDelete: 'cascade' }),
+    categoryId: text('category_id')
+      .notNull()
+      .references(() => category.id, { onUpdate: 'cascade', onDelete: 'cascade' })
+  },
+  (t) => [
+    primaryKey({ columns: [t.divisionId, t.categoryId], name: 'division_category_pk' }),
+    index('division_category_category').on(t.categoryId)
+  ]
 )
 
 export const event = sqliteTable(
