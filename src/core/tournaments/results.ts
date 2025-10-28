@@ -1,7 +1,9 @@
+import { applyBatch, applyEvent } from '@core/events/eventReducer'
+import { appendEvent, EventId, getEvent, listAllEvents, RodeoEvent } from '@core/events/events'
 import { Timestamp } from '@core/types/Shared'
+import { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 
 import type { ULID } from 'ulid'
-import { EventId } from '@core/types/events'
 
 export type ItemResult = {
   name: string
@@ -43,4 +45,26 @@ export function getOrCreatePlayerItems(results: Results, playerId: ULID) {
     results.set(playerId, items)
   }
   return items
+}
+
+/**
+ * Build a results map from all the events in a given store/DB
+ */
+export function buildResults(db: BetterSQLite3Database) {
+  const events = listAllEvents(db)
+  const resolve = (id: ULID) => getEvent(db, id)
+  const emptyResults: Results = new Map()
+
+  return applyBatch(emptyResults, events, resolve)
+}
+
+/**
+ * Record an event to a given DB. Apply that event to the given results map.
+ */
+export function recordEvent(db: BetterSQLite3Database, results: Results, event: RodeoEvent) {
+  appendEvent(db, event)
+
+  const resolve = (id: ULID) => getEvent(db, id)
+
+  return applyEvent(results, event, resolve)
 }

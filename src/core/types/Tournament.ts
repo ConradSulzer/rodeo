@@ -1,16 +1,6 @@
 import { ULID } from 'ulid'
 import { Timestamp } from './Shared'
 
-export interface Player {
-  id: ULID
-  first: string
-  last: string
-  identifier: string // email, cell phone, some info we get from registration to distinguish John Smith from John Smith
-  divisions: ULID[]
-  createdAt: Timestamp
-  updatedAt: Timestamp
-}
-
 export interface Scoreable {
   id: ULID
   name: string

@@ -1,7 +1,5 @@
-import { sortEventsByTime } from './events'
-import { getOrCreatePlayerItems } from '../tournaments/results'
-import { EventId, RodeoEvent } from '../types/events'
-import { Results } from '../types/Tournament'
+import { EventId, RodeoEvent, sortEventsByTime } from './events'
+import { getOrCreatePlayerItems, Results } from '../tournaments/results'
 
 type EventError = {
   status: 'error'
@@ -15,7 +13,7 @@ export function applyEvent(results: Results, e: RodeoEvent, resolve: ResolveFn):
   const errors: EventError[] = []
 
   const playerItems = getOrCreatePlayerItems(results, e.playerId)
-  const current = playerItems.get(e.itemId)
+  const current = playerItems.get(e.scoreableId)
 
   // Idempotence, ignore if this event is the current source
   if (current?.srcEventId === e.id) return errors
@@ -28,17 +26,17 @@ export function applyEvent(results: Results, e: RodeoEvent, resolve: ResolveFn):
 
   switch (e.type) {
     case 'ItemScored': {
-      const existing = playerItems.get(e.itemId)
+      const existing = playerItems.get(e.scoreableId)
 
       if (existing) {
         errors.push(
-          createError(e, `${e.itemName} already exists; void or correct the current result.`)
+          createError(e, `${e.scoreableName} already exists; void or correct the current result.`)
         )
         break
       }
 
-      playerItems.set(e.itemId, {
-        name: e.itemName,
+      playerItems.set(e.scoreableId, {
+        name: e.scoreableName,
         value: e.value,
         srcEventId: e.id,
         createdAt: e.ts,
@@ -55,14 +53,16 @@ export function applyEvent(results: Results, e: RodeoEvent, resolve: ResolveFn):
         errors.push(createError(e, 'No prior event exists to update.'))
       } else if (prior.playerId !== e.playerId) {
         errors.push(createError(e, "Player doesn't match the prior event's player."))
-      } else if (prior.itemId !== e.itemId) {
+      } else if (prior.scoreableId !== e.scoreableId) {
         errors.push(createError(e, "Item doesn't match the prior event's item."))
       } else if (!current) {
-        errors.push(createError(e, `Player does not have an existing ${e.itemName} to correct.`))
+        errors.push(
+          createError(e, `Player does not have an existing ${e.scoreableName} to correct.`)
+        )
       } else if (current.srcEventId !== e.priorEventId) {
         errors.push(createError(e, 'Prior event is not the currently effective source.'))
       } else {
-        playerItems.set(e.itemId, {
+        playerItems.set(e.scoreableId, {
           ...current,
           value: e.value,
           srcEventId: e.id,
@@ -80,15 +80,15 @@ export function applyEvent(results: Results, e: RodeoEvent, resolve: ResolveFn):
         errors.push(createError(e, 'No prior event exists to void.'))
       } else if (prior.playerId !== e.playerId) {
         errors.push(createError(e, "Player doesn't match the prior event's player."))
-      } else if (prior.itemId !== e.itemId) {
+      } else if (prior.scoreableId !== e.scoreableId) {
         errors.push(createError(e, "Item doesn't match the prior event's item."))
       } else if (!current) {
-        errors.push(createError(e, `No current ${e.itemName} exists to void.`))
+        errors.push(createError(e, `No current ${e.scoreableName} exists to void.`))
         break
       } else if (current.srcEventId !== e.priorEventId) {
         errors.push(createError(e, 'Prior event is not the currently effective source.'))
       } else {
-        playerItems.delete(e.itemId)
+        playerItems.delete(e.scoreableId)
       }
       break
     }
