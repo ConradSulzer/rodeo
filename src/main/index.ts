@@ -4,6 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import './ipc/playerHandlers'
 import './ipc/tournamentHandlers'
+import './ipc/scoreablesHandlers'
 
 function createWindow(): void {
   // Create the browser window.

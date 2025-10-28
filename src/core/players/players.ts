@@ -4,12 +4,14 @@ import { eq, asc } from 'drizzle-orm'
 import { ulid } from 'ulid'
 
 export type Player = typeof pl.$inferSelect
-export type NewPlayer = typeof pl.$inferInsert
-export type PlayerCreate = Omit<NewPlayer, 'id' | 'createdAt' | 'updatedAt'>
+export type NewPlayer = Omit<Player, 'id' | 'createdAt' | 'updatedAt'>
+export type PatchPlayer = Partial<NewPlayer>
+
+export type PlayerId = string
 
 const now = () => Date.now()
 
-export function createPlayer(db: BetterSQLite3Database, data: PlayerCreate): string {
+export function createPlayer(db: BetterSQLite3Database, data: NewPlayer): string {
   const id = ulid()
   const t = now()
   db.insert(pl)
@@ -18,20 +20,22 @@ export function createPlayer(db: BetterSQLite3Database, data: PlayerCreate): str
   return id
 }
 
-export function updatePlayer(
-  db: BetterSQLite3Database,
-  id: string,
-  patch: Partial<Omit<NewPlayer, 'id' | 'createdAt' | 'updatedAt'>>
-): void {
-  if (!Object.keys(patch).length) return
-  db.update(pl)
+export function updatePlayer(db: BetterSQLite3Database, id: string, patch: PatchPlayer) {
+  if (!Object.keys(patch).length) return false
+
+  const result = db
+    .update(pl)
     .set({ ...patch, updatedAt: now() })
     .where(eq(pl.id, id))
     .run()
+
+  return result.changes > 0
 }
 
-export function deletePlayer(db: BetterSQLite3Database, id: string): void {
-  db.delete(pl).where(eq(pl.id, id)).run()
+export function deletePlayer(db: BetterSQLite3Database, id: string) {
+  const result = db.delete(pl).where(eq(pl.id, id)).run()
+
+  return result.changes > 0
 }
 
 export function getPlayer(db: BetterSQLite3Database, id: string): Player | undefined {

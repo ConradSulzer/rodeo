@@ -1,12 +1,23 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import { PlayerCreate } from '@core/players/players'
+import { NewPlayer, PatchPlayer } from '@core/players/players'
+import { NewScoreable, PatchScoreable } from '@core/tournaments/scoreables'
 
 // Custom APIs for renderer
 const api = {
   players: {
-    create: (data: PlayerCreate) => ipcRenderer.invoke('players:create', data),
+    create: (data: NewPlayer) => ipcRenderer.invoke('players:create', data),
+    update: (id: string, data: PatchPlayer) => ipcRenderer.invoke('players:update', id, data),
+    delete: (id: string) => ipcRenderer.invoke('players:delete', id),
+    get: (id: string) => ipcRenderer.invoke('players:get', id),
     list: () => ipcRenderer.invoke('players:list')
+  },
+  scoreables: {
+    create: (data: NewScoreable) => ipcRenderer.invoke('scoreables:create', data),
+    update: (id: string, data: PatchScoreable) => ipcRenderer.invoke('scoreables:update', id, data),
+    delete: (id: string) => ipcRenderer.invoke('scoreables:delete', id),
+    get: (id: string) => ipcRenderer.invoke('scoreables:get', id),
+    list: () => ipcRenderer.invoke('scoreables:list')
   },
   tournaments: {
     open: (filePath: string) => ipcRenderer.invoke('tournaments:open', filePath),
