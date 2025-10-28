@@ -1,6 +1,20 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 import { Player, NewPlayer, PatchPlayer } from '@core/players/players'
-import { PatchScoreable, Scoreable } from '@core/tournaments/scoreables'
+import {
+  Category,
+  NewCategory,
+  PatchCategory
+} from '@core/tournaments/categories'
+import {
+  Division,
+  NewDivision,
+  PatchDivision
+} from '@core/tournaments/divisions'
+import {
+  NewScoreable,
+  PatchScoreable,
+  Scoreable
+} from '@core/tournaments/scoreables'
 
 declare global {
   interface Window {
@@ -19,6 +33,28 @@ declare global {
         delete: (id: string) => Promise<boolean>
         get: (id: string) => Promise<Scoreable>
         list: () => Promise<Scoreable[]>
+      }
+      categories: {
+        create: (data: NewCategory) => Promise<string>
+        update: (id: string, data: PatchCategory) => Promise<boolean>
+        delete: (id: string) => Promise<boolean>
+        get: (id: string) => Promise<Category>
+        list: () => Promise<Category[]>
+        addScoreable: (categoryId: string, scoreableId: string) => Promise<boolean>
+        removeScoreable: (categoryId: string, scoreableId: string) => Promise<boolean>
+        listScoreableIds: (categoryId: string) => Promise<string[]>
+        listForScoreable: (scoreableId: string) => Promise<string[]>
+      }
+      divisions: {
+        create: (data: NewDivision) => Promise<string>
+        update: (id: string, data: PatchDivision) => Promise<boolean>
+        delete: (id: string) => Promise<boolean>
+        get: (id: string) => Promise<Division>
+        list: () => Promise<Division[]>
+        addCategory: (divisionId: string, categoryId: string) => Promise<boolean>
+        removeCategory: (divisionId: string, categoryId: string) => Promise<boolean>
+        listCategoryIds: (divisionId: string) => Promise<string[]>
+        listForCategory: (categoryId: string) => Promise<string[]>
       }
       tournaments: {
         open: (filePath: string) => Promise<boolean>

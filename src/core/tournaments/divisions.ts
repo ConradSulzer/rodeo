@@ -1,9 +1,6 @@
 import { ulid } from 'ulid'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
-import {
-  division as dv,
-  divisionCategory as dvCategory
-} from '@core/db/schema'
+import { division as dv, divisionCategory as dvCategory } from '@core/db/schema'
 import { and, asc, eq } from 'drizzle-orm'
 
 export type Division = typeof dv.$inferSelect
