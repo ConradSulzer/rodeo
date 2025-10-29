@@ -1,1 +1,0 @@
-ALTER TABLE `event` ADD `scoreable_name` text DEFAULT '' NOT NULL;
