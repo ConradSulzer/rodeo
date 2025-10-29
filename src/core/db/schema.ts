@@ -82,7 +82,8 @@ export const divisionCategory = sqliteTable(
       .references(() => division.id, { onUpdate: 'cascade', onDelete: 'cascade' }),
     categoryId: text('category_id')
       .notNull()
-      .references(() => category.id, { onUpdate: 'cascade', onDelete: 'cascade' })
+      .references(() => category.id, { onUpdate: 'cascade', onDelete: 'cascade' }),
+    depth: integer('depth', { mode: 'number' }).notNull().default(1)
   },
   (t) => [
     primaryKey({ columns: [t.divisionId, t.categoryId], name: 'division_category_pk' }),

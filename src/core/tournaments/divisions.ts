@@ -6,6 +6,8 @@ import { and, asc, eq } from 'drizzle-orm'
 export type Division = typeof dv.$inferSelect
 export type NewDivision = Omit<Division, 'id' | 'createdAt' | 'updatedAt'>
 export type PatchDivision = Partial<NewDivision>
+export type DivisionCategoryLink = typeof dvCategory.$inferSelect
+export type DivisionCategoryPatch = Partial<Pick<DivisionCategoryLink, 'depth'>>
 
 const now = () => Date.now()
 
@@ -49,12 +51,18 @@ export function listAllDivisions(db: BetterSQLite3Database): Division[] {
 export function addCategoryToDivision(
   db: BetterSQLite3Database,
   divisionId: string,
-  categoryId: string
+  categoryId: string,
+  depth = 1
 ) {
+  const normalizedDepth = Math.max(1, Math.floor(depth))
+
   const result = db
     .insert(dvCategory)
-    .values({ divisionId, categoryId })
-    .onConflictDoNothing()
+    .values({ divisionId, categoryId, depth: normalizedDepth })
+    .onConflictDoUpdate({
+      target: [dvCategory.divisionId, dvCategory.categoryId],
+      set: { depth: normalizedDepth }
+    })
     .run()
 
   return result.changes > 0
@@ -73,20 +81,57 @@ export function removeCategoryFromDivision(
   return result.changes > 0
 }
 
-export function listCategoryIdsForDivision(db: BetterSQLite3Database, divisionId: string) {
-  return db
-    .select({ categoryId: dvCategory.categoryId })
-    .from(dvCategory)
-    .where(eq(dvCategory.divisionId, divisionId))
-    .all()
-    .map((row) => row.categoryId)
+export function updateDivisionCategoryLink(
+  db: BetterSQLite3Database,
+  divisionId: string,
+  categoryId: string,
+  patch: DivisionCategoryPatch
+) {
+  const updateData: Partial<typeof dvCategory.$inferInsert> = {}
+
+  if (patch.depth !== undefined) {
+    updateData.depth = Math.max(1, Math.floor(patch.depth))
+  }
+
+  if (!Object.keys(updateData).length) return false
+
+  const result = db
+    .update(dvCategory)
+    .set(updateData)
+    .where(and(eq(dvCategory.divisionId, divisionId), eq(dvCategory.categoryId, categoryId)))
+    .run()
+
+  return result.changes > 0
 }
 
-export function listDivisionIdsForCategory(db: BetterSQLite3Database, categoryId: string) {
+export function listCategoriesForDivision(
+  db: BetterSQLite3Database,
+  divisionId: string
+): DivisionCategoryLink[] {
   return db
-    .select({ divisionId: dvCategory.divisionId })
+    .select({
+      divisionId: dvCategory.divisionId,
+      categoryId: dvCategory.categoryId,
+      depth: dvCategory.depth
+    })
+    .from(dvCategory)
+    .where(eq(dvCategory.divisionId, divisionId))
+    .orderBy(asc(dvCategory.categoryId))
+    .all()
+}
+
+export function listDivisionsForCategory(
+  db: BetterSQLite3Database,
+  categoryId: string
+): DivisionCategoryLink[] {
+  return db
+    .select({
+      divisionId: dvCategory.divisionId,
+      categoryId: dvCategory.categoryId,
+      depth: dvCategory.depth
+    })
     .from(dvCategory)
     .where(eq(dvCategory.categoryId, categoryId))
+    .orderBy(asc(dvCategory.divisionId))
     .all()
-    .map((row) => row.divisionId)
 }

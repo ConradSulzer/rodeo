@@ -7,6 +7,8 @@ import {
 } from '@core/tournaments/categories'
 import {
   Division,
+  DivisionCategoryLink,
+  DivisionCategoryPatch,
   NewDivision,
   PatchDivision
 } from '@core/tournaments/divisions'
@@ -51,10 +53,15 @@ declare global {
         delete: (id: string) => Promise<boolean>
         get: (id: string) => Promise<Division>
         list: () => Promise<Division[]>
-        addCategory: (divisionId: string, categoryId: string) => Promise<boolean>
+        addCategory: (divisionId: string, categoryId: string, depth?: number) => Promise<boolean>
         removeCategory: (divisionId: string, categoryId: string) => Promise<boolean>
-        listCategoryIds: (divisionId: string) => Promise<string[]>
-        listForCategory: (categoryId: string) => Promise<string[]>
+        listCategories: (divisionId: string) => Promise<DivisionCategoryLink[]>
+        updateCategoryLink: (
+          divisionId: string,
+          categoryId: string,
+          patch: DivisionCategoryPatch
+        ) => Promise<boolean>
+        listForCategory: (categoryId: string) => Promise<DivisionCategoryLink[]>
       }
       tournaments: {
         open: (filePath: string) => Promise<boolean>
