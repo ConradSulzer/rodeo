@@ -87,9 +87,9 @@ const encode = (e: RodeoEvent) => ({
 })
 
 const decode = (row: EventRow) => {
-  if (row.type === 'ItemScored')
-    return {
-      type: row.type,
+  if (row.type === 'ItemScored') {
+    const event: ItemScored = {
+      type: 'ItemScored',
       id: row.id,
       ts: row.ts,
       playerId: row.playerId,
@@ -98,9 +98,11 @@ const decode = (row: EventRow) => {
       value: row.value!,
       note: row.note ?? undefined
     }
-  if (row.type === 'ItemCorrected')
-    return {
-      type: row.type,
+    return event
+  }
+  if (row.type === 'ItemCorrected') {
+    const event: ItemCorrected = {
+      type: 'ItemCorrected',
       id: row.id,
       ts: row.ts,
       playerId: row.playerId,
@@ -110,16 +112,23 @@ const decode = (row: EventRow) => {
       value: row.value!,
       note: row.note ?? undefined
     }
-  return {
-    type: 'ItemVoided',
-    id: row.id,
-    ts: row.ts,
-    playerId: row.playerId,
-    scoreableId: row.scoreableId,
-    scoreableName: row.scoreableName,
-    priorEventId: row.priorEventId!,
-    note: row.note ?? undefined
+    return event
   }
+  if (row.type === 'ItemVoided') {
+    const event: ItemVoided = {
+      type: 'ItemVoided',
+      id: row.id,
+      ts: row.ts,
+      playerId: row.playerId,
+      scoreableId: row.scoreableId,
+      scoreableName: row.scoreableName,
+      priorEventId: row.priorEventId!,
+      note: row.note ?? undefined
+    }
+    return event
+  }
+
+  throw new Error(`Unknown event type in decode: ${row.type}`)
 }
 
 export function sortEventsByTime(events: RodeoEvent[]): RodeoEvent[] {
