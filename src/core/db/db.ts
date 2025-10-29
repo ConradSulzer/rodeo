@@ -24,8 +24,10 @@ export function migrationsPath() {
   )
 }
 
+export type AppDatabase = BetterSQLite3Database
+
 export type OpenDb = {
-  db: BetterSQLite3Database
+  db: AppDatabase
   close: () => void
 }
 
@@ -36,7 +38,7 @@ export function openDb(filePath: string): OpenDb {
   sqlite.pragma('journal_mode = WAL') // use .wal file and merge changes in later isntead of rewriting the file every trans
   sqlite.pragma('synchronous = NORMAL') // fsync less aggressively, but still don't corrupt on crash
 
-  const db = drizzle(sqlite)
+  const db = drizzle(sqlite) as AppDatabase
 
   migrate(db, { migrationsFolder: migrationsPath() }) // this is idempotent
 
@@ -53,9 +55,9 @@ export function openDb(filePath: string): OpenDb {
 
 // In memory sandbox DB for testing. Pass a callback that takes a DB arg and does something against that DB.
 // This function will return the result of that operation.
-export function withInMemoryDb<T>(fn: (db: ReturnType<typeof drizzle>) => T) {
+export function withInMemoryDb<T>(fn: (db: AppDatabase) => T) {
   const sqlite = new Database(':memory:')
-  const db = drizzle(sqlite)
+  const db = drizzle(sqlite) as AppDatabase
   migrate(db, { migrationsFolder: migrationsPath() })
   try {
     return fn(db)

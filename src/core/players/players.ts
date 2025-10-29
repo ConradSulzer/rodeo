@@ -1,4 +1,4 @@
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
+import type { AppDatabase } from '@core/db/db'
 import { player as pl } from '@core/db/schema'
 import { eq, asc } from 'drizzle-orm'
 import { ulid } from 'ulid'
@@ -11,7 +11,7 @@ export type PlayerId = string
 
 const now = () => Date.now()
 
-export function createPlayer(db: BetterSQLite3Database, data: NewPlayer): string {
+export function createPlayer(db: AppDatabase, data: NewPlayer): string {
   const id = ulid()
   const t = now()
   db.insert(pl)
@@ -20,7 +20,7 @@ export function createPlayer(db: BetterSQLite3Database, data: NewPlayer): string
   return id
 }
 
-export function updatePlayer(db: BetterSQLite3Database, id: string, patch: PatchPlayer) {
+export function updatePlayer(db: AppDatabase, id: string, patch: PatchPlayer) {
   if (!Object.keys(patch).length) return false
 
   const result = db
@@ -32,16 +32,16 @@ export function updatePlayer(db: BetterSQLite3Database, id: string, patch: Patch
   return result.changes > 0
 }
 
-export function deletePlayer(db: BetterSQLite3Database, id: string) {
+export function deletePlayer(db: AppDatabase, id: string) {
   const result = db.delete(pl).where(eq(pl.id, id)).run()
 
   return result.changes > 0
 }
 
-export function getPlayer(db: BetterSQLite3Database, id: string): Player | undefined {
+export function getPlayer(db: AppDatabase, id: string): Player | undefined {
   return db.select().from(pl).where(eq(pl.id, id)).get()
 }
 
-export function listAllPlayers(db: BetterSQLite3Database): Player[] {
+export function listAllPlayers(db: AppDatabase): Player[] {
   return db.select().from(pl).orderBy(asc(pl.displayName)).all()
 }
