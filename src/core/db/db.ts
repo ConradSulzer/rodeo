@@ -47,7 +47,9 @@ export function openDb(filePath: string): OpenDb {
     close: () => {
       try {
         sqlite.pragma('wal_checkpoint(TRUNCATE)')
-      } catch {}
+      } catch (error) {
+        console.warn('Failed to checkpoint WAL before closing DB', error)
+      }
       sqlite.close()
     }
   }

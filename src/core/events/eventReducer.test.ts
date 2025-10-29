@@ -1,15 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ulid } from 'ulid'
-import {
-  applyBatch,
-  applyEvent
-} from './eventReducer'
-import {
-  type ItemCorrected,
-  type ItemScored,
-  type ItemVoided,
-  type RodeoEvent
-} from './events'
+import { applyBatch, applyEvent } from './eventReducer'
+import { type ItemCorrected, type ItemScored, type ItemVoided, type RodeoEvent } from './events'
 import type { Results } from '@core/tournaments/results'
 
 const baseTs = Date.now()
