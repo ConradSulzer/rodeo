@@ -12,7 +12,8 @@ const api = {
     update: (id: string, data: PatchPlayer) => ipcRenderer.invoke('players:update', id, data),
     delete: (id: string) => ipcRenderer.invoke('players:delete', id),
     get: (id: string) => ipcRenderer.invoke('players:get', id),
-    list: () => ipcRenderer.invoke('players:list')
+    list: () => ipcRenderer.invoke('players:list'),
+    listWithDivisions: () => ipcRenderer.invoke('players:listWithDivisions')
   },
   scoreables: {
     create: (data: NewScoreable) => ipcRenderer.invoke('scoreables:create', data),

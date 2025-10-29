@@ -1,11 +1,13 @@
 import type { AppDatabase } from '@core/db/db'
-import { player as pl } from '@core/db/schema'
+import { division as dv, player as pl, playerDivision as pd } from '@core/db/schema'
+import type { Division } from '@core/tournaments/divisions'
 import { eq, asc } from 'drizzle-orm'
 import { ulid } from 'ulid'
 
 export type Player = typeof pl.$inferSelect
 export type NewPlayer = Omit<Player, 'id' | 'createdAt' | 'updatedAt'>
 export type PatchPlayer = Partial<NewPlayer>
+export type PlayerDivisionTuple = [Player, Division[]]
 
 export type PlayerId = string
 
@@ -44,4 +46,29 @@ export function getPlayer(db: AppDatabase, id: string): Player | undefined {
 
 export function listAllPlayers(db: AppDatabase): Player[] {
   return db.select().from(pl).orderBy(asc(pl.displayName)).all()
+}
+
+export function listAllPlayersWithDivisions(db: AppDatabase): PlayerDivisionTuple[] {
+  const players = listAllPlayers(db)
+  if (!players.length) return []
+
+  const assignments = db
+    .select({ playerId: pd.playerId, division: dv })
+    .from(pd)
+    .innerJoin(dv, eq(pd.divisionId, dv.id))
+    .orderBy(asc(pd.playerId), asc(dv.name))
+    .all()
+
+  const divisionMap = new Map<string, Division[]>()
+  for (const { playerId, division } of assignments) {
+    if (!division) continue
+    const list = divisionMap.get(playerId)
+    if (list) {
+      list.push(division)
+    } else {
+      divisionMap.set(playerId, [division])
+    }
+  }
+
+  return players.map((player) => [player, divisionMap.get(player.id) ?? []])
 }

@@ -1,5 +1,5 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
-import { Player, NewPlayer, PatchPlayer } from '@core/players/players'
+import { Player, PlayerDivisionTuple, NewPlayer, PatchPlayer } from '@core/players/players'
 import { Category, NewCategory, PatchCategory } from '@core/tournaments/categories'
 import {
   Division,
@@ -21,6 +21,7 @@ declare global {
         delete: (id: string) => Promise<boolean>
         get: (id: string) => Promise<Player>
         list: () => Promise<Array<Player>>
+        listWithDivisions: () => Promise<Array<PlayerDivisionTuple>>
       }
       scoreables: {
         create: (data: NewScoreable) => Promise<string>
