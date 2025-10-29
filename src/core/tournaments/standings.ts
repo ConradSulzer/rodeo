@@ -29,8 +29,11 @@ export function computeDivisionStanding(
   results: Results,
   division: DivisionView
 ): DivisionStanding {
+  const eligible = division.eligiblePlayerIds.length
+    ? new Set<ULID>(division.eligiblePlayerIds)
+    : null
   const categories = division.categories.map((categoryView) =>
-    computeCategoryStanding(results, categoryView)
+    computeCategoryStanding(results, categoryView, eligible)
   )
 
   return {
@@ -49,11 +52,13 @@ export function computeAllDivisionStandings(
 
 function computeCategoryStanding(
   results: Results,
-  categoryView: DivisionView['categories'][number]
+  categoryView: DivisionView['categories'][number],
+  eligible: Set<ULID> | null
 ): CategoryStanding {
   const entries: CategoryStandingEntry[] = []
 
   for (const [playerId, playerItems] of results) {
+    if (eligible && !eligible.has(playerId)) continue
     const breakdown: Record<string, ItemResult> = {}
     let total = 0
     let hasAllScoreables = true

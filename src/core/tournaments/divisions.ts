@@ -1,6 +1,10 @@
 import { ulid } from 'ulid'
 import type { AppDatabase } from '@core/db/db'
-import { division as dv, divisionCategory as dvCategory } from '@core/db/schema'
+import {
+  division as dv,
+  divisionCategory as dvCategory,
+  playerDivision as pd
+} from '@core/db/schema'
 import { and, asc, eq } from 'drizzle-orm'
 import {
   getCategory,
@@ -150,6 +154,7 @@ export type DivisionCategoryView = {
 
 export type DivisionView = Division & {
   categories: DivisionCategoryView[]
+  eligiblePlayerIds: string[]
 }
 
 export function getDivisionView(db: AppDatabase, divisionId: string): DivisionView | undefined {
@@ -157,17 +162,20 @@ export function getDivisionView(db: AppDatabase, divisionId: string): DivisionVi
   if (!division) return undefined
 
   const categories = buildDivisionCategories(db, divisionId)
+  const eligiblePlayerIds = listPlayerIdsForDivision(db, divisionId)
 
   return {
     ...division,
-    categories
+    categories,
+    eligiblePlayerIds
   }
 }
 
 export function listDivisionViews(db: AppDatabase): DivisionView[] {
   return listAllDivisions(db).map((division) => ({
     ...division,
-    categories: buildDivisionCategories(db, division.id)
+    categories: buildDivisionCategories(db, division.id),
+    eligiblePlayerIds: listPlayerIdsForDivision(db, division.id)
   }))
 }
 
@@ -190,4 +198,47 @@ function buildDivisionCategories(db: AppDatabase, divisionId: string): DivisionC
       }
     })
     .filter((entry): entry is DivisionCategoryView => entry !== null)
+}
+
+export function addPlayerToDivision(
+  db: AppDatabase,
+  divisionId: string,
+  playerId: string
+): boolean {
+  const result = db.insert(pd).values({ divisionId, playerId }).onConflictDoNothing().run()
+
+  return result.changes > 0
+}
+
+export function removePlayerFromDivision(
+  db: AppDatabase,
+  divisionId: string,
+  playerId: string
+): boolean {
+  const result = db
+    .delete(pd)
+    .where(and(eq(pd.divisionId, divisionId), eq(pd.playerId, playerId)))
+    .run()
+
+  return result.changes > 0
+}
+
+export function listPlayerIdsForDivision(db: AppDatabase, divisionId: string): string[] {
+  return db
+    .select({ playerId: pd.playerId })
+    .from(pd)
+    .where(eq(pd.divisionId, divisionId))
+    .orderBy(asc(pd.playerId))
+    .all()
+    .map((row) => row.playerId)
+}
+
+export function listDivisionIdsForPlayer(db: AppDatabase, playerId: string): string[] {
+  return db
+    .select({ divisionId: pd.divisionId })
+    .from(pd)
+    .where(eq(pd.playerId, playerId))
+    .orderBy(asc(pd.divisionId))
+    .all()
+    .map((row) => row.divisionId)
 }

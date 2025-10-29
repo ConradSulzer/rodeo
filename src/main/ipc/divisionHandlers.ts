@@ -1,12 +1,18 @@
 import {
   addCategoryToDivision,
+  addPlayerToDivision,
   createDivision,
   deleteDivision,
   getDivision,
+  getDivisionView,
   listAllDivisions,
   listCategoriesForDivision,
+  listDivisionIdsForPlayer,
+  listDivisionViews,
   listDivisionsForCategory,
+  listPlayerIdsForDivision,
   removeCategoryFromDivision,
+  removePlayerFromDivision,
   updateDivision,
   updateDivisionCategoryLink,
   type DivisionCategoryPatch,
@@ -70,4 +76,34 @@ ipcMain.handle(
 ipcMain.handle('divisions:listForCategory', (_evt, categoryId: string) => {
   const db = getTournamentDb()
   return listDivisionsForCategory(db, categoryId)
+})
+
+ipcMain.handle('divisions:getView', (_evt, id: string) => {
+  const db = getTournamentDb()
+  return getDivisionView(db, id)
+})
+
+ipcMain.handle('divisions:listViews', () => {
+  const db = getTournamentDb()
+  return listDivisionViews(db)
+})
+
+ipcMain.handle('divisions:addPlayer', (_evt, divisionId: string, playerId: string) => {
+  const db = getTournamentDb()
+  return addPlayerToDivision(db, divisionId, playerId)
+})
+
+ipcMain.handle('divisions:removePlayer', (_evt, divisionId: string, playerId: string) => {
+  const db = getTournamentDb()
+  return removePlayerFromDivision(db, divisionId, playerId)
+})
+
+ipcMain.handle('divisions:listPlayers', (_evt, divisionId: string) => {
+  const db = getTournamentDb()
+  return listPlayerIdsForDivision(db, divisionId)
+})
+
+ipcMain.handle('divisions:listForPlayer', (_evt, playerId: string) => {
+  const db = getTournamentDb()
+  return listDivisionIdsForPlayer(db, playerId)
 })

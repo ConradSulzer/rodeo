@@ -5,6 +5,7 @@ import {
   Division,
   DivisionCategoryLink,
   DivisionCategoryPatch,
+  DivisionView,
   NewDivision,
   PatchDivision
 } from '@core/tournaments/divisions'
@@ -54,6 +55,12 @@ declare global {
           patch: DivisionCategoryPatch
         ) => Promise<boolean>
         listForCategory: (categoryId: string) => Promise<DivisionCategoryLink[]>
+        getView: (id: string) => Promise<DivisionView | undefined>
+        listViews: () => Promise<DivisionView[]>
+        addPlayer: (divisionId: string, playerId: string) => Promise<boolean>
+        removePlayer: (divisionId: string, playerId: string) => Promise<boolean>
+        listPlayers: (divisionId: string) => Promise<string[]>
+        listForPlayer: (playerId: string) => Promise<string[]>
       }
       tournaments: {
         open: (filePath: string) => Promise<boolean>

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { withInMemoryDb } from '@core/db/db'
-import { createDivision, addCategoryToDivision, getDivisionView } from './divisions'
+import {
+  createDivision,
+  addCategoryToDivision,
+  getDivisionView,
+  addPlayerToDivision
+} from './divisions'
 import { addScoreableToCategory, createCategory } from './categories'
 import { createScoreable } from './scoreables'
 import { createPlayer } from '@core/players/players'
@@ -29,6 +34,9 @@ describe('standings computation', () => {
       const playerB = createPlayer(db, basePlayer('B'))
       const playerC = createPlayer(db, basePlayer('C'))
 
+      addPlayerToDivision(db, divisionId, playerA)
+      addPlayerToDivision(db, divisionId, playerC)
+
       const results: Results = new Map()
       const makeEvent = (playerId: string, value: number): ItemScored => ({
         type: 'ItemScored',
@@ -52,6 +60,7 @@ describe('standings computation', () => {
 
       const [categoryStanding] = standing.categories
       expect(categoryStanding.entries).toHaveLength(2) // depth = 2, ties allowed
+      expect(categoryStanding.entries.map((entry) => entry.playerId)).not.toContain(playerB)
 
       const [first, second] = categoryStanding.entries
       expect(first.rank).toBe(1)
@@ -74,6 +83,9 @@ describe('standings computation', () => {
 
       const playerA = createPlayer(db, basePlayer('A'))
       const playerB = createPlayer(db, basePlayer('B'))
+
+      addPlayerToDivision(db, divisionId, playerA)
+      addPlayerToDivision(db, divisionId, playerB)
 
       const results: Results = new Map()
       const makeEvent = (scoreableId: string, playerId: string, value: number): ItemScored => ({

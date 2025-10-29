@@ -91,6 +91,23 @@ export const divisionCategory = sqliteTable(
   ]
 )
 
+export const playerDivision = sqliteTable(
+  'player_division',
+  {
+    playerId: text('player_id')
+      .notNull()
+      .references(() => player.id, { onUpdate: 'cascade', onDelete: 'cascade' }),
+    divisionId: text('division_id')
+      .notNull()
+      .references(() => division.id, { onUpdate: 'cascade', onDelete: 'cascade' })
+  },
+  (t) => [
+    primaryKey({ columns: [t.playerId, t.divisionId], name: 'player_division_pk' }),
+    index('player_division_division').on(t.divisionId),
+    index('player_division_player').on(t.playerId)
+  ]
+)
+
 export const event = sqliteTable(
   'event',
   {
