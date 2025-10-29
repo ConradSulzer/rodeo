@@ -1,7 +1,17 @@
 import { ulid } from 'ulid'
 import type { AppDatabase } from '@core/db/db'
-import { division as dv, divisionCategory as dvCategory } from '@core/db/schema'
+import {
+  division as dv,
+  divisionCategory as dvCategory,
+  playerDivision as pd
+} from '@core/db/schema'
 import { and, asc, eq } from 'drizzle-orm'
+import {
+  getCategory,
+  listScoreableIdsForCategory,
+  type Category
+} from '@core/tournaments/categories'
+import { getScoreable, type Scoreable } from '@core/tournaments/scoreables'
 
 export type Division = typeof dv.$inferSelect
 export type NewDivision = Omit<Division, 'id' | 'createdAt' | 'updatedAt'>
@@ -134,4 +144,101 @@ export function listDivisionsForCategory(
     .where(eq(dvCategory.categoryId, categoryId))
     .orderBy(asc(dvCategory.divisionId))
     .all()
+}
+
+export type DivisionCategoryView = {
+  category: Category
+  depth: number
+  scoreables: Scoreable[]
+}
+
+export type DivisionView = Division & {
+  categories: DivisionCategoryView[]
+  eligiblePlayerIds: string[]
+}
+
+export function getDivisionView(db: AppDatabase, divisionId: string): DivisionView | undefined {
+  const division = getDivision(db, divisionId)
+  if (!division) return undefined
+
+  const categories = buildDivisionCategories(db, divisionId)
+  const eligiblePlayerIds = listPlayerIdsForDivision(db, divisionId)
+
+  return {
+    ...division,
+    categories,
+    eligiblePlayerIds
+  }
+}
+
+export function listDivisionViews(db: AppDatabase): DivisionView[] {
+  return listAllDivisions(db).map((division) => ({
+    ...division,
+    categories: buildDivisionCategories(db, division.id),
+    eligiblePlayerIds: listPlayerIdsForDivision(db, division.id)
+  }))
+}
+
+function buildDivisionCategories(db: AppDatabase, divisionId: string): DivisionCategoryView[] {
+  const links = listCategoriesForDivision(db, divisionId)
+
+  return links
+    .map((link) => {
+      const category = getCategory(db, link.categoryId)
+      if (!category) return null
+
+      const scoreables = listScoreableIdsForCategory(db, link.categoryId)
+        .map((scoreableId) => getScoreable(db, scoreableId))
+        .filter((scoreable): scoreable is Scoreable => Boolean(scoreable))
+
+      return {
+        category,
+        depth: link.depth,
+        scoreables
+      }
+    })
+    .filter((entry): entry is DivisionCategoryView => entry !== null)
+}
+
+export function addPlayerToDivision(
+  db: AppDatabase,
+  divisionId: string,
+  playerId: string
+): boolean {
+  const result = db.insert(pd).values({ divisionId, playerId }).onConflictDoNothing().run()
+
+  return result.changes > 0
+}
+
+export function removePlayerFromDivision(
+  db: AppDatabase,
+  divisionId: string,
+  playerId: string
+): boolean {
+  const result = db
+    .delete(pd)
+    .where(and(eq(pd.divisionId, divisionId), eq(pd.playerId, playerId)))
+    .run()
+
+  return result.changes > 0
+}
+
+export function listPlayerIdsForDivision(db: AppDatabase, divisionId: string): string[] {
+  return db
+    .select({ playerId: pd.playerId })
+    .from(pd)
+    .where(eq(pd.divisionId, divisionId))
+    .orderBy(asc(pd.playerId))
+    .all()
+    .map((row) => row.playerId)
+}
+
+export function listDivisionIdsForPlayer(db: AppDatabase, playerId: string): string[] {
+  return db
+    .select({ divisionId: pd.divisionId })
+    .from(pd)
+    .where(eq(pd.playerId, playerId))
+    .orderBy(asc(pd.divisionId))
+    .all()
+    .map((row) => row.divisionId)
 }

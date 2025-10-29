@@ -1,10 +1,11 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
-import { Player, NewPlayer, PatchPlayer } from '@core/players/players'
+import { Player, PlayerDivisionTuple, NewPlayer, PatchPlayer } from '@core/players/players'
 import { Category, NewCategory, PatchCategory } from '@core/tournaments/categories'
 import {
   Division,
   DivisionCategoryLink,
   DivisionCategoryPatch,
+  DivisionView,
   NewDivision,
   PatchDivision
 } from '@core/tournaments/divisions'
@@ -20,6 +21,7 @@ declare global {
         delete: (id: string) => Promise<boolean>
         get: (id: string) => Promise<Player>
         list: () => Promise<Array<Player>>
+        listWithDivisions: () => Promise<Array<PlayerDivisionTuple>>
       }
       scoreables: {
         create: (data: NewScoreable) => Promise<string>
@@ -54,6 +56,12 @@ declare global {
           patch: DivisionCategoryPatch
         ) => Promise<boolean>
         listForCategory: (categoryId: string) => Promise<DivisionCategoryLink[]>
+        getView: (id: string) => Promise<DivisionView | undefined>
+        listViews: () => Promise<DivisionView[]>
+        addPlayer: (divisionId: string, playerId: string) => Promise<boolean>
+        removePlayer: (divisionId: string, playerId: string) => Promise<boolean>
+        listPlayers: (divisionId: string) => Promise<string[]>
+        listForPlayer: (playerId: string) => Promise<string[]>
       }
       tournaments: {
         open: (filePath: string) => Promise<boolean>

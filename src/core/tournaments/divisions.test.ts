@@ -2,18 +2,26 @@ import { describe, expect, it } from 'vitest'
 import { withInMemoryDb } from '@core/db/db'
 import {
   addCategoryToDivision,
+  addPlayerToDivision,
   createDivision,
   deleteDivision,
   getDivision,
+  getDivisionView,
   listAllDivisions,
   listCategoriesForDivision,
+  listDivisionIdsForPlayer,
+  listDivisionViews,
   listDivisionsForCategory,
+  listPlayerIdsForDivision,
   removeCategoryFromDivision,
+  removePlayerFromDivision,
   updateDivision,
   updateDivisionCategoryLink,
   type NewDivision
 } from './divisions'
-import { createCategory, type NewCategory } from './categories'
+import { addScoreableToCategory, createCategory, type NewCategory } from './categories'
+import { createScoreable, type NewScoreable } from './scoreables'
+import { createPlayer } from '@core/players/players'
 
 const baseDivision: NewDivision = {
   name: 'Open'
@@ -23,6 +31,18 @@ const baseCategory: NewCategory = {
   name: 'Overall',
   direction: 'asc'
 }
+
+const baseScoreable: NewScoreable = {
+  label: 'Weight',
+  unit: 'lbs'
+}
+
+const basePlayer = (suffix: string) => ({
+  firstName: `First${suffix}`,
+  lastName: `Last${suffix}`,
+  displayName: `Player ${suffix}`,
+  email: `player${suffix}@example.com`
+})
 
 describe('divisions data access', () => {
   it('creates and retrieves a division', () => {
@@ -155,6 +175,63 @@ describe('divisions data access', () => {
       const byId = Object.fromEntries(divisions.map((entry) => [entry.divisionId, entry]))
       expect(byId[divisionA]).toEqual({ divisionId: divisionA, categoryId, depth: 3 })
       expect(byId[divisionB]).toEqual({ divisionId: divisionB, categoryId, depth: 1 })
+    })
+  })
+
+  it('builds division view with categories and scoreables', () => {
+    withInMemoryDb((db) => {
+      const divisionId = createDivision(db, baseDivision)
+      const categoryId = createCategory(db, baseCategory)
+      const scoreableId = createScoreable(db, baseScoreable)
+      const playerA = createPlayer(db, basePlayer('A'))
+      const playerB = createPlayer(db, basePlayer('B'))
+
+      addScoreableToCategory(db, categoryId, scoreableId)
+      addCategoryToDivision(db, divisionId, categoryId, 4)
+      addPlayerToDivision(db, divisionId, playerA)
+      addPlayerToDivision(db, divisionId, playerB)
+
+      const view = getDivisionView(db, divisionId)
+      expect(view).toBeDefined()
+      expect(view?.categories).toHaveLength(1)
+      expect(new Set(view?.eligiblePlayerIds)).toEqual(new Set([playerA, playerB]))
+
+      const [categoryView] = view!.categories
+      expect(categoryView.depth).toBe(4)
+      expect(categoryView.category.id).toBe(categoryId)
+      expect(categoryView.scoreables).toHaveLength(1)
+      expect(categoryView.scoreables[0]).toMatchObject({
+        id: scoreableId,
+        label: baseScoreable.label
+      })
+
+      const all = listDivisionViews(db)
+      expect(all).toHaveLength(1)
+      expect(all[0].categories[0].scoreables[0].unit).toBe(baseScoreable.unit)
+      expect(new Set(all[0].eligiblePlayerIds)).toEqual(new Set([playerA, playerB]))
+    })
+  })
+
+  it('manages player eligibility assignments', () => {
+    withInMemoryDb((db) => {
+      const divisionId = createDivision(db, baseDivision)
+      const playerA = createPlayer(db, basePlayer('A'))
+      const playerB = createPlayer(db, basePlayer('B'))
+
+      expect(listPlayerIdsForDivision(db, divisionId)).toHaveLength(0)
+
+      addPlayerToDivision(db, divisionId, playerA)
+      addPlayerToDivision(db, divisionId, playerB)
+
+      const players = listPlayerIdsForDivision(db, divisionId)
+      expect(new Set(players)).toEqual(new Set([playerA, playerB]))
+
+      const divisionsForPlayer = listDivisionIdsForPlayer(db, playerA)
+      expect(divisionsForPlayer).toEqual([divisionId])
+
+      const removed = removePlayerFromDivision(db, divisionId, playerA)
+      expect(removed).toBe(true)
+      expect(listPlayerIdsForDivision(db, divisionId)).toEqual([playerB])
     })
   })
 })

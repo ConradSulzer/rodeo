@@ -3,6 +3,7 @@ import {
   deletePlayer,
   getPlayer,
   listAllPlayers,
+  listAllPlayersWithDivisions,
   updatePlayer,
   type NewPlayer,
   type PatchPlayer
@@ -37,4 +38,9 @@ ipcMain.handle('players:get', (_evt, id: string) => {
 ipcMain.handle('players:list', () => {
   const db = getTournamentDb()
   return listAllPlayers(db)
+})
+
+ipcMain.handle('players:listWithDivisions', () => {
+  const db = getTournamentDb()
+  return listAllPlayersWithDivisions(db)
 })
