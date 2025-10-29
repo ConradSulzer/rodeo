@@ -25,5 +25,11 @@ jobs:
       - name: Rebuild native modules
         run: npm rebuild better-sqlite3
 
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
       - name: Run tests
         run: npm test
