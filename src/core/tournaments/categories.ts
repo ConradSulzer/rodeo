@@ -1,9 +1,6 @@
 import { ulid } from 'ulid'
 import type { AppDatabase } from '@core/db/db'
-import {
-  category as cat,
-  categoryScoreable as catScoreable
-} from '@core/db/schema'
+import { category as cat, categoryScoreable as catScoreable } from '@core/db/schema'
 import { and, asc, eq } from 'drizzle-orm'
 
 export type Category = typeof cat.$inferSelect
@@ -49,11 +46,7 @@ export function listAllCategories(db: AppDatabase): Category[] {
   return db.select().from(cat).orderBy(asc(cat.name)).all()
 }
 
-export function addScoreableToCategory(
-  db: AppDatabase,
-  categoryId: string,
-  scoreableId: string
-) {
+export function addScoreableToCategory(db: AppDatabase, categoryId: string, scoreableId: string) {
   const result = db
     .insert(catScoreable)
     .values({ categoryId, scoreableId })

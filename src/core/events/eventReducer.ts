@@ -112,8 +112,8 @@ export function applyBatch(
   return { results, errors }
 }
 
-function assertNever(_x: never): never {
-  throw new Error('Unexpected event type')
+function assertNever(value: never): never {
+  throw new Error(`Unexpected event type: ${JSON.stringify(value)}`)
 }
 
 function createError(event: RodeoEvent, message: string): EventError {

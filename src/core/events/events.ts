@@ -4,6 +4,7 @@ import { ULID } from 'ulid'
 
 import { event as ev } from '@core/db/schema'
 import { asc, eq, and } from 'drizzle-orm'
+import type { InferSelectModel } from 'drizzle-orm'
 
 export type EventId = ULID
 
@@ -36,6 +37,8 @@ export interface ItemVoided extends BaseEvent {
 
 export type RodeoEvent = ItemScored | ItemCorrected | ItemVoided
 
+type EventRow = InferSelectModel<typeof ev>
+
 export function appendEvents(db: AppDatabase, events: RodeoEvent[]) {
   db.transaction((tx) => {
     for (const e of events) tx.insert(ev).values(encode(e)).run()
@@ -55,11 +58,7 @@ export function listAllEvents(db: AppDatabase) {
   return db.select().from(ev).orderBy(asc(ev.ts)).all().map(decode)
 }
 
-export function listEventsForPlayerItem(
-  db: AppDatabase,
-  playerId: ULID,
-  scoreableId: ULID
-) {
+export function listEventsForPlayerItem(db: AppDatabase, playerId: string, scoreableId: string) {
   const rows = db
     .select()
     .from(ev)
@@ -69,7 +68,7 @@ export function listEventsForPlayerItem(
   return rows.map(decode)
 }
 
-export function listEventsForPlayer(db: AppDatabase, playerId: ULID): RodeoEvent[] {
+export function listEventsForPlayer(db: AppDatabase, playerId: string): RodeoEvent[] {
   const rows = db.select().from(ev).where(eq(ev.playerId, playerId)).orderBy(asc(ev.ts)).all()
 
   return rows.map(decode)
@@ -87,39 +86,39 @@ const encode = (e: RodeoEvent) => ({
   note: e.note ?? null
 })
 
-const decode = (r: any): RodeoEvent => {
-  if (r.type === 'ItemScored')
+const decode = (row: EventRow) => {
+  if (row.type === 'ItemScored')
     return {
-      type: r.type,
-      id: r.id,
-      ts: r.ts,
-      playerId: r.playerId,
-      scoreableId: r.scoreableId,
-      scoreableName: r.scoreableName,
-      value: r.value!,
-      note: r.note ?? undefined
+      type: row.type,
+      id: row.id,
+      ts: row.ts,
+      playerId: row.playerId,
+      scoreableId: row.scoreableId,
+      scoreableName: row.scoreableName,
+      value: row.value!,
+      note: row.note ?? undefined
     }
-  if (r.type === 'ItemCorrected')
+  if (row.type === 'ItemCorrected')
     return {
-      type: r.type,
-      id: r.id,
-      ts: r.ts,
-      playerId: r.playerId,
-      scoreableId: r.scoreableId,
-      scoreableName: r.scoreableName,
-      priorEventId: r.priorEventId!,
-      value: r.value!,
-      note: r.note ?? undefined
+      type: row.type,
+      id: row.id,
+      ts: row.ts,
+      playerId: row.playerId,
+      scoreableId: row.scoreableId,
+      scoreableName: row.scoreableName,
+      priorEventId: row.priorEventId!,
+      value: row.value!,
+      note: row.note ?? undefined
     }
   return {
     type: 'ItemVoided',
-    id: r.id,
-    ts: r.ts,
-    playerId: r.playerId,
-    scoreableId: r.scoreableId,
-    scoreableName: r.scoreableName,
-    priorEventId: r.priorEventId!,
-    note: r.note ?? undefined
+    id: row.id,
+    ts: row.ts,
+    playerId: row.playerId,
+    scoreableId: row.scoreableId,
+    scoreableName: row.scoreableName,
+    priorEventId: row.priorEventId!,
+    note: row.note ?? undefined
   }
 }
 

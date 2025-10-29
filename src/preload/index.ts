@@ -3,11 +3,7 @@ import { electronAPI } from '@electron-toolkit/preload'
 import { NewPlayer, PatchPlayer } from '@core/players/players'
 import { NewScoreable, PatchScoreable } from '@core/tournaments/scoreables'
 import { NewCategory, PatchCategory } from '@core/tournaments/categories'
-import {
-  NewDivision,
-  PatchDivision,
-  DivisionCategoryPatch
-} from '@core/tournaments/divisions'
+import { NewDivision, PatchDivision, DivisionCategoryPatch } from '@core/tournaments/divisions'
 
 // Custom APIs for renderer
 const api = {
@@ -52,11 +48,8 @@ const api = {
       ipcRenderer.invoke('divisions:removeCategory', divisionId, categoryId),
     listCategories: (divisionId: string) =>
       ipcRenderer.invoke('divisions:listCategories', divisionId),
-    updateCategoryLink: (
-      divisionId: string,
-      categoryId: string,
-      patch: DivisionCategoryPatch
-    ) => ipcRenderer.invoke('divisions:updateCategoryLink', divisionId, categoryId, patch),
+    updateCategoryLink: (divisionId: string, categoryId: string, patch: DivisionCategoryPatch) =>
+      ipcRenderer.invoke('divisions:updateCategoryLink', divisionId, categoryId, patch),
     listForCategory: (categoryId: string) =>
       ipcRenderer.invoke('divisions:listForCategory', categoryId)
   },

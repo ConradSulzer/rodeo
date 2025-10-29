@@ -1,10 +1,6 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 import { Player, NewPlayer, PatchPlayer } from '@core/players/players'
-import {
-  Category,
-  NewCategory,
-  PatchCategory
-} from '@core/tournaments/categories'
+import { Category, NewCategory, PatchCategory } from '@core/tournaments/categories'
 import {
   Division,
   DivisionCategoryLink,
@@ -12,11 +8,7 @@ import {
   NewDivision,
   PatchDivision
 } from '@core/tournaments/divisions'
-import {
-  NewScoreable,
-  PatchScoreable,
-  Scoreable
-} from '@core/tournaments/scoreables'
+import { NewScoreable, PatchScoreable, Scoreable } from '@core/tournaments/scoreables'
 
 declare global {
   interface Window {

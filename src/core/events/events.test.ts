@@ -66,7 +66,10 @@ describe('events data access', () => {
     withInMemoryDb((db) => {
       const playerId = createPlayer(db, makePlayerData('A'))
       const scoreableId = createScoreable(db, makeScoreableData('A'))
-      const scored = makeScored({ playerId, scoreableId, scoreableName: 'Time' }, { ts: baseTs + 10 })
+      const scored = makeScored(
+        { playerId, scoreableId, scoreableName: 'Time' },
+        { ts: baseTs + 10 }
+      )
       const corrected: ItemCorrected = {
         type: 'ItemCorrected',
         id: ulid(),
@@ -127,11 +130,7 @@ describe('events data access', () => {
       appendEvents(db, [scoredA, correctedA, scoredOtherItem, scoredOtherPlayer])
 
       expect(listEventsForPlayerItem(db, playerA, scoreableA)).toEqual([scoredA, correctedA])
-      expect(listEventsForPlayer(db, playerA)).toEqual([
-        scoredA,
-        correctedA,
-        scoredOtherItem
-      ])
+      expect(listEventsForPlayer(db, playerA)).toEqual([scoredA, correctedA, scoredOtherItem])
     })
   })
 

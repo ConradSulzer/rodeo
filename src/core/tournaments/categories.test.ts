@@ -12,10 +12,7 @@ import {
   updateCategory,
   type NewCategory
 } from './categories'
-import {
-  createScoreable,
-  type NewScoreable
-} from './scoreables'
+import { createScoreable, type NewScoreable } from './scoreables'
 
 const baseCategory: NewCategory = {
   name: 'Overall',
