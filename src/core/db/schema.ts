@@ -103,6 +103,7 @@ export const event = sqliteTable(
     scoreableId: text('scoreable_id')
       .notNull()
       .references(() => scoreable.id),
+    scoreableName: text('scoreable_name').notNull().default(''),
     priorEventId: text('prior_event_id'),
     note: text('note'),
     value: real('value')

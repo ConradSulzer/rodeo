@@ -1,5 +1,5 @@
 import { Timestamp } from '@core/types/Shared'
-import { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
+import type { AppDatabase } from '@core/db/db'
 import { ULID } from 'ulid'
 
 import { event as ev } from '@core/db/schema'
@@ -7,7 +7,7 @@ import { asc, eq, and } from 'drizzle-orm'
 
 export type EventId = ULID
 
-export type EventType = 'ItemMeasured' | 'ItemCorrected' | 'ItemVoided'
+export type EventType = 'ItemScored' | 'ItemCorrected' | 'ItemVoided'
 
 export interface BaseEvent {
   id: EventId
@@ -36,27 +36,27 @@ export interface ItemVoided extends BaseEvent {
 
 export type RodeoEvent = ItemScored | ItemCorrected | ItemVoided
 
-export function appendEvents(db: BetterSQLite3Database, events: RodeoEvent[]) {
+export function appendEvents(db: AppDatabase, events: RodeoEvent[]) {
   db.transaction((tx) => {
     for (const e of events) tx.insert(ev).values(encode(e)).run()
   })
 }
 
-export function appendEvent(db: BetterSQLite3Database, event: RodeoEvent) {
+export function appendEvent(db: AppDatabase, event: RodeoEvent) {
   appendEvents(db, [event])
 }
 
-export function getEvent(db: BetterSQLite3Database, id: EventId) {
+export function getEvent(db: AppDatabase, id: EventId) {
   const row = db.select().from(ev).where(eq(ev.id, id)).get()
   return row ? decode(row) : undefined
 }
 
-export function listAllEvents(db: BetterSQLite3Database) {
+export function listAllEvents(db: AppDatabase) {
   return db.select().from(ev).orderBy(asc(ev.ts)).all().map(decode)
 }
 
 export function listEventsForPlayerItem(
-  db: BetterSQLite3Database,
+  db: AppDatabase,
   playerId: ULID,
   scoreableId: ULID
 ) {
@@ -69,7 +69,7 @@ export function listEventsForPlayerItem(
   return rows.map(decode)
 }
 
-export function listEventsForPlayer(db: BetterSQLite3Database, playerId: ULID): RodeoEvent[] {
+export function listEventsForPlayer(db: AppDatabase, playerId: ULID): RodeoEvent[] {
   const rows = db.select().from(ev).where(eq(ev.playerId, playerId)).orderBy(asc(ev.ts)).all()
 
   return rows.map(decode)
@@ -88,7 +88,7 @@ const encode = (e: RodeoEvent) => ({
 })
 
 const decode = (r: any): RodeoEvent => {
-  if (r.type === 'ItemMeasured')
+  if (r.type === 'ItemScored')
     return {
       type: r.type,
       id: r.id,
