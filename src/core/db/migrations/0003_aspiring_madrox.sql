@@ -1,0 +1,1 @@
+ALTER TABLE `division_category` ADD `depth` integer DEFAULT 1 NOT NULL;

@@ -1,0 +1,160 @@
+import { describe, expect, it } from 'vitest'
+import { withInMemoryDb } from '@core/db/db'
+import {
+  addCategoryToDivision,
+  createDivision,
+  deleteDivision,
+  getDivision,
+  listAllDivisions,
+  listCategoriesForDivision,
+  listDivisionsForCategory,
+  removeCategoryFromDivision,
+  updateDivision,
+  updateDivisionCategoryLink,
+  type NewDivision
+} from './divisions'
+import { createCategory, type NewCategory } from './categories'
+
+const baseDivision: NewDivision = {
+  name: 'Open'
+}
+
+const baseCategory: NewCategory = {
+  name: 'Overall',
+  direction: 'asc'
+}
+
+describe('divisions data access', () => {
+  it('creates and retrieves a division', () => {
+    withInMemoryDb((db) => {
+      const id = createDivision(db, baseDivision)
+      const division = getDivision(db, id)
+
+      expect(division).toBeDefined()
+      expect(division?.id).toBe(id)
+      expect(division?.name).toBe(baseDivision.name)
+      expect(division?.createdAt).toBeTypeOf('number')
+      expect(division?.updatedAt).toBeTypeOf('number')
+    })
+  })
+
+  it('updates a division and refreshes updatedAt', () => {
+    withInMemoryDb((db) => {
+      const id = createDivision(db, baseDivision)
+      const before = getDivision(db, id)
+      expect(before).toBeDefined()
+
+      const changed = updateDivision(db, id, { name: 'Pro' })
+      expect(changed).toBe(true)
+
+      const after = getDivision(db, id)
+      expect(after?.name).toBe('Pro')
+      expect(after?.updatedAt).toBeGreaterThanOrEqual(before!.updatedAt)
+    })
+  })
+
+  it('returns false on empty patch', () => {
+    withInMemoryDb((db) => {
+      const id = createDivision(db, baseDivision)
+      const before = getDivision(db, id)
+
+      const changed = updateDivision(db, id, {})
+      expect(changed).toBe(false)
+
+      const after = getDivision(db, id)
+      expect(after?.updatedAt).toBe(before?.updatedAt)
+    })
+  })
+
+  it('deletes a division', () => {
+    withInMemoryDb((db) => {
+      const id = createDivision(db, baseDivision)
+
+      const deleted = deleteDivision(db, id)
+      expect(deleted).toBe(true)
+      expect(getDivision(db, id)).toBeUndefined()
+    })
+  })
+
+  it('lists divisions ordered by name', () => {
+    withInMemoryDb((db) => {
+      createDivision(db, { name: 'Masters' })
+      createDivision(db, { name: 'Amateur' })
+      createDivision(db, { name: 'Pro' })
+
+      const divisions = listAllDivisions(db)
+      expect(divisions.map((d) => d.name)).toEqual(['Amateur', 'Masters', 'Pro'])
+    })
+  })
+
+  it('links categories to divisions with normalized depth', () => {
+    withInMemoryDb((db) => {
+      const divisionId = createDivision(db, baseDivision)
+      const categoryId = createCategory(db, baseCategory)
+
+      const created = addCategoryToDivision(db, divisionId, categoryId, -2)
+      expect(created).toBe(true)
+
+      const links = listCategoriesForDivision(db, divisionId)
+      expect(links).toEqual([{ divisionId, categoryId, depth: 1 }])
+    })
+  })
+
+  it('upserts category link depth on repeated add', () => {
+    withInMemoryDb((db) => {
+      const divisionId = createDivision(db, baseDivision)
+      const categoryId = createCategory(db, baseCategory)
+
+      addCategoryToDivision(db, divisionId, categoryId, 5)
+      addCategoryToDivision(db, divisionId, categoryId, 2)
+
+      const link = listCategoriesForDivision(db, divisionId)[0]
+      expect(link.depth).toBe(2)
+    })
+  })
+
+  it('updates division-category link via patch', () => {
+    withInMemoryDb((db) => {
+      const divisionId = createDivision(db, baseDivision)
+      const categoryId = createCategory(db, baseCategory)
+
+      addCategoryToDivision(db, divisionId, categoryId, 1)
+
+      const updated = updateDivisionCategoryLink(db, divisionId, categoryId, { depth: 4.7 })
+      expect(updated).toBe(true)
+
+      const link = listCategoriesForDivision(db, divisionId)[0]
+      expect(link.depth).toBe(4) // floor applied
+    })
+  })
+
+  it('removes category link from division', () => {
+    withInMemoryDb((db) => {
+      const divisionId = createDivision(db, baseDivision)
+      const categoryId = createCategory(db, baseCategory)
+
+      addCategoryToDivision(db, divisionId, categoryId)
+      const removed = removeCategoryFromDivision(db, divisionId, categoryId)
+      expect(removed).toBe(true)
+
+      expect(listCategoriesForDivision(db, divisionId)).toHaveLength(0)
+    })
+  })
+
+  it('lists divisions for a category', () => {
+    withInMemoryDb((db) => {
+      const categoryId = createCategory(db, baseCategory)
+      const divisionA = createDivision(db, { name: 'A' })
+      const divisionB = createDivision(db, { name: 'B' })
+
+      addCategoryToDivision(db, divisionA, categoryId, 3)
+      addCategoryToDivision(db, divisionB, categoryId, 1)
+
+      const divisions = listDivisionsForCategory(db, categoryId)
+      expect(divisions).toHaveLength(2)
+      const byId = Object.fromEntries(divisions.map((entry) => [entry.divisionId, entry]))
+      expect(byId[divisionA]).toEqual({ divisionId: divisionA, categoryId, depth: 3 })
+      expect(byId[divisionB]).toEqual({ divisionId: divisionB, categoryId, depth: 1 })
+    })
+  })
+})

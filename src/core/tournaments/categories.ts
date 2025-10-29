@@ -1,5 +1,5 @@
 import { ulid } from 'ulid'
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
+import type { AppDatabase } from '@core/db/db'
 import {
   category as cat,
   categoryScoreable as catScoreable
@@ -12,7 +12,7 @@ export type PatchCategory = Partial<NewCategory>
 
 const now = () => Date.now()
 
-export function createCategory(db: BetterSQLite3Database, data: NewCategory): string {
+export function createCategory(db: AppDatabase, data: NewCategory): string {
   const id = ulid()
   const t = now()
 
@@ -23,7 +23,7 @@ export function createCategory(db: BetterSQLite3Database, data: NewCategory): st
   return id
 }
 
-export function updateCategory(db: BetterSQLite3Database, id: string, patch: PatchCategory) {
+export function updateCategory(db: AppDatabase, id: string, patch: PatchCategory) {
   if (!Object.keys(patch).length) return false
 
   const result = db
@@ -35,22 +35,22 @@ export function updateCategory(db: BetterSQLite3Database, id: string, patch: Pat
   return result.changes > 0
 }
 
-export function deleteCategory(db: BetterSQLite3Database, id: string) {
+export function deleteCategory(db: AppDatabase, id: string) {
   const result = db.delete(cat).where(eq(cat.id, id)).run()
 
   return result.changes > 0
 }
 
-export function getCategory(db: BetterSQLite3Database, id: string): Category | undefined {
+export function getCategory(db: AppDatabase, id: string): Category | undefined {
   return db.select().from(cat).where(eq(cat.id, id)).get()
 }
 
-export function listAllCategories(db: BetterSQLite3Database): Category[] {
+export function listAllCategories(db: AppDatabase): Category[] {
   return db.select().from(cat).orderBy(asc(cat.name)).all()
 }
 
 export function addScoreableToCategory(
-  db: BetterSQLite3Database,
+  db: AppDatabase,
   categoryId: string,
   scoreableId: string
 ) {
@@ -64,7 +64,7 @@ export function addScoreableToCategory(
 }
 
 export function removeScoreableFromCategory(
-  db: BetterSQLite3Database,
+  db: AppDatabase,
   categoryId: string,
   scoreableId: string
 ) {
@@ -76,7 +76,7 @@ export function removeScoreableFromCategory(
   return result.changes > 0
 }
 
-export function listScoreableIdsForCategory(db: BetterSQLite3Database, categoryId: string) {
+export function listScoreableIdsForCategory(db: AppDatabase, categoryId: string) {
   return db
     .select({ scoreableId: catScoreable.scoreableId })
     .from(catScoreable)
@@ -85,7 +85,7 @@ export function listScoreableIdsForCategory(db: BetterSQLite3Database, categoryI
     .map((row) => row.scoreableId)
 }
 
-export function listCategoryIdsForScoreable(db: BetterSQLite3Database, scoreableId: string) {
+export function listCategoryIdsForScoreable(db: AppDatabase, scoreableId: string) {
   return db
     .select({ categoryId: catScoreable.categoryId })
     .from(catScoreable)

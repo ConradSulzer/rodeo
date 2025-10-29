@@ -1,5 +1,5 @@
 import { ulid } from 'ulid'
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
+import type { AppDatabase } from '@core/db/db'
 import { division as dv, divisionCategory as dvCategory } from '@core/db/schema'
 import { and, asc, eq } from 'drizzle-orm'
 
@@ -11,7 +11,7 @@ export type DivisionCategoryPatch = Partial<Pick<DivisionCategoryLink, 'depth'>>
 
 const now = () => Date.now()
 
-export function createDivision(db: BetterSQLite3Database, data: NewDivision): string {
+export function createDivision(db: AppDatabase, data: NewDivision): string {
   const id = ulid()
   const t = now()
 
@@ -22,7 +22,7 @@ export function createDivision(db: BetterSQLite3Database, data: NewDivision): st
   return id
 }
 
-export function updateDivision(db: BetterSQLite3Database, id: string, patch: PatchDivision) {
+export function updateDivision(db: AppDatabase, id: string, patch: PatchDivision) {
   if (!Object.keys(patch).length) return false
 
   const result = db
@@ -34,22 +34,22 @@ export function updateDivision(db: BetterSQLite3Database, id: string, patch: Pat
   return result.changes > 0
 }
 
-export function deleteDivision(db: BetterSQLite3Database, id: string) {
+export function deleteDivision(db: AppDatabase, id: string) {
   const result = db.delete(dv).where(eq(dv.id, id)).run()
 
   return result.changes > 0
 }
 
-export function getDivision(db: BetterSQLite3Database, id: string): Division | undefined {
+export function getDivision(db: AppDatabase, id: string): Division | undefined {
   return db.select().from(dv).where(eq(dv.id, id)).get()
 }
 
-export function listAllDivisions(db: BetterSQLite3Database): Division[] {
+export function listAllDivisions(db: AppDatabase): Division[] {
   return db.select().from(dv).orderBy(asc(dv.name)).all()
 }
 
 export function addCategoryToDivision(
-  db: BetterSQLite3Database,
+  db: AppDatabase,
   divisionId: string,
   categoryId: string,
   depth = 1
@@ -69,7 +69,7 @@ export function addCategoryToDivision(
 }
 
 export function removeCategoryFromDivision(
-  db: BetterSQLite3Database,
+  db: AppDatabase,
   divisionId: string,
   categoryId: string
 ) {
@@ -82,7 +82,7 @@ export function removeCategoryFromDivision(
 }
 
 export function updateDivisionCategoryLink(
-  db: BetterSQLite3Database,
+  db: AppDatabase,
   divisionId: string,
   categoryId: string,
   patch: DivisionCategoryPatch
@@ -105,7 +105,7 @@ export function updateDivisionCategoryLink(
 }
 
 export function listCategoriesForDivision(
-  db: BetterSQLite3Database,
+  db: AppDatabase,
   divisionId: string
 ): DivisionCategoryLink[] {
   return db
@@ -121,7 +121,7 @@ export function listCategoriesForDivision(
 }
 
 export function listDivisionsForCategory(
-  db: BetterSQLite3Database,
+  db: AppDatabase,
   categoryId: string
 ): DivisionCategoryLink[] {
   return db
