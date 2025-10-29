@@ -1,5 +1,5 @@
 import { ulid } from 'ulid'
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
+import type { AppDatabase } from '@core/db/db'
 import { scoreable as sc } from '@core/db/schema'
 import { asc, eq } from 'drizzle-orm'
 
@@ -9,7 +9,7 @@ export type PatchScoreable = Partial<NewScoreable>
 
 const now = () => Date.now()
 
-export function createScoreable(db: BetterSQLite3Database, data: NewScoreable): string {
+export function createScoreable(db: AppDatabase, data: NewScoreable): string {
   const id = ulid()
   const t = now()
   db.insert(sc)
@@ -18,7 +18,7 @@ export function createScoreable(db: BetterSQLite3Database, data: NewScoreable): 
   return id
 }
 
-export function updateScoreable(db: BetterSQLite3Database, id: string, patch: PatchScoreable) {
+export function updateScoreable(db: AppDatabase, id: string, patch: PatchScoreable) {
   if (!Object.keys(patch).length) return false
 
   const result = db
@@ -30,16 +30,16 @@ export function updateScoreable(db: BetterSQLite3Database, id: string, patch: Pa
   return result.changes > 0
 }
 
-export function deleteScoreable(db: BetterSQLite3Database, id: string) {
+export function deleteScoreable(db: AppDatabase, id: string) {
   const result = db.delete(sc).where(eq(sc.id, id)).run()
 
   return result.changes > 0
 }
 
-export function getScoreable(db: BetterSQLite3Database, id: string): Scoreable | undefined {
+export function getScoreable(db: AppDatabase, id: string): Scoreable | undefined {
   return db.select().from(sc).where(eq(sc.id, id)).get()
 }
 
-export function listAllScoreables(db: BetterSQLite3Database): Scoreable[] {
+export function listAllScoreables(db: AppDatabase): Scoreable[] {
   return db.select().from(sc).orderBy(asc(sc.label)).all()
 }
