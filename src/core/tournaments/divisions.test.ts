@@ -5,15 +5,18 @@ import {
   createDivision,
   deleteDivision,
   getDivision,
+  getDivisionView,
   listAllDivisions,
   listCategoriesForDivision,
+  listDivisionViews,
   listDivisionsForCategory,
   removeCategoryFromDivision,
   updateDivision,
   updateDivisionCategoryLink,
   type NewDivision
 } from './divisions'
-import { createCategory, type NewCategory } from './categories'
+import { addScoreableToCategory, createCategory, type NewCategory } from './categories'
+import { createScoreable, type NewScoreable } from './scoreables'
 
 const baseDivision: NewDivision = {
   name: 'Open'
@@ -22,6 +25,11 @@ const baseDivision: NewDivision = {
 const baseCategory: NewCategory = {
   name: 'Overall',
   direction: 'asc'
+}
+
+const baseScoreable: NewScoreable = {
+  label: 'Weight',
+  unit: 'lbs'
 }
 
 describe('divisions data access', () => {
@@ -155,6 +163,34 @@ describe('divisions data access', () => {
       const byId = Object.fromEntries(divisions.map((entry) => [entry.divisionId, entry]))
       expect(byId[divisionA]).toEqual({ divisionId: divisionA, categoryId, depth: 3 })
       expect(byId[divisionB]).toEqual({ divisionId: divisionB, categoryId, depth: 1 })
+    })
+  })
+
+  it('builds division view with categories and scoreables', () => {
+    withInMemoryDb((db) => {
+      const divisionId = createDivision(db, baseDivision)
+      const categoryId = createCategory(db, baseCategory)
+      const scoreableId = createScoreable(db, baseScoreable)
+
+      addScoreableToCategory(db, categoryId, scoreableId)
+      addCategoryToDivision(db, divisionId, categoryId, 4)
+
+      const view = getDivisionView(db, divisionId)
+      expect(view).toBeDefined()
+      expect(view?.categories).toHaveLength(1)
+
+      const [categoryView] = view!.categories
+      expect(categoryView.depth).toBe(4)
+      expect(categoryView.category.id).toBe(categoryId)
+      expect(categoryView.scoreables).toHaveLength(1)
+      expect(categoryView.scoreables[0]).toMatchObject({
+        id: scoreableId,
+        label: baseScoreable.label
+      })
+
+      const all = listDivisionViews(db)
+      expect(all).toHaveLength(1)
+      expect(all[0].categories[0].scoreables[0].unit).toBe(baseScoreable.unit)
     })
   })
 })

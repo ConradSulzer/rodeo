@@ -2,6 +2,12 @@ import { ulid } from 'ulid'
 import type { AppDatabase } from '@core/db/db'
 import { division as dv, divisionCategory as dvCategory } from '@core/db/schema'
 import { and, asc, eq } from 'drizzle-orm'
+import {
+  getCategory,
+  listScoreableIdsForCategory,
+  type Category
+} from '@core/tournaments/categories'
+import { getScoreable, type Scoreable } from '@core/tournaments/scoreables'
 
 export type Division = typeof dv.$inferSelect
 export type NewDivision = Omit<Division, 'id' | 'createdAt' | 'updatedAt'>
@@ -134,4 +140,54 @@ export function listDivisionsForCategory(
     .where(eq(dvCategory.categoryId, categoryId))
     .orderBy(asc(dvCategory.divisionId))
     .all()
+}
+
+export type DivisionCategoryView = {
+  category: Category
+  depth: number
+  scoreables: Scoreable[]
+}
+
+export type DivisionView = Division & {
+  categories: DivisionCategoryView[]
+}
+
+export function getDivisionView(db: AppDatabase, divisionId: string): DivisionView | undefined {
+  const division = getDivision(db, divisionId)
+  if (!division) return undefined
+
+  const categories = buildDivisionCategories(db, divisionId)
+
+  return {
+    ...division,
+    categories
+  }
+}
+
+export function listDivisionViews(db: AppDatabase): DivisionView[] {
+  return listAllDivisions(db).map((division) => ({
+    ...division,
+    categories: buildDivisionCategories(db, division.id)
+  }))
+}
+
+function buildDivisionCategories(db: AppDatabase, divisionId: string): DivisionCategoryView[] {
+  const links = listCategoriesForDivision(db, divisionId)
+
+  return links
+    .map((link) => {
+      const category = getCategory(db, link.categoryId)
+      if (!category) return null
+
+      const scoreables = listScoreableIdsForCategory(db, link.categoryId)
+        .map((scoreableId) => getScoreable(db, scoreableId))
+        .filter((scoreable): scoreable is Scoreable => Boolean(scoreable))
+
+      return {
+        category,
+        depth: link.depth,
+        scoreables
+      }
+    })
+    .filter((entry): entry is DivisionCategoryView => entry !== null)
 }
