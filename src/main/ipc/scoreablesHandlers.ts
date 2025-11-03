@@ -9,23 +9,22 @@ import {
 } from '@core/tournaments/scoreables'
 import { getTournamentDb } from '@core/tournaments/tournaments'
 import { ipcMain } from 'electron'
+import { withStandingsRefresh } from '../state/tournamentStore'
 
 ipcMain.handle('scoreables:create', (_evt, data: NewScoreable) => {
   const db = getTournamentDb()
-  const id = createScoreable(db, data)
-
-  return id
+  return withStandingsRefresh(db, () => createScoreable(db, data))
 })
 
 ipcMain.handle('scoreables:update', (_evt, id: string, data: PatchScoreable) => {
   const db = getTournamentDb()
 
-  return updateScoreable(db, id, data)
+  return withStandingsRefresh(db, () => updateScoreable(db, id, data))
 })
 
 ipcMain.handle('scoreables:delete', (_evt, id) => {
   const db = getTournamentDb()
-  return deleteScoreable(db, id)
+  return withStandingsRefresh(db, () => deleteScoreable(db, id))
 })
 
 ipcMain.handle('scoreables:get', (_evt, id: string) => {

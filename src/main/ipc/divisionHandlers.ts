@@ -21,20 +21,21 @@ import {
 } from '@core/tournaments/divisions'
 import { getTournamentDb } from '@core/tournaments/tournaments'
 import { ipcMain } from 'electron'
+import { withStandingsRefresh } from '../state/tournamentStore'
 
 ipcMain.handle('divisions:create', (_evt, data: NewDivision) => {
   const db = getTournamentDb()
-  return createDivision(db, data)
+  return withStandingsRefresh(db, () => createDivision(db, data))
 })
 
 ipcMain.handle('divisions:update', (_evt, id: string, patch: PatchDivision) => {
   const db = getTournamentDb()
-  return updateDivision(db, id, patch)
+  return withStandingsRefresh(db, () => updateDivision(db, id, patch))
 })
 
 ipcMain.handle('divisions:delete', (_evt, id: string) => {
   const db = getTournamentDb()
-  return deleteDivision(db, id)
+  return withStandingsRefresh(db, () => deleteDivision(db, id))
 })
 
 ipcMain.handle('divisions:get', (_evt, id: string) => {
@@ -51,13 +52,13 @@ ipcMain.handle(
   'divisions:addCategory',
   (_evt, divisionId: string, categoryId: string, depth = 1) => {
     const db = getTournamentDb()
-    return addCategoryToDivision(db, divisionId, categoryId, depth)
+    return withStandingsRefresh(db, () => addCategoryToDivision(db, divisionId, categoryId, depth))
   }
 )
 
 ipcMain.handle('divisions:removeCategory', (_evt, divisionId: string, categoryId: string) => {
   const db = getTournamentDb()
-  return removeCategoryFromDivision(db, divisionId, categoryId)
+  return withStandingsRefresh(db, () => removeCategoryFromDivision(db, divisionId, categoryId))
 })
 
 ipcMain.handle('divisions:listCategories', (_evt, divisionId: string) => {
@@ -69,7 +70,9 @@ ipcMain.handle(
   'divisions:updateCategoryLink',
   (_evt, divisionId: string, categoryId: string, patch: DivisionCategoryPatch) => {
     const db = getTournamentDb()
-    return updateDivisionCategoryLink(db, divisionId, categoryId, patch ?? {})
+    return withStandingsRefresh(db, () =>
+      updateDivisionCategoryLink(db, divisionId, categoryId, patch ?? {})
+    )
   }
 )
 
@@ -90,12 +93,12 @@ ipcMain.handle('divisions:listViews', () => {
 
 ipcMain.handle('divisions:addPlayer', (_evt, divisionId: string, playerId: string) => {
   const db = getTournamentDb()
-  return addPlayerToDivision(db, divisionId, playerId)
+  return withStandingsRefresh(db, () => addPlayerToDivision(db, divisionId, playerId))
 })
 
 ipcMain.handle('divisions:removePlayer', (_evt, divisionId: string, playerId: string) => {
   const db = getTournamentDb()
-  return removePlayerFromDivision(db, divisionId, playerId)
+  return withStandingsRefresh(db, () => removePlayerFromDivision(db, divisionId, playerId))
 })
 
 ipcMain.handle('divisions:listPlayers', (_evt, divisionId: string) => {

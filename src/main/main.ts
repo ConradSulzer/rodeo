@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -7,6 +7,8 @@ import './ipc/tournamentHandlers'
 import './ipc/categoryHandlers'
 import './ipc/divisionHandlers'
 import './ipc/scoreablesHandlers'
+import { subscribe } from './state/tournamentStore'
+import { TOURNAMENT_STATE_CHANNEL } from '@core/ipc/channels'
 
 function createWindow(): void {
   // Create the browser window.
@@ -54,8 +56,17 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
+  /**
+   * Register a listener for tournamentStore to will notify all `BrowserWindows`
+   * when the store state changes.
+   */
+  subscribe((state) => {
+    BrowserWindow.getAllWindows()
+      .filter((window) => !window.isDestroyed())
+      .forEach((window) => {
+        window.webContents.send(TOURNAMENT_STATE_CHANNEL, state)
+      })
+  })
 
   createWindow()
 

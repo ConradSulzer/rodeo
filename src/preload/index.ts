@@ -1,9 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron'
+import type { IpcRendererEvent } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import { NewPlayer, PatchPlayer } from '@core/players/players'
 import { NewScoreable, PatchScoreable } from '@core/tournaments/scoreables'
 import { NewCategory, PatchCategory } from '@core/tournaments/categories'
 import { NewDivision, PatchDivision, DivisionCategoryPatch } from '@core/tournaments/divisions'
+import type { SerializableTournamentState } from '@core/tournaments/state'
+import { TOURNAMENT_STATE_CHANNEL } from '@core/ipc/channels'
 
 // Custom APIs for renderer
 const api = {
@@ -64,7 +67,17 @@ const api = {
   },
   tournaments: {
     open: (filePath: string) => ipcRenderer.invoke('tournaments:open', filePath),
-    close: () => ipcRenderer.invoke('tournaments:close')
+    close: () => ipcRenderer.invoke('tournaments:close'),
+    getState: () => ipcRenderer.invoke('tournaments:state:get') as Promise<SerializableTournamentState>,
+    subscribe: (listener: (snapshot: SerializableTournamentState) => void) => {
+      const handler = (_evt: IpcRendererEvent, payload: SerializableTournamentState) => {
+        listener(payload)
+      }
+      ipcRenderer.on(TOURNAMENT_STATE_CHANNEL, handler)
+      return () => {
+        ipcRenderer.removeListener(TOURNAMENT_STATE_CHANNEL, handler)
+      }
+    }
   }
 }
 
