@@ -4,38 +4,6 @@ import type { Results } from './results'
 import type { Timestamp } from '@core/types/Shared'
 import { applyRulesToStanding } from './standingRules'
 
-/**
- * Example DivisionStanding shape:
- * {
- *   divisionId: '01HXYZ...',
- *   categories: [
- *     {
- *       categoryId: '01HABC...',
- *       depth: 3,
- *       direction: 'desc',
- *       entries: [
- *         {
- *           playerId: '01HPLAYER1',
- *           itemCount: 3,
- *           total: 45.5,
- *           score: 45.5,
- *           rank: 1,
- *           ts: 1716499200000
- *         },
- *         {
- *           playerId: '01HPLAYER2',
- *           itemCount: 2,
- *           total: 32.0,
- *           score: 32.0,
- *           rank: 2,
- *           ts: 1716499600000
- *         }
- *       ]
- *     }
- *   ]
- * }
- */
-
 export type PlayerStanding = {
   playerId: ULID
   itemCount: number
