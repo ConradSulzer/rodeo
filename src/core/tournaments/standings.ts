@@ -2,6 +2,7 @@ import type { ULID } from 'ulid'
 import type { DivisionView, DivisionCategoryView } from './divisions'
 import type { Results } from './results'
 import type { Timestamp } from '@core/types/Shared'
+import { applyRulesToStanding } from './standingRules'
 
 /**
  * Example DivisionStanding shape:
@@ -118,7 +119,12 @@ function computeCategoryStanding(
       ts: tieBreakTs
     }
 
-    entries.push(playerStanding)
+    const rules = categoryView.category.rules ?? []
+    const adjustedStanding = applyRulesToStanding(playerStanding, rules, { categoryView })
+
+    if (!adjustedStanding) continue
+
+    entries.push(adjustedStanding)
   }
 
   // Fallback for no valid entries created in the above loop over results for this category

@@ -31,6 +31,7 @@ const api = {
     delete: (id: string) => ipcRenderer.invoke('categories:delete', id),
     get: (id: string) => ipcRenderer.invoke('categories:get', id),
     list: () => ipcRenderer.invoke('categories:list'),
+    listRules: () => ipcRenderer.invoke('categories:listRules'),
     addScoreable: (categoryId: string, scoreableId: string) =>
       ipcRenderer.invoke('categories:addScoreable', categoryId, scoreableId),
     removeScoreable: (categoryId: string, scoreableId: string) =>

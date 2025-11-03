@@ -43,6 +43,7 @@ export const category = sqliteTable(
     id: text('id').primaryKey(),
     name: text('name').notNull(),
     direction: text('direction', { enum: ['asc', 'desc'] }).notNull(),
+    rules: text('rules', { mode: 'json' }).$type<string[]>().notNull().default([] as string[]),
     createdAt: integer('created_at', { mode: 'number' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'number' }).notNull()
   },

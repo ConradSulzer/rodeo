@@ -4,17 +4,31 @@ import { category as cat, categoryScoreable as catScoreable } from '@core/db/sch
 import { and, asc, eq } from 'drizzle-orm'
 
 export type Category = typeof cat.$inferSelect
-export type NewCategory = Omit<Category, 'id' | 'createdAt' | 'updatedAt'>
-export type PatchCategory = Partial<NewCategory>
+type CategoryWritableFields = Omit<Category, 'id' | 'createdAt' | 'updatedAt'>
+export type NewCategory = Omit<CategoryWritableFields, 'rules'> & { rules?: string[] }
+export type PatchCategory = Partial<Omit<CategoryWritableFields, 'rules'>> & { rules?: string[] }
 
 const now = () => Date.now()
+
+function normalizeCategoryRules(rules?: string[]): string[] {
+  if (!Array.isArray(rules)) return []
+
+  const cleaned = rules
+    .filter((rule): rule is string => typeof rule === 'string')
+    .map((rule) => rule.trim())
+    .filter((rule) => rule.length > 0)
+
+  return Array.from(new Set(cleaned))
+}
 
 export function createCategory(db: AppDatabase, data: NewCategory): string {
   const id = ulid()
   const t = now()
+  const { rules, ...rest } = data
+  const normalizedRules = normalizeCategoryRules(rules)
 
   db.insert(cat)
-    .values({ id, ...data, createdAt: t, updatedAt: t })
+    .values({ id, ...rest, rules: normalizedRules, createdAt: t, updatedAt: t })
     .run()
 
   return id
@@ -23,11 +37,18 @@ export function createCategory(db: AppDatabase, data: NewCategory): string {
 export function updateCategory(db: AppDatabase, id: string, patch: PatchCategory) {
   if (!Object.keys(patch).length) return false
 
-  const result = db
-    .update(cat)
-    .set({ ...patch, updatedAt: now() })
-    .where(eq(cat.id, id))
-    .run()
+  const { rules, ...rest } = patch
+  const updateData: Partial<typeof cat.$inferInsert> = { ...rest }
+
+  if (rules !== undefined) {
+    updateData.rules = normalizeCategoryRules(rules)
+  }
+
+  if (!Object.keys(updateData).length) return false
+
+  updateData.updatedAt = now()
+
+  const result = db.update(cat).set(updateData).where(eq(cat.id, id)).run()
 
   return result.changes > 0
 }
