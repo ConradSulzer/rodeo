@@ -13,20 +13,21 @@ import {
 } from '@core/tournaments/categories'
 import { getTournamentDb } from '@core/tournaments/tournaments'
 import { ipcMain } from 'electron'
+import { withStandingsRefresh } from '../state/tournamentStore'
 
 ipcMain.handle('categories:create', (_evt, data: NewCategory) => {
   const db = getTournamentDb()
-  return createCategory(db, data)
+  return withStandingsRefresh(db, () => createCategory(db, data))
 })
 
 ipcMain.handle('categories:update', (_evt, id: string, patch: PatchCategory) => {
   const db = getTournamentDb()
-  return updateCategory(db, id, patch)
+  return withStandingsRefresh(db, () => updateCategory(db, id, patch))
 })
 
 ipcMain.handle('categories:delete', (_evt, id: string) => {
   const db = getTournamentDb()
-  return deleteCategory(db, id)
+  return withStandingsRefresh(db, () => deleteCategory(db, id))
 })
 
 ipcMain.handle('categories:get', (_evt, id: string) => {
@@ -41,12 +42,12 @@ ipcMain.handle('categories:list', () => {
 
 ipcMain.handle('categories:addScoreable', (_evt, categoryId: string, scoreableId: string) => {
   const db = getTournamentDb()
-  return addScoreableToCategory(db, categoryId, scoreableId)
+  return withStandingsRefresh(db, () => addScoreableToCategory(db, categoryId, scoreableId))
 })
 
 ipcMain.handle('categories:removeScoreable', (_evt, categoryId: string, scoreableId: string) => {
   const db = getTournamentDb()
-  return removeScoreableFromCategory(db, categoryId, scoreableId)
+  return withStandingsRefresh(db, () => removeScoreableFromCategory(db, categoryId, scoreableId))
 })
 
 ipcMain.handle('categories:listScoreableIds', (_evt, categoryId: string) => {

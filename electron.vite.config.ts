@@ -5,6 +5,14 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   main: {
+    build: {
+      rollupOptions: {
+        input: resolve(__dirname, 'src/main/main.ts'),
+        output: {
+          entryFileNames: 'index.js'
+        }
+      }
+    },
     plugins: [externalizeDepsPlugin()],
     resolve: {
       alias: {

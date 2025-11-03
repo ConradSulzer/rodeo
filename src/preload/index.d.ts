@@ -10,6 +10,7 @@ import {
   PatchDivision
 } from '@core/tournaments/divisions'
 import { NewScoreable, PatchScoreable, Scoreable } from '@core/tournaments/scoreables'
+import type { SerializableTournamentState } from '@core/tournaments/state'
 
 declare global {
   interface Window {
@@ -66,6 +67,10 @@ declare global {
       tournaments: {
         open: (filePath: string) => Promise<boolean>
         close: () => Promise<boolean>
+        getState: () => Promise<SerializableTournamentState>
+        subscribe: (
+          listener: (snapshot: SerializableTournamentState) => void
+        ) => () => void
       }
     }
   }
