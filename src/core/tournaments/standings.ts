@@ -1,27 +1,60 @@
 import type { ULID } from 'ulid'
-import type { DivisionView } from './divisions'
-import type { Results, ItemResult } from './results'
+import type { DivisionView, DivisionCategoryView } from './divisions'
+import type { Results } from './results'
+import type { Timestamp } from '@core/types/Shared'
 
-export type CategoryStandingEntry = {
+/**
+ * Example DivisionStanding shape:
+ * {
+ *   divisionId: '01HXYZ...',
+ *   categories: [
+ *     {
+ *       categoryId: '01HABC...',
+ *       depth: 3,
+ *       direction: 'desc',
+ *       entries: [
+ *         {
+ *           playerId: '01HPLAYER1',
+ *           itemCount: 3,
+ *           total: 45.5,
+ *           score: 45.5,
+ *           rank: 1,
+ *           ts: 1716499200000
+ *         },
+ *         {
+ *           playerId: '01HPLAYER2',
+ *           itemCount: 2,
+ *           total: 32.0,
+ *           score: 32.0,
+ *           rank: 2,
+ *           ts: 1716499600000
+ *         }
+ *       ]
+ *     }
+ *   ]
+ * }
+ */
+
+export type PlayerStanding = {
   playerId: ULID
+  itemCount: number
+  total: number
+  score: number
   rank: number
-  value: number
-  breakdown: Record<string, ItemResult>
+  ts: Timestamp
 }
 
-type RankDirection = DivisionView['categories'][number]['category']['direction']
+type RankDirection = DivisionCategoryView['category']['direction']
 
 export type CategoryStanding = {
   categoryId: string
-  categoryName: string
   depth: number
   direction: RankDirection
-  entries: CategoryStandingEntry[]
+  entries: PlayerStanding[]
 }
 
 export type DivisionStanding = {
   divisionId: string
-  divisionName: string
   categories: CategoryStanding[]
 }
 
@@ -38,7 +71,6 @@ export function computeDivisionStanding(
 
   return {
     divisionId: division.id,
-    divisionName: division.name,
     categories
   }
 }
@@ -52,70 +84,72 @@ export function computeAllDivisionStandings(
 
 function computeCategoryStanding(
   results: Results,
-  categoryView: DivisionView['categories'][number],
+  categoryView: DivisionCategoryView,
   eligible: Set<ULID> | null
 ): CategoryStanding {
-  const entries: CategoryStandingEntry[] = []
+  const entries: PlayerStanding[] = []
 
   for (const [playerId, playerItems] of results) {
     if (eligible && !eligible.has(playerId)) continue
-    const breakdown: Record<string, ItemResult> = {}
     let total = 0
-    let hasAllScoreables = true
+    let itemCount = 0
+    let earliestTs: number | null = null
 
     for (const scoreable of categoryView.scoreables) {
       const item = playerItems.get(scoreable.id)
-      if (!item) {
-        hasAllScoreables = false
-        break
-      }
-      breakdown[scoreable.id] = item
+      if (!item) continue
       total += item.value
+      itemCount += 1
+      earliestTs = earliestTs === null ? item.createdAt : Math.min(earliestTs, item.createdAt)
     }
 
-    if (!hasAllScoreables) continue
+    if (itemCount === 0) continue
 
-    entries.push({
+    // ensures we have a timestamp here if not then send to bottom.
+    // TODO: make sure we always have a timestamp and never have to resort to this fallback.
+    const tieBreakTs = (earliestTs ?? Number.POSITIVE_INFINITY) as Timestamp
+
+    const playerStanding: PlayerStanding = {
       playerId,
-      rank: 0, // placeholder until actual rank
-      value: total,
-      breakdown
-    })
+      itemCount,
+      total,
+      score: total,
+      rank: 0,
+      ts: tieBreakTs
+    }
+
+    entries.push(playerStanding)
   }
 
+  // Fallback for no valid entries created in the above loop over results for this category
   if (!entries.length) {
     return {
       categoryId: categoryView.category.id,
-      categoryName: categoryView.category.name,
       depth: categoryView.depth,
       direction: categoryView.category.direction,
       entries: []
     }
   }
 
+  const direction = categoryView.category.direction
+
+  // Sort all entries by score, then tie-break using the earliest timestamp
   entries.sort((a, b) => {
-    if (a.value === b.value) return a.playerId.localeCompare(b.playerId)
-    return categoryView.category.direction === 'asc' ? a.value - b.value : b.value - a.value
+    const scoreDiff = direction === 'asc' ? a.score - b.score : b.score - a.score
+    if (scoreDiff !== 0) return scoreDiff
+
+    return a.ts - b.ts
   })
 
-  let currentRank = 0
-  let lastValue: number | null = null
-
+  // Because we sort by score then timestamp, ranks can follow the array index directly.
   entries.forEach((entry, index) => {
-    if (lastValue === null || entry.value !== lastValue) {
-      currentRank = index + 1
-      lastValue = entry.value
-    }
-    entry.rank = currentRank
+    entry.rank = index + 1
   })
-
-  const limitedEntries = entries.filter((entry) => entry.rank <= categoryView.depth)
 
   return {
     categoryId: categoryView.category.id,
-    categoryName: categoryView.category.name,
     depth: categoryView.depth,
     direction: categoryView.category.direction,
-    entries: limitedEntries
+    entries: entries
   }
 }

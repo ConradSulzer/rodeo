@@ -58,7 +58,6 @@ const sampleDivisionViews = (): DivisionView[] => [
 const sampleStandings = (): DivisionStanding[] => [
   {
     divisionId: 'division-1',
-    divisionName: 'Division 1',
     categories: []
   }
 ]
@@ -222,7 +221,6 @@ describe('refreshStandings', () => {
     const updatedStandings: DivisionStanding[] = [
       {
         divisionId: 'division-2',
-        divisionName: 'Division 2',
         categories: []
       }
     ]
