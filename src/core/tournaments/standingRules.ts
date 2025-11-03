@@ -1,25 +1,36 @@
 import type { PlayerStanding } from './standings'
 import type { DivisionCategoryView } from './divisions'
+import { moreItemsTrumpFewerApply } from './standingRules/moreItemsTrumpFewer'
 
 export type StandingRuleContext = {
   categoryView: DivisionCategoryView
 }
 
 export type StandingRule = {
+  label: string
   description: string
   apply: (standing: PlayerStanding, context: StandingRuleContext) => PlayerStanding | null
 }
 
-const STANDING_RULES: Record<string, StandingRule> = {}
+const STANDING_RULES: Record<string, StandingRule> = {
+  more_items_trump_fewer: {
+    label: 'More Items Trump Fewer',
+    description:
+      'Favors players who completed more scoreables by applying a large per-item boost before ranking.',
+    apply: moreItemsTrumpFewerApply
+  }
+}
 
 export type StandingRuleSummary = {
   name: string
+  label: string
   description: string
 }
 
 export function listStandingRules(): StandingRuleSummary[] {
   return Object.entries(STANDING_RULES).map(([name, rule]) => ({
     name,
+    label: rule.label,
     description: rule.description
   }))
 }

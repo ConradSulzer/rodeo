@@ -6,7 +6,7 @@ import {
   getDivisionView,
   addPlayerToDivision
 } from './divisions'
-import { addScoreableToCategory, createCategory } from './categories'
+import { addScoreableToCategory, createCategory, updateCategory } from './categories'
 import { createScoreable } from './scoreables'
 import { createPlayer } from '@core/players/players'
 import { computeDivisionStanding } from './standings'
@@ -133,6 +133,68 @@ describe('standings computation', () => {
       expect(entries[0].rank).toBe(1)
       expect(entries[1].score).toBe(8)
       expect(entries[1].rank).toBe(2)
+    })
+  })
+
+  it('applies the "More Items Trump Fewer" rule to prioritize fuller cards', () => {
+    withInMemoryDb((db) => {
+      const divisionId = createDivision(db, { name: 'Rule Division' })
+      const categoryId = createCategory(db, { name: 'Full Cards Win', direction: 'desc' })
+      const scoreableA = createScoreable(db, { label: 'Fish A', unit: 'lbs' })
+      const scoreableB = createScoreable(db, { label: 'Fish B', unit: 'lbs' })
+      const scoreableC = createScoreable(db, { label: 'Fish C', unit: 'lbs' })
+
+      addScoreableToCategory(db, categoryId, scoreableA)
+      addScoreableToCategory(db, categoryId, scoreableB)
+      addScoreableToCategory(db, categoryId, scoreableC)
+      updateCategory(db, categoryId, { rules: ['more_items_trump_fewer'] })
+      addCategoryToDivision(db, divisionId, categoryId, 5)
+
+      const playerFull = createPlayer(db, basePlayer('FullCard'))
+      const playerPartial = createPlayer(db, basePlayer('PartialCard'))
+
+      addPlayerToDivision(db, divisionId, playerFull)
+      addPlayerToDivision(db, divisionId, playerPartial)
+
+      const results: Results = new Map()
+      const baseTs = Date.now()
+      const makeEvent = (
+        scoreableId: string,
+        playerId: string,
+        value: number,
+        offset = 0
+      ): ItemScored => ({
+        type: 'ItemScored',
+        id: ulid(),
+        ts: baseTs + offset,
+        playerId,
+        scoreableId,
+        scoreableName: 'Score',
+        value
+      })
+
+      // Player with a full card has a lower raw total but more items
+      recordEvent(db, results, makeEvent(scoreableA, playerFull, 5, 1))
+      recordEvent(db, results, makeEvent(scoreableB, playerFull, 5, 2))
+      recordEvent(db, results, makeEvent(scoreableC, playerFull, 5, 3))
+
+      // Partial player posts a higher raw total but fewer items
+      recordEvent(db, results, makeEvent(scoreableA, playerPartial, 20, 1))
+
+      const standing = computeDivisionStanding(results, getDivisionView(db, divisionId)!)
+      const [categoryStanding] = standing.categories
+
+      expect(categoryStanding.entries.map((entry) => entry.playerId)).toEqual([
+        playerFull,
+        playerPartial
+      ])
+
+      const [first, second] = categoryStanding.entries
+      expect(first.itemCount).toBe(3)
+      expect(second.itemCount).toBe(1)
+      expect(first.score).toBeGreaterThan(second.score)
+      expect(first.rank).toBe(1)
+      expect(second.rank).toBe(2)
     })
   })
 
