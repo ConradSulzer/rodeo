@@ -17,6 +17,8 @@ export const player = sqliteTable(
     lastName: text('last_name').notNull(),
     displayName: text('display_name').notNull(),
     email: text('email').notNull(),
+    cellPhone: text('cell_phone'),
+    emergencyContact: text('emergency_contact'),
     createdAt: integer('created_at', { mode: 'number' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'number' }).notNull()
   },

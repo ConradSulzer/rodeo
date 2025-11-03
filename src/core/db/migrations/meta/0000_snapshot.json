@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "3278eda8-7f6a-4df3-9874-32fa9ef7a0a2",
+  "id": "b5c8fe35-2ecc-4e80-a6b8-7634ac02cbca",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "category": {
@@ -414,6 +414,20 @@
           "notNull": true,
           "autoincrement": false
         },
+        "cell_phone": {
+          "name": "cell_phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "emergency_contact": {
+          "name": "emergency_contact",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "integer",
@@ -442,6 +456,80 @@
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "player_division": {
+      "name": "player_division",
+      "columns": {
+        "player_id": {
+          "name": "player_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "division_id": {
+          "name": "division_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "player_division_division": {
+          "name": "player_division_division",
+          "columns": [
+            "division_id"
+          ],
+          "isUnique": false
+        },
+        "player_division_player": {
+          "name": "player_division_player",
+          "columns": [
+            "player_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "player_division_player_id_player_id_fk": {
+          "name": "player_division_player_id_player_id_fk",
+          "tableFrom": "player_division",
+          "tableTo": "player",
+          "columnsFrom": [
+            "player_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "player_division_division_id_division_id_fk": {
+          "name": "player_division_division_id_division_id_fk",
+          "tableFrom": "player_division",
+          "tableTo": "division",
+          "columnsFrom": [
+            "division_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "player_division_pk": {
+          "columns": [
+            "player_id",
+            "division_id"
+          ],
+          "name": "player_division_pk"
+        }
+      },
       "uniqueConstraints": {},
       "checkConstraints": {}
     },

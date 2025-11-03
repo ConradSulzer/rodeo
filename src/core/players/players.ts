@@ -5,7 +5,19 @@ import { eq, asc } from 'drizzle-orm'
 import { ulid } from 'ulid'
 
 export type Player = typeof pl.$inferSelect
-export type NewPlayer = Omit<Player, 'id' | 'createdAt' | 'updatedAt'>
+
+type PlayerContactFields = {
+  cellPhone?: string | null
+  emergencyContact?: string | null
+}
+
+export type NewPlayer = {
+  firstName: string
+  lastName: string
+  displayName: string
+  email: string
+} & PlayerContactFields
+
 export type PatchPlayer = Partial<NewPlayer>
 export type PlayerDivisionTuple = [Player, Division[]]
 
@@ -16,8 +28,9 @@ const now = () => Date.now()
 export function createPlayer(db: AppDatabase, data: NewPlayer): string {
   const id = ulid()
   const t = now()
+  const { cellPhone = null, emergencyContact = null, ...rest } = data
   db.insert(pl)
-    .values({ id, ...data, createdAt: t, updatedAt: t })
+    .values({ id, ...rest, cellPhone, emergencyContact, createdAt: t, updatedAt: t })
     .run()
   return id
 }
@@ -25,11 +38,16 @@ export function createPlayer(db: AppDatabase, data: NewPlayer): string {
 export function updatePlayer(db: AppDatabase, id: string, patch: PatchPlayer) {
   if (!Object.keys(patch).length) return false
 
-  const result = db
-    .update(pl)
-    .set({ ...patch, updatedAt: now() })
-    .where(eq(pl.id, id))
-    .run()
+  const { cellPhone, emergencyContact, ...rest } = patch
+  const updateData: Partial<typeof pl.$inferInsert> = {
+    ...rest,
+    updatedAt: now()
+  }
+
+  if (cellPhone !== undefined) updateData.cellPhone = cellPhone ?? null
+  if (emergencyContact !== undefined) updateData.emergencyContact = emergencyContact ?? null
+
+  const result = db.update(pl).set(updateData).where(eq(pl.id, id)).run()
 
   return result.changes > 0
 }

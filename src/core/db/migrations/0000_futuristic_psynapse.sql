@@ -57,11 +57,23 @@ CREATE TABLE `player` (
 	`last_name` text NOT NULL,
 	`display_name` text NOT NULL,
 	`email` text NOT NULL,
+	`cell_phone` text,
+	`emergency_contact` text,
 	`created_at` integer NOT NULL,
 	`updated_at` integer NOT NULL
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `player_email_first_last` ON `player` (`email`,`first_name`,`last_name`);--> statement-breakpoint
+CREATE TABLE `player_division` (
+	`player_id` text NOT NULL,
+	`division_id` text NOT NULL,
+	PRIMARY KEY(`player_id`, `division_id`),
+	FOREIGN KEY (`player_id`) REFERENCES `player`(`id`) ON UPDATE cascade ON DELETE cascade,
+	FOREIGN KEY (`division_id`) REFERENCES `division`(`id`) ON UPDATE cascade ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE INDEX `player_division_division` ON `player_division` (`division_id`);--> statement-breakpoint
+CREATE INDEX `player_division_player` ON `player_division` (`player_id`);--> statement-breakpoint
 CREATE TABLE `scoreable` (
 	`id` text PRIMARY KEY NOT NULL,
 	`label` text NOT NULL,
