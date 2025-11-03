@@ -198,6 +198,58 @@ describe('standings computation', () => {
     })
   })
 
+  it('applies the "Require All Scoreables" rule to drop incomplete cards', () => {
+    withInMemoryDb((db) => {
+      const divisionId = createDivision(db, { name: 'Require Division' })
+      const categoryId = createCategory(db, { name: 'Complete Cards Only', direction: 'desc' })
+      const scoreableA = createScoreable(db, { label: 'Fish A', unit: 'lbs' })
+      const scoreableB = createScoreable(db, { label: 'Fish B', unit: 'lbs' })
+      const scoreableC = createScoreable(db, { label: 'Fish C', unit: 'lbs' })
+
+      addScoreableToCategory(db, categoryId, scoreableA)
+      addScoreableToCategory(db, categoryId, scoreableB)
+      addScoreableToCategory(db, categoryId, scoreableC)
+      updateCategory(db, categoryId, { rules: ['require_all_scoreables'] })
+      addCategoryToDivision(db, divisionId, categoryId, 5)
+
+      const playerComplete = createPlayer(db, basePlayer('Complete'))
+      const playerMissing = createPlayer(db, basePlayer('MissingOne'))
+
+      addPlayerToDivision(db, divisionId, playerComplete)
+      addPlayerToDivision(db, divisionId, playerMissing)
+
+      const results: Results = new Map()
+      const baseTs = Date.now()
+      const makeEvent = (
+        scoreableId: string,
+        playerId: string,
+        value: number,
+        offset = 0
+      ): ItemScored => ({
+        type: 'ItemScored',
+        id: ulid(),
+        ts: baseTs + offset,
+        playerId,
+        scoreableId,
+        scoreableName: 'Score',
+        value
+      })
+
+      recordEvent(db, results, makeEvent(scoreableA, playerComplete, 10, 1))
+      recordEvent(db, results, makeEvent(scoreableB, playerComplete, 8, 2))
+      recordEvent(db, results, makeEvent(scoreableC, playerComplete, 6, 3))
+
+      recordEvent(db, results, makeEvent(scoreableA, playerMissing, 12, 1))
+      recordEvent(db, results, makeEvent(scoreableB, playerMissing, 9, 2))
+
+      const standing = computeDivisionStanding(results, getDivisionView(db, divisionId)!)
+      const [categoryStanding] = standing.categories
+
+      expect(categoryStanding.entries.map((entry) => entry.playerId)).toEqual([playerComplete])
+      expect(categoryStanding.entries[0].rank).toBe(1)
+    })
+  })
+
   it('breaks ties using earliest timestamp when scores match', () => {
     withInMemoryDb((db) => {
       const divisionId = createDivision(db, { name: 'TieBreak' })
