@@ -27,6 +27,8 @@ describe('players data access', () => {
       expect(player).toMatchObject({
         ...basePlayer
       })
+      expect(player?.cellPhone).toBeNull()
+      expect(player?.emergencyContact).toBeNull()
       expect(player?.createdAt).toBeTypeOf('number')
       expect(player?.updatedAt).toBeTypeOf('number')
     })
@@ -43,6 +45,7 @@ describe('players data access', () => {
 
       const after = getPlayer(db, id)
       expect(after?.displayName).toBe('JD')
+      expect(after?.cellPhone).toBeNull()
       expect(after?.updatedAt).toBeGreaterThanOrEqual(before!.updatedAt)
     })
   })
@@ -81,6 +84,27 @@ describe('players data access', () => {
       const players = listAllPlayers(db)
       expect(players.map((p) => p.displayName)).toEqual(['Alice', 'Bob', 'Charlie'])
       expect(players).toHaveLength(ids.length)
+    })
+  })
+  it('allows specifying optional contact fields', () => {
+    withInMemoryDb((db) => {
+      const id = createPlayer(db, {
+        ...basePlayer,
+        email: 'alternate@example.com',
+        cellPhone: '555-1234',
+        emergencyContact: '555-9876'
+      })
+
+      const player = getPlayer(db, id)
+      expect(player?.cellPhone).toBe('555-1234')
+      expect(player?.emergencyContact).toBe('555-9876')
+
+      const updated = updatePlayer(db, id, { cellPhone: null })
+      expect(updated).toBe(true)
+
+      const after = getPlayer(db, id)
+      expect(after?.cellPhone).toBeNull()
+      expect(after?.emergencyContact).toBe('555-9876')
     })
   })
 })
