@@ -9,8 +9,12 @@ ipcMain.handle('tournaments:open', (_evt, filePath: string) => {
 })
 
 ipcMain.handle('tournaments:close', () => {
+  // close current tournament DB connection
   closeTournament()
+
+  // clear main process tournament store
   clear()
+
   return true
 })
 
