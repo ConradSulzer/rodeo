@@ -58,6 +58,7 @@ export const division = sqliteTable(
   {
     id: text('id').primaryKey(),
     name: text('name').notNull(),
+    order: integer('order', { mode: 'number' }).notNull().default(0),
     createdAt: integer('created_at', { mode: 'number' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'number' }).notNull()
   },
@@ -89,6 +90,7 @@ export const divisionCategory = sqliteTable(
     categoryId: text('category_id')
       .notNull()
       .references(() => category.id, { onUpdate: 'cascade', onDelete: 'cascade' }),
+    order: integer('order', { mode: 'number' }).notNull().default(0),
     depth: integer('depth', { mode: 'number' }).notNull().default(1)
   },
   (t) => [

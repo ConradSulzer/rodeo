@@ -96,14 +96,15 @@ describe('divisions data access', () => {
     })
   })
 
-  it('lists divisions ordered by name', () => {
+  it('lists divisions ordered by order then name', () => {
     withInMemoryDb((db) => {
-      createDivision(db, { name: 'Masters' })
-      createDivision(db, { name: 'Amateur' })
-      createDivision(db, { name: 'Pro' })
+      createDivision(db, { name: 'Masters', order: 2 })
+      createDivision(db, { name: 'Amateur', order: 1 })
+      createDivision(db, { name: 'Pro', order: 1 })
 
       const divisions = listAllDivisions(db)
-      expect(divisions.map((d) => d.name)).toEqual(['Amateur', 'Masters', 'Pro'])
+      expect(divisions.map((d) => d.name)).toEqual(['Amateur', 'Pro', 'Masters'])
+      expect(divisions.map((d) => d.order)).toEqual([1, 1, 2])
     })
   })
 
@@ -116,7 +117,7 @@ describe('divisions data access', () => {
       expect(created).toBe(true)
 
       const links = listCategoriesForDivision(db, divisionId)
-      expect(links).toEqual([{ divisionId, categoryId, depth: 1 }])
+      expect(links).toEqual([{ divisionId, categoryId, depth: 1, order: 0 }])
     })
   })
 
@@ -125,11 +126,12 @@ describe('divisions data access', () => {
       const divisionId = createDivision(db, baseDivision)
       const categoryId = createCategory(db, baseCategory)
 
-      addCategoryToDivision(db, divisionId, categoryId, 5)
+      addCategoryToDivision(db, divisionId, categoryId, 5, 4)
       addCategoryToDivision(db, divisionId, categoryId, 2)
 
       const link = listCategoriesForDivision(db, divisionId)[0]
       expect(link.depth).toBe(2)
+      expect(link.order).toBe(4)
     })
   })
 
@@ -138,13 +140,17 @@ describe('divisions data access', () => {
       const divisionId = createDivision(db, baseDivision)
       const categoryId = createCategory(db, baseCategory)
 
-      addCategoryToDivision(db, divisionId, categoryId, 1)
+      addCategoryToDivision(db, divisionId, categoryId, 1, 2)
 
-      const updated = updateDivisionCategoryLink(db, divisionId, categoryId, { depth: 4.7 })
+      const updated = updateDivisionCategoryLink(db, divisionId, categoryId, {
+        depth: 4.7,
+        order: 7.1
+      })
       expect(updated).toBe(true)
 
       const link = listCategoriesForDivision(db, divisionId)[0]
       expect(link.depth).toBe(4) // floor applied
+      expect(link.order).toBe(7)
     })
   })
 
@@ -173,8 +179,8 @@ describe('divisions data access', () => {
       const divisions = listDivisionsForCategory(db, categoryId)
       expect(divisions).toHaveLength(2)
       const byId = Object.fromEntries(divisions.map((entry) => [entry.divisionId, entry]))
-      expect(byId[divisionA]).toEqual({ divisionId: divisionA, categoryId, depth: 3 })
-      expect(byId[divisionB]).toEqual({ divisionId: divisionB, categoryId, depth: 1 })
+      expect(byId[divisionA]).toEqual({ divisionId: divisionA, categoryId, depth: 3, order: 0 })
+      expect(byId[divisionB]).toEqual({ divisionId: divisionB, categoryId, depth: 1, order: 0 })
     })
   })
 
@@ -187,7 +193,7 @@ describe('divisions data access', () => {
       const playerB = createPlayer(db, basePlayer('B'))
 
       addScoreableToCategory(db, categoryId, scoreableId)
-      addCategoryToDivision(db, divisionId, categoryId, 4)
+      addCategoryToDivision(db, divisionId, categoryId, 4, 5)
       addPlayerToDivision(db, divisionId, playerA)
       addPlayerToDivision(db, divisionId, playerB)
 
@@ -198,6 +204,7 @@ describe('divisions data access', () => {
 
       const [categoryView] = view!.categories
       expect(categoryView.depth).toBe(4)
+      expect(categoryView.order).toBe(5)
       expect(categoryView.category.id).toBe(categoryId)
       expect(categoryView.scoreables).toHaveLength(1)
       expect(categoryView.scoreables[0]).toMatchObject({

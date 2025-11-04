@@ -39,6 +39,7 @@ const baseCategoryContext = (
       updatedAt: 0
     },
     depth: 1,
+    order: 0,
     scoreables
   }
 

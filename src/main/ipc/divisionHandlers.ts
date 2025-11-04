@@ -50,9 +50,11 @@ ipcMain.handle('divisions:list', () => {
 
 ipcMain.handle(
   'divisions:addCategory',
-  (_evt, divisionId: string, categoryId: string, depth = 1) => {
+  (_evt, divisionId: string, categoryId: string, depth = 1, order?: number) => {
     const db = getTournamentDb()
-    return withStandingsRefresh(db, () => addCategoryToDivision(db, divisionId, categoryId, depth))
+    return withStandingsRefresh(db, () =>
+      addCategoryToDivision(db, divisionId, categoryId, depth, order)
+    )
   }
 )
 

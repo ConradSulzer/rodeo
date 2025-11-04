@@ -2,6 +2,7 @@ CREATE TABLE `category` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
 	`direction` text NOT NULL,
+	`rules` text DEFAULT '[]' NOT NULL,
 	`created_at` integer NOT NULL,
 	`updated_at` integer NOT NULL
 );
@@ -19,6 +20,7 @@ CREATE INDEX `category_scoreable_scoreable` ON `category_scoreable` (`scoreable_
 CREATE TABLE `division` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
+	`order` integer DEFAULT 0 NOT NULL,
 	`created_at` integer NOT NULL,
 	`updated_at` integer NOT NULL
 );
@@ -27,6 +29,7 @@ CREATE UNIQUE INDEX `uniq_division_name` ON `division` (`name`);--> statement-br
 CREATE TABLE `division_category` (
 	`division_id` text NOT NULL,
 	`category_id` text NOT NULL,
+	`order` integer DEFAULT 0 NOT NULL,
 	`depth` integer DEFAULT 1 NOT NULL,
 	PRIMARY KEY(`division_id`, `category_id`),
 	FOREIGN KEY (`division_id`) REFERENCES `division`(`id`) ON UPDATE cascade ON DELETE cascade,

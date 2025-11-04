@@ -47,8 +47,8 @@ const api = {
     delete: (id: string) => ipcRenderer.invoke('divisions:delete', id),
     get: (id: string) => ipcRenderer.invoke('divisions:get', id),
     list: () => ipcRenderer.invoke('divisions:list'),
-    addCategory: (divisionId: string, categoryId: string, depth?: number) =>
-      ipcRenderer.invoke('divisions:addCategory', divisionId, categoryId, depth),
+    addCategory: (divisionId: string, categoryId: string, depth?: number, order?: number) =>
+      ipcRenderer.invoke('divisions:addCategory', divisionId, categoryId, depth, order),
     removeCategory: (divisionId: string, categoryId: string) =>
       ipcRenderer.invoke('divisions:removeCategory', divisionId, categoryId),
     listCategories: (divisionId: string) =>
