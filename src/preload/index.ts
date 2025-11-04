@@ -69,7 +69,8 @@ const api = {
   tournaments: {
     open: (filePath: string) => ipcRenderer.invoke('tournaments:open', filePath),
     close: () => ipcRenderer.invoke('tournaments:close'),
-    getState: () => ipcRenderer.invoke('tournaments:state:get') as Promise<SerializableTournamentState>,
+    getState: () =>
+      ipcRenderer.invoke('tournaments:state:get') as Promise<SerializableTournamentState>,
     subscribe: (listener: (snapshot: SerializableTournamentState) => void) => {
       const handler = (_evt: IpcRendererEvent, payload: SerializableTournamentState) => {
         listener(payload)

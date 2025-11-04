@@ -70,9 +70,7 @@ declare global {
         open: (filePath: string) => Promise<boolean>
         close: () => Promise<boolean>
         getState: () => Promise<SerializableTournamentState>
-        subscribe: (
-          listener: (snapshot: SerializableTournamentState) => void
-        ) => () => void
+        subscribe: (listener: (snapshot: SerializableTournamentState) => void) => () => void
       }
     }
   }

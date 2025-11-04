@@ -1,10 +1,4 @@
-import {
-  describe,
-  expect,
-  it,
-  vi,
-  afterEach
-} from 'vitest'
+import { describe, expect, it, vi, afterEach } from 'vitest'
 import type { AppDatabase } from '@core/db/db'
 import type { ItemResult, Results } from '@core/tournaments/results'
 import type { DivisionView } from '@core/tournaments/divisions'
@@ -34,15 +28,7 @@ const sampleItem: ItemResult = {
   updatedAt: 1
 }
 
-const sampleResults = (): Results =>
-  new Map([
-    [
-      'player-1',
-      new Map([
-        ['scoreable-1', sampleItem]
-      ])
-    ]
-  ])
+const sampleResults = (): Results => new Map([['player-1', new Map([['scoreable-1', sampleItem]])]])
 
 const sampleDivisionViews = (): DivisionView[] => [
   {
@@ -297,7 +283,11 @@ describe('applyEvent', () => {
     const { listSpy, standingsSpy } = setup()
     listSpy.mockClear()
     standingsSpy.mockClear()
-    const expectedError = { status: 'error', message: 'bad event' } as any
+    const expectedError: ReturnType<typeof resultsModule.recordEvent>[number] = {
+      status: 'error',
+      message: 'bad event',
+      event: baseEvent
+    }
     vi.spyOn(resultsModule, 'recordEvent').mockReturnValue([expectedError])
 
     const errors = applyEvent(db, baseEvent)
