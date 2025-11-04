@@ -31,6 +31,7 @@ const api = {
     delete: (id: string) => ipcRenderer.invoke('categories:delete', id),
     get: (id: string) => ipcRenderer.invoke('categories:get', id),
     list: () => ipcRenderer.invoke('categories:list'),
+    listRules: () => ipcRenderer.invoke('categories:listRules'),
     addScoreable: (categoryId: string, scoreableId: string) =>
       ipcRenderer.invoke('categories:addScoreable', categoryId, scoreableId),
     removeScoreable: (categoryId: string, scoreableId: string) =>
@@ -68,7 +69,8 @@ const api = {
   tournaments: {
     open: (filePath: string) => ipcRenderer.invoke('tournaments:open', filePath),
     close: () => ipcRenderer.invoke('tournaments:close'),
-    getState: () => ipcRenderer.invoke('tournaments:state:get') as Promise<SerializableTournamentState>,
+    getState: () =>
+      ipcRenderer.invoke('tournaments:state:get') as Promise<SerializableTournamentState>,
     subscribe: (listener: (snapshot: SerializableTournamentState) => void) => {
       const handler = (_evt: IpcRendererEvent, payload: SerializableTournamentState) => {
         listener(payload)

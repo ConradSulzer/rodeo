@@ -12,6 +12,7 @@ import {
   type PatchCategory
 } from '@core/tournaments/categories'
 import { getTournamentDb } from '@core/tournaments/tournaments'
+import { listStandingRules } from '@core/tournaments/standingRules'
 import { ipcMain } from 'electron'
 import { withStandingsRefresh } from '../state/tournamentStore'
 
@@ -38,6 +39,10 @@ ipcMain.handle('categories:get', (_evt, id: string) => {
 ipcMain.handle('categories:list', () => {
   const db = getTournamentDb()
   return listAllCategories(db)
+})
+
+ipcMain.handle('categories:listRules', () => {
+  return listStandingRules()
 })
 
 ipcMain.handle('categories:addScoreable', (_evt, categoryId: string, scoreableId: string) => {

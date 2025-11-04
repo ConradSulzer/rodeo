@@ -33,6 +33,7 @@ describe('categories data access', () => {
       expect(category).toBeDefined()
       expect(category?.id).toBe(id)
       expect(category).toMatchObject(baseCategory)
+      expect(category?.rules).toEqual([])
       expect(category?.createdAt).toBeTypeOf('number')
       expect(category?.updatedAt).toBeTypeOf('number')
     })
@@ -49,6 +50,25 @@ describe('categories data access', () => {
       const after = getCategory(db, id)
       expect(after?.name).toBe('Speed')
       expect(after?.updatedAt).toBeGreaterThanOrEqual(before!.updatedAt)
+    })
+  })
+
+  it('normalizes rules when creating and updating', () => {
+    withInMemoryDb((db) => {
+      const id = createCategory(db, {
+        name: 'Technique',
+        direction: 'asc',
+        rules: ['  rule-a', 'rule-b', 'rule-a', '', '  ']
+      })
+
+      const created = getCategory(db, id)
+      expect(created?.rules).toEqual(['rule-a', 'rule-b'])
+
+      const changed = updateCategory(db, id, { rules: ['rule-c', 'rule-c', ''] })
+      expect(changed).toBe(true)
+
+      const updated = getCategory(db, id)
+      expect(updated?.rules).toEqual(['rule-c'])
     })
   })
 

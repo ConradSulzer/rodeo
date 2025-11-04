@@ -1,6 +1,7 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 import { Player, PlayerDivisionTuple, NewPlayer, PatchPlayer } from '@core/players/players'
 import { Category, NewCategory, PatchCategory } from '@core/tournaments/categories'
+import { StandingRuleSummary } from '@core/tournaments/standingRules'
 import {
   Division,
   DivisionCategoryLink,
@@ -37,6 +38,7 @@ declare global {
         delete: (id: string) => Promise<boolean>
         get: (id: string) => Promise<Category>
         list: () => Promise<Category[]>
+        listRules: () => Promise<StandingRuleSummary[]>
         addScoreable: (categoryId: string, scoreableId: string) => Promise<boolean>
         removeScoreable: (categoryId: string, scoreableId: string) => Promise<boolean>
         listScoreableIds: (categoryId: string) => Promise<string[]>
@@ -68,9 +70,7 @@ declare global {
         open: (filePath: string) => Promise<boolean>
         close: () => Promise<boolean>
         getState: () => Promise<SerializableTournamentState>
-        subscribe: (
-          listener: (snapshot: SerializableTournamentState) => void
-        ) => () => void
+        subscribe: (listener: (snapshot: SerializableTournamentState) => void) => () => void
       }
     }
   }
