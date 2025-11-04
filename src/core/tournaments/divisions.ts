@@ -14,20 +14,36 @@ import {
 import { getScoreable, type Scoreable } from '@core/tournaments/scoreables'
 
 export type Division = typeof dv.$inferSelect
-export type NewDivision = Omit<Division, 'id' | 'createdAt' | 'updatedAt'>
+export type NewDivision = Omit<Division, 'id' | 'createdAt' | 'updatedAt'> & { order?: number }
 export type PatchDivision = Partial<NewDivision>
 export type DivisionCategoryLink = typeof dvCategory.$inferSelect
-export type DivisionCategoryPatch = Partial<Pick<DivisionCategoryLink, 'depth'>>
+export type DivisionCategoryPatch = Partial<Pick<DivisionCategoryLink, 'depth' | 'order'>>
 
 const now = () => Date.now()
+
+const normalizeOrder = (value: number | undefined) => {
+  if (value === undefined) return undefined
+  if (!Number.isFinite(value)) return 0
+  return Math.floor(value)
+}
 
 export function createDivision(db: AppDatabase, data: NewDivision): string {
   const id = ulid()
   const t = now()
+  const normalizedOrder = normalizeOrder(data.order)
 
-  db.insert(dv)
-    .values({ id, ...data, createdAt: t, updatedAt: t })
-    .run()
+  const insertData: typeof dv.$inferInsert = {
+    id,
+    name: data.name,
+    createdAt: t,
+    updatedAt: t
+  }
+
+  if (normalizedOrder !== undefined) {
+    insertData.order = normalizedOrder
+  }
+
+  db.insert(dv).values(insertData).run()
 
   return id
 }
@@ -35,9 +51,19 @@ export function createDivision(db: AppDatabase, data: NewDivision): string {
 export function updateDivision(db: AppDatabase, id: string, patch: PatchDivision) {
   if (!Object.keys(patch).length) return false
 
+  const { order, ...rest } = patch
+  const updatePayload: Partial<typeof dv.$inferInsert> = {
+    ...rest,
+    updatedAt: now()
+  }
+
+  if (order !== undefined) {
+    updatePayload.order = normalizeOrder(order)
+  }
+
   const result = db
     .update(dv)
-    .set({ ...patch, updatedAt: now() })
+    .set(updatePayload)
     .where(eq(dv.id, id))
     .run()
 
@@ -55,23 +81,40 @@ export function getDivision(db: AppDatabase, id: string): Division | undefined {
 }
 
 export function listAllDivisions(db: AppDatabase): Division[] {
-  return db.select().from(dv).orderBy(asc(dv.name)).all()
+  return db.select().from(dv).orderBy(asc(dv.order), asc(dv.name)).all()
 }
 
 export function addCategoryToDivision(
   db: AppDatabase,
   divisionId: string,
   categoryId: string,
-  depth = 1
+  depth = 1,
+  order?: number
 ) {
   const normalizedDepth = Math.max(1, Math.floor(depth))
+  const normalizedOrder = normalizeOrder(order)
+
+  const insertData: typeof dvCategory.$inferInsert = {
+    divisionId,
+    categoryId,
+    depth: normalizedDepth
+  }
+
+  if (normalizedOrder !== undefined) {
+    insertData.order = normalizedOrder
+  }
+
+  const updateData: Partial<typeof dvCategory.$inferInsert> = { depth: normalizedDepth }
+  if (normalizedOrder !== undefined) {
+    updateData.order = normalizedOrder
+  }
 
   const result = db
     .insert(dvCategory)
-    .values({ divisionId, categoryId, depth: normalizedDepth })
+    .values(insertData)
     .onConflictDoUpdate({
       target: [dvCategory.divisionId, dvCategory.categoryId],
-      set: { depth: normalizedDepth }
+      set: updateData
     })
     .run()
 
@@ -102,6 +145,9 @@ export function updateDivisionCategoryLink(
   if (patch.depth !== undefined) {
     updateData.depth = Math.max(1, Math.floor(patch.depth))
   }
+  if (patch.order !== undefined) {
+    updateData.order = normalizeOrder(patch.order)
+  }
 
   if (!Object.keys(updateData).length) return false
 
@@ -122,11 +168,12 @@ export function listCategoriesForDivision(
     .select({
       divisionId: dvCategory.divisionId,
       categoryId: dvCategory.categoryId,
-      depth: dvCategory.depth
+      depth: dvCategory.depth,
+      order: dvCategory.order
     })
     .from(dvCategory)
     .where(eq(dvCategory.divisionId, divisionId))
-    .orderBy(asc(dvCategory.categoryId))
+    .orderBy(asc(dvCategory.order), asc(dvCategory.categoryId))
     .all()
 }
 
@@ -138,17 +185,19 @@ export function listDivisionsForCategory(
     .select({
       divisionId: dvCategory.divisionId,
       categoryId: dvCategory.categoryId,
-      depth: dvCategory.depth
+      depth: dvCategory.depth,
+      order: dvCategory.order
     })
     .from(dvCategory)
     .where(eq(dvCategory.categoryId, categoryId))
-    .orderBy(asc(dvCategory.divisionId))
+    .orderBy(asc(dvCategory.order), asc(dvCategory.divisionId))
     .all()
 }
 
 export type DivisionCategoryView = {
   category: Category
   depth: number
+  order: number
   scoreables: Scoreable[]
 }
 
@@ -194,6 +243,7 @@ function buildDivisionCategories(db: AppDatabase, divisionId: string): DivisionC
       return {
         category,
         depth: link.depth,
+        order: link.order,
         scoreables
       }
     })

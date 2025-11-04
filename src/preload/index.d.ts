@@ -50,7 +50,12 @@ declare global {
         delete: (id: string) => Promise<boolean>
         get: (id: string) => Promise<Division>
         list: () => Promise<Division[]>
-        addCategory: (divisionId: string, categoryId: string, depth?: number) => Promise<boolean>
+        addCategory: (
+          divisionId: string,
+          categoryId: string,
+          depth?: number,
+          order?: number
+        ) => Promise<boolean>
         removeCategory: (divisionId: string, categoryId: string) => Promise<boolean>
         listCategories: (divisionId: string) => Promise<DivisionCategoryLink[]>
         updateCategoryLink: (
