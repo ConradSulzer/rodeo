@@ -39,6 +39,7 @@
     "@electron-toolkit/utils": "^4.0.0",
     "@tailwindcss/vite": "^4.1.15",
     "better-sqlite3": "^12.4.1",
+    "class-variance-authority": "^0.7.1",
     "drizzle-orm": "^0.44.7",
     "electron-updater": "^6.3.9",
     "tailwindcss": "^4.1.15",

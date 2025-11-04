@@ -8,7 +8,7 @@
   }
 
   .ro-bg-card {
-    background-color: var(--ro-bg-dim);
+    background-color: var(--ro-bg-muted);
   }
 
   .ro-card-header {
@@ -24,10 +24,10 @@
   }
 
   .ro-card-content {
-    @apply p-6 pt-0;
+    @apply flex flex-col p-6;
   }
 
   .ro-card-footer {
-    @apply flex items-center p-2;
+    @apply flex items-center p-6 pt-0;
   }
 }

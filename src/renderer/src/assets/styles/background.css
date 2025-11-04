@@ -10,11 +10,11 @@
     background-color: var(--ro-hover-muted);
   }
 
-  .ro-bg-subtle {
-    background-color: var(--ro-bg-subtle);
+  .ro-bg-dim {
+    background-color: var(--ro-bg-dim);
   }
-  .ro-hover-bg-subtle:hover {
-    background-color: var(--ro-bg-subtle);
+  .ro-hover-bg-dim:hover {
+    background-color: var(--ro-bg-dim);
   }
 
   .ro-bg-light {

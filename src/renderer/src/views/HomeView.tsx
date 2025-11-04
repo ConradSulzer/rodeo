@@ -9,12 +9,16 @@ export function HomeView(): JSX.Element {
       <img src={logo} alt="Rodeo logo" className="h-40 w-auto" />
       <h1 className="font-press-play font-bold text-4xl uppercase tracking-[0.5em]">Rodeo</h1>
       <Card>
-        <CardContent className="items-stretch">
+        <CardContent className="items-stretch gap-6">
           <Button className="w-full" size="lg">
             Create Tournament
           </Button>
-          <Button className="w-full" size="lg" variant="ghost">
+          <Button className="w-full" size="lg">
             Open Tournament
+          </Button>
+
+          <Button className="w-full" size="lg">
+            Open Recent
           </Button>
         </CardContent>
       </Card>
