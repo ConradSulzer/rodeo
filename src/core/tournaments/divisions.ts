@@ -14,7 +14,9 @@ import {
 import { getScoreable, type Scoreable } from '@core/tournaments/scoreables'
 
 export type Division = typeof dv.$inferSelect
-export type NewDivision = Omit<Division, 'id' | 'createdAt' | 'updatedAt'> & { order?: number }
+export type NewDivision = Omit<Division, 'id' | 'createdAt' | 'updatedAt' | 'order'> & {
+  order?: number
+}
 export type PatchDivision = Partial<NewDivision>
 export type DivisionCategoryLink = typeof dvCategory.$inferSelect
 export type DivisionCategoryPatch = Partial<Pick<DivisionCategoryLink, 'depth' | 'order'>>
@@ -61,11 +63,7 @@ export function updateDivision(db: AppDatabase, id: string, patch: PatchDivision
     updatePayload.order = normalizeOrder(order)
   }
 
-  const result = db
-    .update(dv)
-    .set(updatePayload)
-    .where(eq(dv.id, id))
-    .run()
+  const result = db.update(dv).set(updatePayload).where(eq(dv.id, id)).run()
 
   return result.changes > 0
 }

@@ -34,6 +34,7 @@ const sampleDivisionViews = (): DivisionView[] => [
   {
     id: 'division-1',
     name: 'Division 1',
+    order: 0,
     createdAt: 1,
     updatedAt: 1,
     categories: [],
@@ -198,6 +199,7 @@ describe('refreshStandings', () => {
       {
         id: 'division-2',
         name: 'Division 2',
+        order: 1,
         createdAt: 2,
         updatedAt: 2,
         categories: [],
