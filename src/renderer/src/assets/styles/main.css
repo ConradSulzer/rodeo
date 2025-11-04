@@ -1,19 +1,9 @@
 @import 'tailwindcss';
-
-@font-face {
-  font-family: 'Roboto Mono';
-  src: url('./fonts/RobotoMono-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Press Start 2P';
-  src: url('./fonts/PressStart2P-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
+@import './background.css';
 @import './base.css';
+@import './border.css';
+@import './button.css';
+@import './card.css';
+@import './fonts.css';
+@import './text.css';
+@import './variables.css';

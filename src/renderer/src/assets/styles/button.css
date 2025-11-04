@@ -6,15 +6,31 @@
   }
 
   .ro-btn-success {
-    @apply bg-(--ro-success) hover:opacity-80 text-(--ro-success-text);
+    background-color: var(--ro-success);
+    color: var(--ro-success-text);
+  }
+  .ro-btn-success:hover {
+    background-color: var(--ro-success-hover);
   }
   .ro-btn-error {
-    @apply bg-(--ro-error) hover:opacity-80 text-(--ro-error-text);
+    background-color: var(--ro-error);
+    color: var(--ro-error-text);
+  }
+  .ro-btn-error:hover {
+    background-color: var(--ro-error-hover);
   }
   .ro-btn-warning {
-    @apply bg-(--ro-warning) hover:opacity-80 text-(--ro-warning-text);
+    background-color: var(--ro-warning);
+    color: var(--ro-warning-text);
+  }
+  .ro-btn-warning:hover {
+    background-color: var(--ro-warning-hover);
   }
   .ro-btn-info {
-    @apply bg-(--ro-info) hover:opacity-80 text-(--ro-info-text);
+    background-color: var(--ro-info);
+    color: var(--ro-info-text);
+  }
+  .ro-btn-info:hover {
+    background-color: var(--ro-info-hover);
   }
 }

@@ -10,11 +10,23 @@ body,
   height: 100%;
   margin: 0;
   padding: 0;
+}
+
+body {
+  font-family: var(--ro-font-body);
+  background-color: var(--ro-bg-main);
+  color: var(--ro-text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
 }
 
-.font-display {
-  font-family: 'Press Start 2P', monospace;
+#root {
+  width: 100%;
+  padding: 2rem 1rem;
+  display: flex;
+  justify-content: center;
 }
 
 @layer utilities {
@@ -33,7 +45,7 @@ body,
   }
 
   .ro-outline-focus:focus-visible {
-    outline: 2px solid var(--text-color);
+    outline: 2px solid var(--ro-outline-color);
     outline-offset: 2px;
   }
 }
@@ -42,7 +54,7 @@ body,
 body,
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #94a3b8 transparent;
+  scrollbar-color: var(--ro-scrollbar-thumb) transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -55,14 +67,14 @@ body,
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #94a3b8; /* slate-400 */
+  background-color: var(--ro-scrollbar-thumb);
   border-radius: 6px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: #64748b; /* slate-500 */
+  background-color: var(--ro-scrollbar-thumb-hover);
 }
 
 /* Sonner Toast overrides */

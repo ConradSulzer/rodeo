@@ -3,13 +3,13 @@ import type { ButtonHTMLAttributes } from 'react'
 import { cn } from '../../lib/utils'
 
 const baseStyles =
-  'inline-flex items-center justify-center rounded-md border font-mono text-xs uppercase tracking-[0.3em] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--rodeo-yellow)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--rodeo-dark)]'
+  'inline-flex items-center justify-center rounded-md border font-mono text-xs uppercase tracking-[0.3em] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ro-border)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ro-bg-main)]'
 
 const variantStyles: Record<'primary' | 'ghost', string> = {
   primary:
-    'border-[var(--rodeo-yellow)] bg-[var(--rodeo-yellow)] text-black hover:bg-transparent hover:text-[var(--rodeo-yellow)]',
+    'border-[var(--ro-border)] bg-[var(--ro-bg-middle)] text-[var(--ro-text-dark)] hover:bg-[var(--ro-bg-muted)]',
   ghost:
-    'border-[var(--rodeo-yellow)] bg-transparent text-[var(--rodeo-yellow)] hover:bg-[var(--rodeo-yellow)] hover:text-black'
+    'border-[var(--ro-border)] bg-transparent text-[var(--ro-text-main)] hover:bg-[var(--ro-bg-muted)]'
 }
 
 const sizeStyles: Record<'md' | 'lg', string> = {
