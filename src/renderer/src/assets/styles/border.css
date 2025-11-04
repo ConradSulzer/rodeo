@@ -1,0 +1,13 @@
+@layer utilities {
+  .ro-0border {
+    border-color: var(--ro-border);
+  }
+
+  .ro-muted-border {
+    border-color: var(--ro-bg-muted);
+  }
+
+  .ro-border-light {
+    border-color: var(--ro-border-light);
+  }
+}

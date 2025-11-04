@@ -1,0 +1,42 @@
+@layer utilities {
+  .ro-text-main {
+    color: var(--ro-text-main);
+  }
+
+  .ro-text-dim {
+    color: var(--ro-text-dim);
+  }
+
+  .ro-text-muted {
+    color: var(--ro-text-muted);
+  }
+
+  /* Ex: placeholder:ro-text-muted  */
+  .placeholder\:mpt-text-muted::placeholder {
+    color: var(--ro-text-muted);
+  }
+
+  .ro-text-light {
+    color: var(--ro-text-light);
+  }
+
+  .ro-text-dark {
+    color: var(--ro-text-dark);
+  }
+
+  .ro-text-success {
+    color: var(--ro-success-text);
+  }
+
+  .ro-text-error {
+    color: var(--ro-error-text);
+  }
+
+  .ro-text-warning {
+    color: var(--ro-warning-text);
+  }
+
+  .ro-text-info {
+    color: var(--ro-info-text);
+  }
+}

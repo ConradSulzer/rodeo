@@ -1,0 +1,46 @@
+@layer utilities {
+  .ro-bg-main {
+    background-color: var(--ro-bg-main);
+  }
+
+  .ro-bg-muted {
+    background-color: var(--ro-bg-muted);
+  }
+  .ro-hover-bg-muted:hover {
+    background-color: var(--ro-hover-muted);
+  }
+
+  .ro-bg-subtle {
+    background-color: var(--ro-bg-subtle);
+  }
+  .ro-hover-bg-subtle:hover {
+    background-color: var(--ro-bg-subtle);
+  }
+
+  .ro-bg-light {
+    background-color: var(--ro-text-light);
+  }
+
+  .ro-bg-secondary {
+    background-color: var(--ro-bg-secondary);
+  }
+
+  .ro-bg-success {
+    background-color: var(--ro-success);
+  }
+
+  .ro-bg-error {
+    background-color: var(--ro-error);
+  }
+
+  .ro-bg-warning {
+    background-color: var(--ro-warning);
+  }
+
+  .ro-bg-info {
+    background-color: var(--ro-info);
+  }
+  .ro-bg-info-10 {
+    background-color: var(--ro-info) / 10;
+  }
+}

@@ -1,0 +1,33 @@
+@layer utilities {
+  .ro-card {
+    @apply border shadow-sm;
+  }
+
+  .ro-card-border {
+    border-color: var(--ro-border);
+  }
+
+  .ro-bg-card {
+    background-color: var(--ro-bg-dim);
+  }
+
+  .ro-card-header {
+    @apply flex flex-col space-y-1.5 p-6;
+  }
+
+  .ro-card-title {
+    @apply text-2xl font-semibold leading-none tracking-tight;
+  }
+
+  .ro-card-description {
+    @apply text-sm;
+  }
+
+  .ro-card-content {
+    @apply p-6 pt-0;
+  }
+
+  .ro-card-footer {
+    @apply flex items-center p-2;
+  }
+}

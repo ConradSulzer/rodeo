@@ -1,0 +1,20 @@
+@layer utilities {
+  .ro-btn-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .ro-btn-success {
+    @apply bg-(--ro-success) hover:opacity-80 text-(--ro-success-text);
+  }
+  .ro-btn-error {
+    @apply bg-(--ro-error) hover:opacity-80 text-(--ro-error-text);
+  }
+  .ro-btn-warning {
+    @apply bg-(--ro-warning) hover:opacity-80 text-(--ro-warning-text);
+  }
+  .ro-btn-info {
+    @apply bg-(--ro-info) hover:opacity-80 text-(--ro-info-text);
+  }
+}
