@@ -1,10 +1,14 @@
 @layer utilities {
-  .ro-0border {
+  .ro-border {
     border-color: var(--ro-border);
   }
 
   .ro-muted-border {
     border-color: var(--ro-bg-muted);
+  }
+
+  .ro-dim-border {
+    border-color: var(--ro-bg-dim);
   }
 
   .ro-border-light {

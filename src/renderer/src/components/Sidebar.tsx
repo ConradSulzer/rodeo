@@ -1,5 +1,6 @@
 import { FiLogOut } from 'react-icons/fi'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import logo from '../assets/rodeo_logo.png'
 import { usePreferences } from '../context/preferences'
 import { DarkModeToggle } from './DarkModeToggle'
@@ -26,7 +27,23 @@ const RUN_EVENT_ITEMS: NavItem[] = [
 ]
 
 export function Sidebar() {
+  const navigate = useNavigate()
   const { theme, setTheme } = usePreferences()
+
+  const handleExit = async () => {
+    try {
+      const success = await window.api.tournaments.close()
+      if (success) {
+        toast.success('Tournament closed')
+        navigate('/')
+      } else {
+        toast.error('Failed to close tournament')
+      }
+    } catch (error) {
+      console.error('Failed to close tournament', error)
+      toast.error('Failed to close tournament')
+    }
+  }
 
   return (
     <Card className="flex h-full w-72 flex-col">
@@ -52,6 +69,7 @@ export function Sidebar() {
           variant="outline-muted"
           size="sm"
           className="flex items-center justify-center gap-2 tracking-[0.25em]"
+          onClick={handleExit}
         >
           <FiLogOut className="text-sm" />
           Exit

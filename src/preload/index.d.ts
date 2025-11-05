@@ -73,6 +73,8 @@ declare global {
       }
       tournaments: {
         open: (filePath: string) => Promise<boolean>
+        openDialog: () => Promise<string | null>
+        createDialog: () => Promise<string | null>
         close: () => Promise<boolean>
         getState: () => Promise<SerializableTournamentState>
         subscribe: (listener: (snapshot: SerializableTournamentState) => void) => () => void

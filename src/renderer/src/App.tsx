@@ -1,4 +1,5 @@
 import type { JSX } from 'react'
+import { Toaster } from 'sonner'
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { HomeView } from './views/HomeView'
 import { MainView } from './views/MainView'
@@ -31,8 +32,8 @@ function App(): JSX.Element {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+      <Toaster position="top-right" richColors closeButton />
     </HashRouter>
   )
 }
-
 export default App

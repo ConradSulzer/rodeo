@@ -68,6 +68,8 @@ const api = {
   },
   tournaments: {
     open: (filePath: string) => ipcRenderer.invoke('tournaments:open', filePath),
+    openDialog: () => ipcRenderer.invoke('tournaments:dialog:openExisting'),
+    createDialog: () => ipcRenderer.invoke('tournaments:dialog:create'),
     close: () => ipcRenderer.invoke('tournaments:close'),
     getState: () =>
       ipcRenderer.invoke('tournaments:state:get') as Promise<SerializableTournamentState>,
