@@ -70,6 +70,9 @@ const api = {
     open: (filePath: string) => ipcRenderer.invoke('tournaments:open', filePath),
     openDialog: () => ipcRenderer.invoke('tournaments:dialog:openExisting'),
     createDialog: () => ipcRenderer.invoke('tournaments:dialog:create'),
+    getMetadata: () => ipcRenderer.invoke('tournaments:meta:get'),
+    updateMetadata: (patch: { name?: string; eventDate?: string | null }) =>
+      ipcRenderer.invoke('tournaments:meta:update', patch),
     close: () => ipcRenderer.invoke('tournaments:close'),
     getState: () =>
       ipcRenderer.invoke('tournaments:state:get') as Promise<SerializableTournamentState>,

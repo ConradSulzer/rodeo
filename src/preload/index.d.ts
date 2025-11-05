@@ -75,6 +75,20 @@ declare global {
         open: (filePath: string) => Promise<boolean>
         openDialog: () => Promise<string | null>
         createDialog: () => Promise<string | null>
+        getMetadata: () => Promise<{
+          id: string
+          name: string
+          eventDate: string | null
+          createdAt: number
+          updatedAt: number
+        }>
+        updateMetadata: (patch: { name?: string; eventDate?: string | null }) => Promise<{
+          id: string
+          name: string
+          eventDate: string | null
+          createdAt: number
+          updatedAt: number
+        }>
         close: () => Promise<boolean>
         getState: () => Promise<SerializableTournamentState>
         subscribe: (listener: (snapshot: SerializableTournamentState) => void) => () => void

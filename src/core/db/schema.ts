@@ -145,3 +145,11 @@ export const event = sqliteTable(
       .onDelete('restrict')
   ]
 )
+
+export const tournamentMeta = sqliteTable('tournament', {
+  id: text('id').primaryKey().default('meta'),
+  name: text('name').notNull().default('Untitled Tournament'),
+  eventDate: text('event_date'),
+  createdAt: integer('created_at', { mode: 'number' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'number' }).notNull()
+})

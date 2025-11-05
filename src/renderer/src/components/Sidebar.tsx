@@ -50,8 +50,8 @@ export function Sidebar() {
       <CardHeader className="items-center">
         <div className="flex flex-col items-center gap-4">
           <img src={logo} alt="Rodeo logo" className="h-20 w-auto" />
-          <CardTitle className="font-press-play text-base uppercase tracking-[0.6em]">
-            Rodeo
+          <CardTitle>
+            <div className="font-press-play text-lg uppercase tracking-[0.5em]">Rodeo</div>
           </CardTitle>
         </div>
       </CardHeader>

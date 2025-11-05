@@ -1,0 +1,11 @@
+# Agent Notes for Rodeo
+
+- CSS utilities are centralized under `src/renderer/src/assets/styles/`. Reuse the `ro-` utility classes (border, background, text) instead of hardcoding `var(--ro-*)` values inline.
+- Prefer shared UI primitives (Button, Input, DateInput, Card, Field, Label, etc.) before rolling custom elements. If a variant is missing, extend the component rather than hand-styling.
+- Modal interactions should use `Modal` component; avoid ad-hoc absolute overlays.
+- Toasts: use Sonner (`toast.*`) sparingly but consistently for success/error feedback.
+- Avoid inline anonymous handlers for complex actions; extract helper functions to keep JSX tidy.
+- Persistent data: use the preferences provider for theme/recents and IPC via preload for tournament operations.
+- When adding schema changes, remember to run `npm run db:gen` to update Drizzle migrations.
+- Runtime: Electron (Chromium); assume Electron APIs (e.g. showPicker) are available.
+- Default mindset: propose the cleanest long-term approach; refactors are welcome when they improve the foundation. 
