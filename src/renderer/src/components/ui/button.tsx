@@ -29,6 +29,10 @@ const buttonVariants = cva(
           'border ro-border bg-transparent ro-text-main ro-hover-bg-muted',
           'hover:opacity-75 cursor-pointer'
         ].join(' '),
+        'outline-muted': [
+          'border ro-border-muted bg-transparent ro-text-muted ro-hover-bg-dim',
+          'hover:opacity-75 cursor-pointer'
+        ].join(' '),
         info: [
           'border border-transparent ro-bg-info ro-text-info',
           'hover:opacity-75 cursor-pointer'
