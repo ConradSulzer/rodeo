@@ -2,7 +2,7 @@ export function SettingsSection() {
   return (
     <section className="flex flex-1 flex-col gap-4">
       <header>
-        <h2 className="font-press-play text-lg uppercase tracking-[0.4em]">Settings</h2>
+        <h2 className="font-mono text-[16px] font-semibold uppercase tracking-[2px]">Settings</h2>
         <p className="mt-2 text-sm ro-text-dim">
           Configure tournament behavior, scoring, and appearance.
         </p>
