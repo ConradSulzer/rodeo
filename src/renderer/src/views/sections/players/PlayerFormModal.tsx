@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import type { Player } from '@core/players/players'
-import { playerFormSchema, type PlayerFormInput, type PlayerFormData } from '@core/players/playerFormSchema'
+import {
+  playerFormSchema,
+  type PlayerFormInput,
+  type PlayerFormData
+} from '@core/players/playerFormSchema'
 import { Modal } from '../../../components/Modal'
 import { Field } from '../../../components/ui/field'
 import { Label } from '../../../components/ui/label'
@@ -42,7 +46,10 @@ function toInitialValues(player?: Player): PlayerFormInput {
 }
 
 function buildDisplayName(firstName: string, lastName: string) {
-  return [firstName, lastName].map((part) => part.trim()).filter(Boolean).join(' ')
+  return [firstName, lastName]
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(' ')
 }
 
 export function PlayerFormModal({
@@ -111,7 +118,10 @@ export function PlayerFormModal({
     <Modal open={open} onClose={onClose} title={title}>
       <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Field label={<Label htmlFor="player-first-name">First Name</Label>} error={errors.firstName}>
+          <Field
+            label={<Label htmlFor="player-first-name">First Name</Label>}
+            error={errors.firstName}
+          >
             <Input
               id="player-first-name"
               value={values.firstName}
@@ -119,7 +129,10 @@ export function PlayerFormModal({
               autoFocus
             />
           </Field>
-          <Field label={<Label htmlFor="player-last-name">Last Name</Label>} error={errors.lastName}>
+          <Field
+            label={<Label htmlFor="player-last-name">Last Name</Label>}
+            error={errors.lastName}
+          >
             <Input
               id="player-last-name"
               value={values.lastName}
@@ -127,7 +140,10 @@ export function PlayerFormModal({
             />
           </Field>
         </div>
-        <Field label={<Label htmlFor="player-display-name">Display Name</Label>} error={errors.displayName}>
+        <Field
+          label={<Label htmlFor="player-display-name">Display Name</Label>}
+          error={errors.displayName}
+        >
           <Input
             id="player-display-name"
             value={values.displayName}
@@ -154,6 +170,7 @@ export function PlayerFormModal({
           <Field
             label={<Label htmlFor="player-cellphone">Cell Phone</Label>}
             description="Optional"
+            error={errors.cellPhone}
           >
             <Input
               id="player-cellphone"
@@ -165,6 +182,7 @@ export function PlayerFormModal({
           <Field
             label={<Label htmlFor="player-emergency">Emergency Contact</Label>}
             description="Optional"
+            error={errors.emergencyContact}
           >
             <Input
               id="player-emergency"
