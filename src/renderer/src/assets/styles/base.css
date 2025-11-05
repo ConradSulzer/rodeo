@@ -1,0 +1,91 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--ro-font-body);
+  background-color: var(--ro-bg-main);
+  color: var(--ro-text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+@layer utilities {
+  /* hide native calendar icon for date picker and make room for custom icon */
+  input[type='datetime-local']::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    cursor: pointer;
+    position: absolute;
+    right: 0;
+    height: 100%;
+    width: 2.5rem;
+  }
+
+  .ro-outline-focus {
+    outline: none;
+  }
+
+  .ro-outline-focus:focus-visible {
+    outline: 2px solid var(--ro-outline-color);
+    outline-offset: 2px;
+  }
+}
+
+/* Custom Scrollbar */
+body,
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ro-scrollbar-thumb) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--ro-scrollbar-thumb);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--ro-scrollbar-thumb-hover);
+}
+
+/* Sonner Toast overrides */
+html [data-rich-colors='true'][data-sonner-toast][data-type='success'] {
+  background-color: var(--ro-success) !important;
+  border-color: var(--ro-success-hover) !important;
+  color: var(--ro-success-text) !important;
+}
+
+html [data-rich-colors='true'][data-sonner-toast][data-type='error'] {
+  background-color: var(--ro-error) !important;
+  border-color: var(--ro-error) !important;
+  color: var(--ro-error-text) !important;
+}
+
+html [data-rich-colors='true'][data-sonner-toast][data-type='info'] {
+  background-color: var(--ro-info) !important;
+  border-color: var(--ro-info) !important;
+  color: var(--ro-info-text) !important;
+}

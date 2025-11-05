@@ -1,0 +1,81 @@
+:root {
+  /* === Custom Colors === */
+  --ro-zinc-750: #333338;
+
+  /* === Backgrounds === */
+  --ro-bg-main: var(--color-zinc-300);
+  --ro-bg-dim: var(--color-zinc-200);
+  --ro-bg-muted: var(--color-zinc-100);
+  --ro-bg-middle: var(--color-zinc-500);
+  --ro-bg-subtle: var(--color-zinc-100);
+  --ro-bg-secondary: var(--color-zinc-400);
+  --ro-hover-muted: var(--color-zinc-200);
+
+  /* === Text === */
+  --ro-text-main: var(--color-zinc-800);
+  --ro-text-dim: var(--color-zinc-500);
+  --ro-text-muted: var(--color-gray-400);
+  --ro-text-light: var(--color-zinc-200);
+  --ro-text-dark: var(--color-zinc-800);
+
+  /* === Borders === */
+  --ro-border: var(--color-zinc-300);
+  --ro-border-light: var(--color-zinc-200);
+
+  /* === Semantic Tokens === */
+  --ro-success: #61e294;
+  --ro-success-text: var(--color-emerald-900);
+  --ro-success-hover: #4fcb7d;
+
+  --ro-error: #fe654f;
+  --ro-error-text: var(--color-rose-900);
+  --ro-error-hover: #f34b33;
+
+  --ro-warning: #ffcf56;
+  --ro-warning-text: var(--color-amber-900);
+  --ro-warning-hover: #f3b620;
+
+  --ro-info: var(--color-blue-300);
+  --ro-info-text: var(--color-sky-900);
+  --ro-info-hover: var(--color-blue-400);
+  --ro-info-soft: rgba(125, 211, 252, 0.15);
+
+  /* === Misc === */
+  --ro-scrollbar-thumb: #94a3b8;
+  --ro-scrollbar-thumb-hover: #64748b;
+  --ro-outline-color: var(--ro-text-main);
+  --ro-font-body: 'Roboto Mono', monospace;
+  --ro-font-display: 'Press Start 2P', monospace;
+}
+
+:root[data-theme='dark'] {
+  /* === Backgrounds === */
+  --ro-bg-main: var(--color-zinc-900);
+  --ro-bg-dim: var(--color-zinc-800);
+  --ro-bg-muted: var(--ro-zinc-750);
+  --ro-bg-middle: var(--color-zinc-600);
+  --ro-bg-subtle: var(--color-zinc-700);
+  --ro-bg-secondary: var(--color-zinc-700);
+  --ro-hover-muted: var(--color-zinc-700);
+
+  /* === Text === */
+  --ro-text-main: var(--color-zinc-300);
+  --ro-text-dim: var(--color-zinc-400);
+  --ro-text-muted: var(--color-zinc-500);
+
+  /* === Borders === */
+  --ro-border: var(--color-zinc-600);
+  --ro-border-light: var(--ro-zinc-750);
+
+  /* === Semantic Tokens === */
+  --ro-success-hover: #3dae69;
+  --ro-error-hover: #d8402c;
+  --ro-warning-hover: #dca41d;
+  --ro-info-hover: var(--color-blue-500);
+  --ro-info-soft: rgba(96, 165, 250, 0.18);
+
+  /* === Misc === */
+  --ro-scrollbar-thumb: #475569;
+  --ro-scrollbar-thumb-hover: #64748b;
+  --ro-outline-color: var(--ro-text-main);
+}

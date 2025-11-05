@@ -1,0 +1,9 @@
+@import 'tailwindcss';
+@import './background.css';
+@import './base.css';
+@import './border.css';
+@import './button.css';
+@import './card.css';
+@import './fonts.css';
+@import './text.css';
+@import './variables.css';

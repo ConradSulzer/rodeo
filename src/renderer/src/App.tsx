@@ -1,34 +1,37 @@
-import Versions from './components/Versions'
-import electronLogo from './assets/electron.svg'
+import type { JSX } from 'react'
+import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { HomeView } from './views/HomeView'
+import { MainView } from './views/MainView'
+import { TournamentSection } from './views/sections/TournamentSection'
+import { PlayersSection } from './views/sections/PlayersSection'
+import { ScoreablesSection } from './views/sections/ScoreablesSection'
+import { CategoriesSection } from './views/sections/CategoriesSection'
+import { DivisionsSection } from './views/sections/DivisionsSection'
+import { ScoringSection } from './views/sections/ScoringSection'
+import { ResultsSection } from './views/sections/ResultsSection'
+import { LeaderboardSection } from './views/sections/LeaderboardSection'
 
-function App(): React.JSX.Element {
-  const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
-
+function App(): JSX.Element {
   return (
-    <>
-      <img alt="logo" className="logo" src={electronLogo} />
-      <div className="creator">Powered by electron-vite</div>
-      <div className="text">
-        Build an Electron app with <span className="react">React</span>
-        &nbsp;and <span className="ts">TypeScript</span>
-      </div>
-      <p className="tip">
-        Please try pressing <code>F12</code> to open the devTool
-      </p>
-      <div className="actions">
-        <div className="action">
-          <a href="https://electron-vite.org/" target="_blank" rel="noreferrer">
-            Documentation
-          </a>
-        </div>
-        <div className="action">
-          <a target="_blank" rel="noreferrer" onClick={ipcHandle}>
-            Send IPC
-          </a>
-        </div>
-      </div>
-      <Versions></Versions>
-    </>
+    <HashRouter>
+      <main className="flex min-h-full w-full justify-center">
+        <Routes>
+          <Route path="/" element={<HomeView />} />
+          <Route path="/app" element={<MainView />}>
+            <Route index element={<Navigate to="tournament" replace />} />
+            <Route path="tournament" element={<TournamentSection />} />
+            <Route path="players" element={<PlayersSection />} />
+            <Route path="scoreables" element={<ScoreablesSection />} />
+            <Route path="categories" element={<CategoriesSection />} />
+            <Route path="divisions" element={<DivisionsSection />} />
+            <Route path="scoring" element={<ScoringSection />} />
+            <Route path="results" element={<ResultsSection />} />
+            <Route path="leaderboard" element={<LeaderboardSection />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+    </HashRouter>
   )
 }
 

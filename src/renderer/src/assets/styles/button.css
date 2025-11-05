@@ -1,0 +1,36 @@
+@layer utilities {
+  .ro-btn-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .ro-btn-success {
+    background-color: var(--ro-success);
+    color: var(--ro-success-text);
+  }
+  .ro-btn-success:hover {
+    background-color: var(--ro-success-hover);
+  }
+  .ro-btn-error {
+    background-color: var(--ro-error);
+    color: var(--ro-error-text);
+  }
+  .ro-btn-error:hover {
+    background-color: var(--ro-error-hover);
+  }
+  .ro-btn-warning {
+    background-color: var(--ro-warning);
+    color: var(--ro-warning-text);
+  }
+  .ro-btn-warning:hover {
+    background-color: var(--ro-warning-hover);
+  }
+  .ro-btn-info {
+    background-color: var(--ro-info);
+    color: var(--ro-info-text);
+  }
+  .ro-btn-info:hover {
+    background-color: var(--ro-info-hover);
+  }
+}
