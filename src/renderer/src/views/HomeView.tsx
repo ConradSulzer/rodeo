@@ -1,13 +1,16 @@
-import type { JSX } from 'react'
+import { useState, type JSX } from 'react'
+import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import logo from '../assets/rodeo_logo.png'
 import { usePreferences } from '../context/preferences'
+import { Modal } from '../components/Modal'
 
 export function HomeView(): JSX.Element {
   const navigate = useNavigate()
   const { recents, addRecent } = usePreferences()
+  const [showRecents, setShowRecents] = useState(false)
 
   const handleCreate = async () => {
     try {
@@ -18,9 +21,11 @@ export function HomeView(): JSX.Element {
       if (!success) return
 
       addRecent(filePath)
+      toast.success('Tournament created')
       navigate('/app/tournament', { replace: true })
     } catch (error) {
       console.error('Failed to create tournament', error)
+      toast.error('Failed to create tournament')
     }
   }
 
@@ -33,24 +38,28 @@ export function HomeView(): JSX.Element {
       if (!success) return
 
       addRecent(filePath)
+      toast.success('Tournament opened')
       navigate('/app/tournament', { replace: true })
     } catch (error) {
       console.error('Failed to open tournament', error)
+      toast.error('Failed to open tournament')
     }
   }
 
-  const handleOpenRecent = async () => {
-    if (!recents.length) return
-    const filePath = recents[0]
+  const handleOpenRecent = async (filePath: string) => {
+    if (!filePath) return
 
     try {
       const success = await window.api.tournaments.open(filePath)
       if (!success) return
 
       addRecent(filePath)
+      toast.success('Tournament opened')
       navigate('/app/tournament', { replace: true })
+      setShowRecents(false)
     } catch (error) {
       console.error('Failed to open recent tournament', error)
+      toast.error('Failed to open tournament')
     }
   }
 
@@ -73,12 +82,35 @@ export function HomeView(): JSX.Element {
             size="lg"
             variant="outline"
             disabled={!recents.length}
-            onClick={handleOpenRecent}
+            onClick={() => setShowRecents(true)}
           >
             Open Recent
           </Button>
         </CardContent>
       </Card>
+      <Modal open={showRecents} onClose={() => setShowRecents(false)} title="Choose Recent:">
+        {recents.length ? (
+          <div className="flex flex-col gap-3">
+            {recents.map((filePath) => (
+              <Button
+                key={filePath}
+                variant="ghost"
+                className="justify-start text-left font-mono text-xs normal-case tracking-normal"
+                onClick={() => handleOpenRecent(filePath)}
+              >
+                {filePath}
+              </Button>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm ro-text-muted">No recent tournaments yet.</p>
+        )}
+        <div className="mt-6 flex justify-end">
+          <Button variant="outline" size="sm" onClick={() => setShowRecents(false)}>
+            Cancel
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }
