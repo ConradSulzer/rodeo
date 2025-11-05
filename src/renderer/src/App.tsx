@@ -15,7 +15,7 @@ import { LeaderboardSection } from './views/sections/LeaderboardSection'
 function App(): JSX.Element {
   return (
     <HashRouter>
-      <main className="flex min-h-full w-full justify-center">
+      <main className="flex h-screen w-full justify-center items-stretch">
         <Routes>
           <Route path="/" element={<HomeView />} />
           <Route path="/app" element={<MainView />}>

@@ -20,6 +20,21 @@ $ npm install
 $ npm run dev
 ```
 
+### Seed Demo Tournament
+
+Generate a pre-populated tournament database for local development:
+
+```bash
+$ npm run seed:tournament [./path/to/file.rodeo] [--force]
+
+# Use electron runtime when native modules mismatch (macOS/Linux):
+$ npm run seed:tournament:electron -- [./path/to/file.rodeo] [--force]
+```
+
+- If no path is provided, the script writes to `tmp/demo-tournament.rodeo`.
+- Pass `--force` to overwrite an existing tournament file.
+- Open the generated file through the app's "Open Tournament" flow to explore seeded players, divisions, categories, and scoreables.
+
 ### Build
 
 ```bash

@@ -46,7 +46,7 @@ export function Sidebar() {
   }
 
   return (
-    <Card className="flex h-full w-72 flex-col">
+    <Card className="flex h-full w-72 flex-col overflow-hidden">
       <CardHeader className="items-center">
         <div className="flex flex-col items-center gap-4">
           <img src={logo} alt="Rodeo logo" className="h-20 w-auto" />
@@ -55,7 +55,7 @@ export function Sidebar() {
           </CardTitle>
         </div>
       </CardHeader>
-      <CardContent className="flex flex-1 flex-col gap-6">
+      <CardContent className="flex flex-1 flex-col gap-6 overflow-auto">
         <SidebarGroup label="Manage" items={MANAGE_ITEMS} />
         <SidebarGroup label="Run Event" items={RUN_EVENT_ITEMS} />
       </CardContent>
