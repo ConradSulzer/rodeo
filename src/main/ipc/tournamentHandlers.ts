@@ -1,12 +1,21 @@
 import { closeTournament, openTournament } from '@core/tournaments/tournaments'
 import { ipcMain } from 'electron'
 import { hydrate, clear, getSerializableState } from '../state/tournamentStore'
+import { showOpenFileDialog, showSaveFileDialog } from './utils/dialogs'
 
 ipcMain.handle('tournaments:open', (_evt, filePath: string) => {
   const db = openTournament(filePath)
   hydrate(db)
   return true
 })
+
+ipcMain.handle('tournaments:dialog:openExisting', () =>
+  showOpenFileDialog({ title: 'Open Tournament', allowedExtensions: ['rodeo'] })
+)
+
+ipcMain.handle('tournaments:dialog:create', () =>
+  showSaveFileDialog({ title: 'Create Tournament', defaultName: 'tournament', extension: 'rodeo' })
+)
 
 ipcMain.handle('tournaments:close', () => {
   // close current tournament DB connection
