@@ -28,12 +28,28 @@
     color: var(--ro-success);
   }
 
+  .ro-text-success-dark {
+    color: var(--ro-success-dark);
+  }
+
   .ro-text-error {
     color: var(--ro-error);
   }
 
+  .ro-text-error-dark {
+    color: var(--ro-error-dark);
+  }
+
   .ro-text-warning {
     color: var(--ro-warning);
+  }
+
+  .ro-text-warning-dark {
+    color: var(--ro-warning-dark);
+  }
+
+  .ro-text-info-dark {
+    color: var(--ro-info-dark);
   }
 
   .ro-text-info {

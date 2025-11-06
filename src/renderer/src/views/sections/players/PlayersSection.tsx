@@ -3,19 +3,13 @@ import { toast } from 'sonner'
 import { FiEdit2, FiTrash2, FiEye } from 'react-icons/fi'
 import type { Player, PatchPlayer, NewPlayer } from '@core/players/players'
 import { Button } from '@renderer/components/ui/button'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHeader,
-  TableRow
-} from '@renderer/components/ui/table'
-import { SearchInput } from '@renderer/components/ui/search_input'
+import { Table, TableBody, TableCell, TableHeader, TableRow } from '@renderer/components/ui/table'
 import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
 import { PlayerDetailsModal } from './PlayerDetailsModal'
 import { PlayerFormModal, type PlayerFormValues } from './PlayerFormModal'
 import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
 import { CrudTableActions, CrudTableColumn, renderCrudTableHeader } from '@renderer/utils/crudTable'
+import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 
 type FormState =
   | { open: false; mode: null; player?: undefined }
@@ -215,30 +209,17 @@ export function PlayersSection() {
   const isEmpty = !loading && filteredPlayers.length === 0
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
-      <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div>
-          <h2 className="font-mono text-[16px] font-semibold uppercase tracking-[2px]">Players</h2>
-          <p className="mt-2 text-sm ro-text-dim max-w-2xl">
-            Manage the roster, eligibility, and division assignments for the event.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {refreshing ? (
-            <span className="text-xs uppercase tracking-[0.3em] ro-text-muted">Refreshing...</span>
-          ) : null}
-          <Button type="button" variant="positive" size="sm" onClick={openCreateModal}>
-            Add Player
-          </Button>
-        </div>
-      </header>
-      <SearchInput
-        placeholder="Search by name or email"
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
-        aria-label="Search players"
-      />
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <>
+      <ManageSectionShell
+        title="Players"
+        description="Manage the roster, eligibility, and division assignments for the event."
+        searchPlaceholder="Search by name or email"
+        searchValue={query}
+        onSearchChange={setQuery}
+        onAdd={openCreateModal}
+        addLabel="Add Player"
+        refreshing={refreshing}
+      >
         {loading ? (
           <div className="flex flex-1 items-center justify-center ro-text-muted">
             Loading players...
@@ -297,7 +278,7 @@ export function PlayersSection() {
             </div>
           </div>
         )}
-      </div>
+      </ManageSectionShell>
       <PlayerFormModal
         open={formState.open}
         mode={formState.open ? formState.mode : 'create'}
@@ -329,6 +310,6 @@ export function PlayersSection() {
         player={detailsState.player}
         onClose={closeDetails}
       />
-    </section>
+    </>
   )
 }
