@@ -1,15 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { FiEdit2, FiTrash2, FiEye, FiArrowDown, FiArrowUp } from 'react-icons/fi'
+import { FiEdit2, FiTrash2, FiEye } from 'react-icons/fi'
 import type { Player, PatchPlayer, NewPlayer } from '@core/players/players'
 import { universalSearchSort } from '@core/sort/universalSearchSort'
 import { Button } from '@renderer/components/ui/button'
-import { Table, TableBody, TableCell, TableHeader, TableHeaderCell, TableRow } from '@renderer/components/ui/table'
+import {
+  SortableHeaderCell,
+  Table,
+  TableBody,
+  TableCell,
+  TableHeader,
+  TableRow
+} from '@renderer/components/ui/table'
 import { SearchInput } from '@renderer/components/ui/search_input'
 import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
 import { PlayerDetailsModal } from './PlayerDetailsModal'
 import { PlayerFormModal, type PlayerFormValues } from './PlayerFormModal'
-import { cn } from '@renderer/lib/utils'
 
 type FormState =
   | { open: false; mode: null; player?: undefined }
@@ -54,7 +60,6 @@ const FUZZY_FIELDS: Array<keyof Player & string> = [
   'lastName',
   'id'
 ]
-const SORT_FIELDS: Array<SortKey> = ['displayName', 'email']
 
 function buildPatch(values: PlayerFormValues, current: Player): PatchPlayer | null {
   const patch: PatchPlayer = {}
@@ -289,49 +294,25 @@ export function PlayersSection() {
                 <TableHeader>
                   <TableRow>
                     {columns.map((column) => {
-                      const alignRight = column.align === 'right'
-                      if (column.sortable && SORT_FIELDS.includes(column.key as SortKey)) {
+                      if (column.sortable) {
                         const sortKey = column.key as SortKey
-                        const isActive = sort.key === sortKey
                         return (
-                          <TableHeaderCell
+                          <SortableHeaderCell
                             key={column.key}
-                            onClick={() => handleSort(sortKey)}
-                            className={cn(
-                              'cursor-pointer select-none',
-                              alignRight ? 'text-right' : '',
-                              isActive ? 'ro-text-main' : ''
-                            )}
+                            align={column.align}
+                            onSort={() => handleSort(sortKey)}
+                            active={sort.key === sortKey}
+                            direction={sort.direction}
                           >
-                            <span
-                              className={cn(
-                                'inline-flex items-center gap-1',
-                                alignRight ? 'justify-end' : '',
-                                'text-xs'
-                              )}
-                            >
-                              {column.label}
-                              <span className="inline-flex h-3.5 w-3.5 items-center justify-center">
-                                {isActive ? (
-                                  sort.direction === 'asc' ? (
-                                    <FiArrowUp className="h-3 w-3" />
-                                  ) : (
-                                    <FiArrowDown className="h-3 w-3" />
-                                  )
-                                ) : null}
-                              </span>
-                            </span>
-                          </TableHeaderCell>
+                            {column.label}
+                          </SortableHeaderCell>
                         )
                       }
 
                       return (
-                        <TableHeaderCell
-                          key={column.key}
-                          className={cn(alignRight ? 'text-right' : '')}
-                        >
+                        <SortableHeaderCell key={column.key} align={column.align}>
                           {column.label}
-                        </TableHeaderCell>
+                        </SortableHeaderCell>
                       )
                     })}
                   </TableRow>

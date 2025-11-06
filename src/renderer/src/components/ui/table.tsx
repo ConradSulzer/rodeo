@@ -1,4 +1,6 @@
 import type { HTMLAttributes, ReactNode, TableHTMLAttributes } from 'react'
+import { FiArrowDown, FiArrowUp } from 'react-icons/fi'
+import { cn } from '../../lib/utils'
 
 type TableProps = TableHTMLAttributes<HTMLTableElement> & {
   children: ReactNode
@@ -8,10 +10,10 @@ type TableProps = TableHTMLAttributes<HTMLTableElement> & {
 export function Table({ className = '', containerClassName = '', children, ...props }: TableProps) {
   return (
     <div
-      className={[
-        'custom-scrollbar relative max-h-full overflow-auto rounded-md border ro-border ro-bg-dim',
+      className={cn(
+        'custom-scrollbar relative max-h-full overflow-auto rounded-2xl border ro-border ro-bg-dim',
         containerClassName
-      ].join(' ')}
+      )}
     >
       <table
         className={[
@@ -74,13 +76,95 @@ type TableHeaderCellProps = HTMLAttributes<HTMLTableCellElement> & {
 export function TableHeaderCell({ className = '', children, ...props }: TableHeaderCellProps) {
   return (
     <th
-      className={[
+      className={cn(
         'sticky top-0 z-30 px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.2em] ro-text-dim ro-bg-dim',
         className
-      ].join(' ')}
+      )}
       {...props}
     >
       {children}
+    </th>
+  )
+}
+
+type SortDirection = 'asc' | 'desc'
+
+type SortableHeaderCellProps = Omit<TableHeaderCellProps, 'onClick'> & {
+  align?: 'left' | 'center' | 'right'
+  active?: boolean
+  direction?: SortDirection
+  onSort?: () => void
+}
+
+export function SortableHeaderCell({
+  align = 'left',
+  active = false,
+  direction = 'asc',
+  onSort,
+  className = '',
+  children,
+  ...props
+}: SortableHeaderCellProps) {
+  const interactive = typeof onSort === 'function'
+
+  const alignmentClass =
+    align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'
+  const justifyClass =
+    align === 'right' ? 'justify-end' : align === 'center' ? 'justify-center' : 'justify-start'
+
+  const handleClick = () => {
+    if (interactive && onSort) {
+      onSort()
+    }
+  }
+
+  const arrow =
+    interactive && active ? (
+      direction === 'asc' ? (
+        <FiArrowUp className="h-3 w-3" />
+      ) : (
+        <FiArrowDown className="h-3 w-3" />
+      )
+    ) : null
+
+  return (
+    <th
+      className={cn(
+        'sticky top-0 z-30 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] ro-bg-dim ro-text-dim',
+        alignmentClass,
+        interactive ? 'cursor-pointer select-none hover:ro-text-main' : '',
+        active ? 'ro-text-main' : '',
+        className
+      )}
+      {...props}
+    >
+      {interactive ? (
+        <button
+          type="button"
+          onClick={handleClick}
+          className={cn(
+            'flex w-full items-center gap-1 bg-transparent p-0 text-inherit uppercase tracking-[inherit] cursor-pointer',
+            justifyClass,
+            alignmentClass,
+            'focus:outline-none'
+          )}
+        >
+          <span className="flex-1">{children}</span>
+          {arrow}
+        </button>
+      ) : (
+        <span
+          className={cn(
+            'inline-flex w-full items-center gap-1',
+            justifyClass,
+            alignmentClass,
+            active ? 'ro-text-main' : ''
+          )}
+        >
+          <span className="flex-1">{children}</span>
+          {arrow}
+        </span>
+      )}
     </th>
   )
 }
