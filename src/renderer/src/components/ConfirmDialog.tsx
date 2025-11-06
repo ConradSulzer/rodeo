@@ -28,10 +28,22 @@ export function ConfirmDialog({
       <div className="flex flex-col gap-6">
         <div className="text-sm leading-relaxed ro-text-main">{description}</div>
         <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline-muted" size="sm" onClick={onCancel} disabled={confirming}>
+          <Button
+            type="button"
+            variant="outline-muted"
+            size="sm"
+            onClick={onCancel}
+            disabled={confirming}
+          >
             {cancelLabel}
           </Button>
-          <Button type="button" variant="destructive" size="sm" onClick={onConfirm} disabled={confirming}>
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={onConfirm}
+            disabled={confirming}
+          >
             {confirming ? 'Deleting...' : confirmLabel}
           </Button>
         </div>

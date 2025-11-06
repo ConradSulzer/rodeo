@@ -78,7 +78,9 @@ export function useUniversalSearchSort<T extends Record<string, unknown>>({
     clearQuery,
     sort,
     setSort: (next) =>
-      setSortState((prev) => (typeof next === 'function' ? (next as (p: SortState<T>) => SortState<T>)(prev) : next)),
+      setSortState((prev) =>
+        typeof next === 'function' ? (next as (p: SortState<T>) => SortState<T>)(prev) : next
+      ),
     toggleSort
   }
 }

@@ -8,7 +8,8 @@ import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
 import { PlayerDetailsModal } from './PlayerDetailsModal'
 import { PlayerFormModal, type PlayerFormValues } from './PlayerFormModal'
 import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
-import { CrudTableActions, CrudTableColumn, renderCrudTableHeader } from '@renderer/utils/crudTable'
+import { CrudTableActions } from '@renderer/components/crud/CrudTableActions'
+import { CrudTableColumn, renderCrudTableHeader } from '@renderer/components/crud/CrudTableHeader'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 
 type FormState =
@@ -32,7 +33,6 @@ const columns: ReadonlyArray<CrudTableColumn<Player, 'actions'>> = [
   { key: 'email', label: 'Email', sortable: true },
   { key: 'actions', label: 'Actions', sortable: false, align: 'right' }
 ]
-
 
 const FUZZY_FIELDS: Array<keyof Player & string> = [
   'displayName',
@@ -102,7 +102,13 @@ export function PlayersSection() {
     fetchPlayers()
   }, [fetchPlayers])
 
-  const { results: filteredPlayers, query, setQuery, sort, toggleSort } = useUniversalSearchSort<Player>({
+  const {
+    results: filteredPlayers,
+    query,
+    setQuery,
+    sort,
+    toggleSort
+  } = useUniversalSearchSort<Player>({
     items: players,
     searchKeys: FUZZY_FIELDS,
     initialSort: {
