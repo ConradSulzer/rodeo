@@ -14,6 +14,7 @@ import { PlayerFormModal, type PlayerFormValues } from './PlayerFormModal'
 import { Button } from '@renderer/components/ui/button'
 import { PlayerDetailsModal } from './PlayerDetailsModal'
 import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
+import { SearchInput } from '@renderer/components/ui/search_input'
 
 type FormState =
   | { open: false; mode: null; player?: undefined }
@@ -205,6 +206,7 @@ export function PlayersSection() {
           </Button>
         </div>
       </header>
+      <SearchInput placeholder="Search by name, email or id" />
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {loading ? (
           <div className="flex flex-1 items-center justify-center ro-text-muted">

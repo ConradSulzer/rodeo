@@ -12,7 +12,7 @@
   }
 
   /* Ex: placeholder:ro-text-muted  */
-  .placeholder\:mpt-text-muted::placeholder {
+  .placeholder\:ro-text-muted::placeholder {
     color: var(--ro-text-muted);
   }
 

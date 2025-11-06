@@ -9,7 +9,7 @@ export function Table({ className = '', containerClassName = '', children, ...pr
   return (
     <div
       className={[
-        'custom-scrollbar relative max-h-full overflow-auto rounded-2xl border ro-border ro-bg-dim',
+        'custom-scrollbar relative max-h-full overflow-auto rounded-md border ro-border ro-bg-dim',
         containerClassName
       ].join(' ')}
     >
@@ -33,7 +33,9 @@ type TableHeaderProps = HTMLAttributes<HTMLTableSectionElement> & {
 export function TableHeader({ className = '', children, ...props }: TableHeaderProps) {
   return (
     <thead
-      className={['sticky top-0 z-20 font-semibold uppercase tracking-[0.15em]', className].join(' ')}
+      className={['sticky top-0 z-20 font-semibold uppercase tracking-[0.15em]', className].join(
+        ' '
+      )}
       {...props}
     >
       {children}

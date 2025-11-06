@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from '
 import { toast } from 'sonner'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
-import { DateInput } from '../../components/ui/date-input'
+import { DateInput } from '../../components/ui/date_input'
 import { Label } from '../../components/ui/label'
 import { Field } from '../../components/ui/field'
 
