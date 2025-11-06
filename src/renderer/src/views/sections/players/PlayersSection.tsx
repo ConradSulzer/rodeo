@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { FiEdit2, FiTrash2, FiEye } from 'react-icons/fi'
 import type { Player, PatchPlayer, NewPlayer } from '@core/players/players'
-import { universalSearchSort } from '@core/sort/universalSearchSort'
 import { Button } from '@renderer/components/ui/button'
 import {
   SortableHeaderCell,
@@ -16,6 +15,7 @@ import { SearchInput } from '@renderer/components/ui/search_input'
 import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
 import { PlayerDetailsModal } from './PlayerDetailsModal'
 import { PlayerFormModal, type PlayerFormValues } from './PlayerFormModal'
+import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
 
 type FormState =
   | { open: false; mode: null; player?: undefined }
@@ -46,11 +46,6 @@ const columns: ReadonlyArray<{
 
 type ColumnKey = (typeof columns)[number]['key']
 type SortKey = Extract<ColumnKey, keyof Player>
-type SortDirection = 'asc' | 'desc'
-type SortState = {
-  key: SortKey
-  direction: SortDirection
-}
 
 const FUZZY_FIELDS: Array<keyof Player & string> = [
   'displayName',
@@ -94,11 +89,6 @@ export function PlayersSection() {
     open: false,
     player: undefined
   })
-  const [query, setQuery] = useState('')
-  const [sort, setSort] = useState<SortState>({
-    key: 'displayName',
-    direction: 'asc'
-  })
 
   const fetchPlayers = useCallback(async (silent = false) => {
     if (silent) {
@@ -125,34 +115,14 @@ export function PlayersSection() {
     fetchPlayers()
   }, [fetchPlayers])
 
-  const trimmedQuery = query.trim()
-
-  const filteredPlayers = useMemo(
-    () =>
-      universalSearchSort<Player>({
-        items: players,
-        sortKey: sort.key,
-        direction: sort.direction,
-        query: trimmedQuery,
-        searchKeys: FUZZY_FIELDS
-      }),
-    [players, sort, trimmedQuery]
-  )
-
-  const handleSort = (key: SortKey) => {
-    setSort((prev) => {
-      if (prev.key === key) {
-        return {
-          key,
-          direction: prev.direction === 'asc' ? 'desc' : 'asc'
-        }
-      }
-      return {
-        key,
-        direction: 'asc'
-      }
-    })
-  }
+  const { results: filteredPlayers, query, setQuery, sort, toggleSort } = useUniversalSearchSort<Player>({
+    items: players,
+    searchKeys: FUZZY_FIELDS,
+    initialSort: {
+      key: 'displayName',
+      direction: 'asc'
+    }
+  })
 
   const openCreateModal = () => {
     setFormState({ open: true, mode: 'create' })
@@ -300,7 +270,7 @@ export function PlayersSection() {
                           <SortableHeaderCell
                             key={column.key}
                             align={column.align}
-                            onSort={() => handleSort(sortKey)}
+                            onSort={() => toggleSort(sortKey)}
                             active={sort.key === sortKey}
                             direction={sort.direction}
                           >
