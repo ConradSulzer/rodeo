@@ -12,6 +12,14 @@ export type UniversalSortOptions<T> = {
   threshold?: number
 }
 
+export const defaultSearchSort = {
+  items: [],
+  sortKey: '',
+  direction: 'asc',
+  query: '',
+  searchKeys: []
+}
+
 function compare(a: SortablePrimitive, b: SortablePrimitive): number {
   const aEmpty = a === null || a === undefined || a === ''
   const bEmpty = b === null || b === undefined || b === ''

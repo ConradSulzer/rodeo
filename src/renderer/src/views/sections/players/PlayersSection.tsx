@@ -1,20 +1,15 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { FiEdit2, FiTrash2, FiEye } from 'react-icons/fi'
+import { FiEdit2, FiTrash2, FiEye, FiArrowDown, FiArrowUp } from 'react-icons/fi'
 import type { Player, PatchPlayer, NewPlayer } from '@core/players/players'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHeader,
-  TableHeaderCell,
-  TableRow
-} from '@renderer/components/ui/table'
-import { PlayerFormModal, type PlayerFormValues } from './PlayerFormModal'
+import { universalSearchSort } from '@core/sort/universalSearchSort'
 import { Button } from '@renderer/components/ui/button'
-import { PlayerDetailsModal } from './PlayerDetailsModal'
-import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
+import { Table, TableBody, TableCell, TableHeader, TableHeaderCell, TableRow } from '@renderer/components/ui/table'
 import { SearchInput } from '@renderer/components/ui/search_input'
+import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
+import { PlayerDetailsModal } from './PlayerDetailsModal'
+import { PlayerFormModal, type PlayerFormValues } from './PlayerFormModal'
+import { cn } from '@renderer/lib/utils'
 
 type FormState =
   | { open: false; mode: null; player?: undefined }
@@ -32,6 +27,35 @@ type DetailsState = {
   player?: Player
 }
 
+const columns: ReadonlyArray<{
+  key: keyof Player | 'actions'
+  label: string
+  sortable: boolean
+  align?: 'left' | 'right'
+}> = [
+  { key: 'displayName', label: 'Name', sortable: true },
+  { key: 'email', label: 'Email', sortable: true },
+  { key: 'actions', label: 'Actions', sortable: false, align: 'right' }
+]
+
+type ColumnKey = (typeof columns)[number]['key']
+type SortKey = Extract<ColumnKey, keyof Player>
+type SortDirection = 'asc' | 'desc'
+type SortState = {
+  key: SortKey
+  direction: SortDirection
+}
+
+const FUZZY_FIELDS: Array<keyof Player & string> = [
+  'displayName',
+  'email',
+  'cellPhone',
+  'firstName',
+  'lastName',
+  'id'
+]
+const SORT_FIELDS: Array<SortKey> = ['displayName', 'email']
+
 function buildPatch(values: PlayerFormValues, current: Player): PatchPlayer | null {
   const patch: PatchPlayer = {}
 
@@ -39,15 +63,15 @@ function buildPatch(values: PlayerFormValues, current: Player): PatchPlayer | nu
   if (values.lastName !== current.lastName) patch.lastName = values.lastName
   if (values.displayName !== current.displayName) patch.displayName = values.displayName
   if (values.email !== current.email) patch.email = values.email
-  if (values.cellPhone !== current.cellPhone) patch.cellPhone = values.cellPhone
-  if (values.emergencyContact !== current.emergencyContact)
-    patch.emergencyContact = values.emergencyContact
+  const nextCellPhone = values.cellPhone ? values.cellPhone : null
+  const currentCellPhone = current.cellPhone ?? null
+  if (nextCellPhone !== currentCellPhone) patch.cellPhone = nextCellPhone
+
+  const nextEmergency = values.emergencyContact ? values.emergencyContact : null
+  const currentEmergency = current.emergencyContact ?? null
+  if (nextEmergency !== currentEmergency) patch.emergencyContact = nextEmergency
 
   return Object.keys(patch).length ? patch : null
-}
-
-function formatOptional(value?: string | null) {
-  return value?.trim() ? value : '—'
 }
 
 export function PlayersSection() {
@@ -64,6 +88,11 @@ export function PlayersSection() {
   const [detailsState, setDetailsState] = useState<DetailsState>({
     open: false,
     player: undefined
+  })
+  const [query, setQuery] = useState('')
+  const [sort, setSort] = useState<SortState>({
+    key: 'displayName',
+    direction: 'asc'
   })
 
   const fetchPlayers = useCallback(async (silent = false) => {
@@ -91,6 +120,35 @@ export function PlayersSection() {
     fetchPlayers()
   }, [fetchPlayers])
 
+  const trimmedQuery = query.trim()
+
+  const filteredPlayers = useMemo(
+    () =>
+      universalSearchSort<Player>({
+        items: players,
+        sortKey: sort.key,
+        direction: sort.direction,
+        query: trimmedQuery,
+        searchKeys: FUZZY_FIELDS
+      }),
+    [players, sort, trimmedQuery]
+  )
+
+  const handleSort = (key: SortKey) => {
+    setSort((prev) => {
+      if (prev.key === key) {
+        return {
+          key,
+          direction: prev.direction === 'asc' ? 'desc' : 'asc'
+        }
+      }
+      return {
+        key,
+        direction: 'asc'
+      }
+    })
+  }
+
   const openCreateModal = () => {
     setFormState({ open: true, mode: 'create' })
   }
@@ -115,8 +173,8 @@ export function PlayersSection() {
           lastName: values.lastName,
           displayName: values.displayName,
           email: values.email,
-          cellPhone: values.cellPhone,
-          emergencyContact: values.emergencyContact
+          cellPhone: values.cellPhone || undefined,
+          emergencyContact: values.emergencyContact || undefined
         }
 
         await window.api.players.create(payload)
@@ -186,7 +244,7 @@ export function PlayersSection() {
     }
   }
 
-  const isEmpty = !loading && players.length === 0
+  const isEmpty = !loading && filteredPlayers.length === 0
 
   return (
     <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
@@ -206,7 +264,12 @@ export function PlayersSection() {
           </Button>
         </div>
       </header>
-      <SearchInput placeholder="Search by name, email or id" />
+      <SearchInput
+        placeholder="Search by name or email"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        aria-label="Search players"
+      />
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {loading ? (
           <div className="flex flex-1 items-center justify-center ro-text-muted">
@@ -225,18 +288,59 @@ export function PlayersSection() {
               <Table containerClassName="h-full">
                 <TableHeader>
                   <TableRow>
-                    <TableHeaderCell>Name</TableHeaderCell>
-                    <TableHeaderCell>Email</TableHeaderCell>
-                    <TableHeaderCell>Cell Phone</TableHeaderCell>
-                    <TableHeaderCell className="text-right">Actions</TableHeaderCell>
+                    {columns.map((column) => {
+                      const alignRight = column.align === 'right'
+                      if (column.sortable && SORT_FIELDS.includes(column.key as SortKey)) {
+                        const sortKey = column.key as SortKey
+                        const isActive = sort.key === sortKey
+                        return (
+                          <TableHeaderCell
+                            key={column.key}
+                            onClick={() => handleSort(sortKey)}
+                            className={cn(
+                              'cursor-pointer select-none',
+                              alignRight ? 'text-right' : '',
+                              isActive ? 'ro-text-main' : ''
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                'inline-flex items-center gap-1',
+                                alignRight ? 'justify-end' : '',
+                                'text-xs'
+                              )}
+                            >
+                              {column.label}
+                              <span className="inline-flex h-3.5 w-3.5 items-center justify-center">
+                                {isActive ? (
+                                  sort.direction === 'asc' ? (
+                                    <FiArrowUp className="h-3 w-3" />
+                                  ) : (
+                                    <FiArrowDown className="h-3 w-3" />
+                                  )
+                                ) : null}
+                              </span>
+                            </span>
+                          </TableHeaderCell>
+                        )
+                      }
+
+                      return (
+                        <TableHeaderCell
+                          key={column.key}
+                          className={cn(alignRight ? 'text-right' : '')}
+                        >
+                          {column.label}
+                        </TableHeaderCell>
+                      )
+                    })}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {players.map((player) => (
+                  {filteredPlayers.map((player) => (
                     <TableRow key={player.id}>
                       <TableCell>{player.displayName}</TableCell>
                       <TableCell>{player.email}</TableCell>
-                      <TableCell>{formatOptional(player.cellPhone)}</TableCell>
                       <TableCell align="right">
                         <div className="flex justify-end gap-2">
                           <Button
