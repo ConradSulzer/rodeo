@@ -25,18 +25,18 @@
   }
 
   .ro-text-success {
-    color: var(--ro-success-text);
+    color: var(--ro-success);
   }
 
   .ro-text-error {
-    color: var(--ro-error-text);
+    color: var(--ro-error);
   }
 
   .ro-text-warning {
-    color: var(--ro-warning-text);
+    color: var(--ro-warning);
   }
 
   .ro-text-info {
-    color: var(--ro-info-text);
+    color: var(--ro-info);
   }
 }

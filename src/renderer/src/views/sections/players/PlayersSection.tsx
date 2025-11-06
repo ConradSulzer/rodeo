@@ -4,7 +4,6 @@ import { FiEdit2, FiTrash2, FiEye } from 'react-icons/fi'
 import type { Player, PatchPlayer, NewPlayer } from '@core/players/players'
 import { Button } from '@renderer/components/ui/button'
 import {
-  SortableHeaderCell,
   Table,
   TableBody,
   TableCell,
@@ -16,6 +15,7 @@ import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
 import { PlayerDetailsModal } from './PlayerDetailsModal'
 import { PlayerFormModal, type PlayerFormValues } from './PlayerFormModal'
 import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
+import { CrudTableActions, CrudTableColumn, renderCrudTableHeader } from '@renderer/utils/crudTable'
 
 type FormState =
   | { open: false; mode: null; player?: undefined }
@@ -33,19 +33,12 @@ type DetailsState = {
   player?: Player
 }
 
-const columns: ReadonlyArray<{
-  key: keyof Player | 'actions'
-  label: string
-  sortable: boolean
-  align?: 'left' | 'right'
-}> = [
+const columns: ReadonlyArray<CrudTableColumn<Player, 'actions'>> = [
   { key: 'displayName', label: 'Name', sortable: true },
   { key: 'email', label: 'Email', sortable: true },
   { key: 'actions', label: 'Actions', sortable: false, align: 'right' }
 ]
 
-type ColumnKey = (typeof columns)[number]['key']
-type SortKey = Extract<ColumnKey, keyof Player>
 
 const FUZZY_FIELDS: Array<keyof Player & string> = [
   'displayName',
@@ -263,27 +256,10 @@ export function PlayersSection() {
               <Table containerClassName="h-full">
                 <TableHeader>
                   <TableRow>
-                    {columns.map((column) => {
-                      if (column.sortable) {
-                        const sortKey = column.key as SortKey
-                        return (
-                          <SortableHeaderCell
-                            key={column.key}
-                            align={column.align}
-                            onSort={() => toggleSort(sortKey)}
-                            active={sort.key === sortKey}
-                            direction={sort.direction}
-                          >
-                            {column.label}
-                          </SortableHeaderCell>
-                        )
-                      }
-
-                      return (
-                        <SortableHeaderCell key={column.key} align={column.align}>
-                          {column.label}
-                        </SortableHeaderCell>
-                      )
+                    {renderCrudTableHeader<Player, 'actions'>({
+                      columns,
+                      sort,
+                      toggleSort
                     })}
                   </TableRow>
                 </TableHeader>
@@ -293,38 +269,26 @@ export function PlayersSection() {
                       <TableCell>{player.displayName}</TableCell>
                       <TableCell>{player.email}</TableCell>
                       <TableCell align="right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => openDetails(player)}
-                            aria-label={`View ${player.displayName}`}
-                          >
-                            <FiEye />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => openEditModal(player)}
-                            aria-label={`Edit ${player.displayName}`}
-                          >
-                            <FiEdit2 />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-red-400 hover:text-red-300"
-                            onClick={() => requestDeletePlayer(player)}
-                            aria-label={`Delete ${player.displayName}`}
-                          >
-                            <FiTrash2 />
-                          </Button>
-                        </div>
+                        <CrudTableActions
+                          actions={[
+                            {
+                              label: `View ${player.displayName}`,
+                              icon: <FiEye />,
+                              onClick: () => openDetails(player)
+                            },
+                            {
+                              label: `Edit ${player.displayName}`,
+                              icon: <FiEdit2 />,
+                              onClick: () => openEditModal(player)
+                            },
+                            {
+                              label: `Delete ${player.displayName}`,
+                              icon: <FiTrash2 />,
+                              onClick: () => requestDeletePlayer(player),
+                              tone: 'danger'
+                            }
+                          ]}
+                        />
                       </TableCell>
                     </TableRow>
                   ))}

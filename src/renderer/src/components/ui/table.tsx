@@ -2,6 +2,8 @@ import type { HTMLAttributes, ReactNode, TableHTMLAttributes } from 'react'
 import { FiArrowDown, FiArrowUp } from 'react-icons/fi'
 import { cn } from '../../lib/utils'
 
+export type SortDirection = 'asc' | 'desc'
+
 type TableProps = TableHTMLAttributes<HTMLTableElement> & {
   children: ReactNode
   containerClassName?: string
@@ -86,8 +88,6 @@ export function TableHeaderCell({ className = '', children, ...props }: TableHea
     </th>
   )
 }
-
-type SortDirection = 'asc' | 'desc'
 
 type SortableHeaderCellProps = Omit<TableHeaderCellProps, 'onClick'> & {
   align?: 'left' | 'center' | 'right'
