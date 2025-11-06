@@ -23,7 +23,10 @@ const api = {
     update: (id: string, data: PatchScoreable) => ipcRenderer.invoke('scoreables:update', id, data),
     delete: (id: string) => ipcRenderer.invoke('scoreables:delete', id),
     get: (id: string) => ipcRenderer.invoke('scoreables:get', id),
-    list: () => ipcRenderer.invoke('scoreables:list')
+    list: () => ipcRenderer.invoke('scoreables:list'),
+    listViews: () => ipcRenderer.invoke('scoreables:listViews'),
+    move: (id: string, direction: 'up' | 'down') =>
+      ipcRenderer.invoke('scoreables:move', id, direction)
   },
   categories: {
     create: (data: NewCategory) => ipcRenderer.invoke('categories:create', data),

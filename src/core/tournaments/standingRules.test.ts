@@ -25,6 +25,7 @@ const baseCategoryContext = (
     id: `scoreable-${idx}`,
     label: `Scoreable ${idx}`,
     unit: 'unit',
+    order: idx,
     createdAt: 0,
     updatedAt: 0
   }))

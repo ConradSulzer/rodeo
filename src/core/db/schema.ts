@@ -31,6 +31,7 @@ export const scoreable = sqliteTable(
     id: text('id').primaryKey(),
     label: text('label').notNull(),
     unit: text('unit').notNull(),
+    order: integer('order', { mode: 'number' }).notNull().default(0),
     createdAt: integer('created_at', { mode: 'number' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'number' }).notNull()
   },

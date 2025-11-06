@@ -3,6 +3,8 @@ import {
   deleteScoreable,
   getScoreable,
   listAllScoreables,
+  listScoreableViews,
+  moveScoreable,
   NewScoreable,
   PatchScoreable,
   updateScoreable
@@ -39,4 +41,14 @@ ipcMain.handle('scoreables:list', () => {
   const scoreables = listAllScoreables(db)
 
   return scoreables
+})
+
+ipcMain.handle('scoreables:listViews', () => {
+  const db = getTournamentDb()
+  return listScoreableViews(db)
+})
+
+ipcMain.handle('scoreables:move', (_evt, id: string, direction: 'up' | 'down') => {
+  const db = getTournamentDb()
+  return withStandingsRefresh(db, () => moveScoreable(db, id, direction))
 })

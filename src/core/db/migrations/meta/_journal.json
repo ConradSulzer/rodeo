@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1762234125370,
-      "tag": "0000_puzzling_george_stacy",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1762307770627,
-      "tag": "0001_fast_jimmy_woo",
+      "when": 1762461920319,
+      "tag": "0000_open_red_shift",
       "breakpoints": true
     }
   ]

@@ -7,8 +7,8 @@ type ManageSectionShellProps = {
   description?: string
   children: ReactNode
   searchPlaceholder?: string
-  searchValue: string
-  onSearchChange: (value: string) => void
+  searchValue?: string
+  onSearchChange?: (value: string) => void
   onAdd?: () => void
   addLabel?: string
   refreshing?: boolean
@@ -46,12 +46,14 @@ export function ManageSectionShell({
           ) : null}
         </div>
       </header>
-      <SearchInput
-        placeholder={searchPlaceholder}
-        value={searchValue}
-        onChange={(event) => onSearchChange(event.target.value)}
-        aria-label={searchPlaceholder ?? 'Search'}
-      />
+      {typeof searchValue === 'string' && onSearchChange ? (
+        <SearchInput
+          placeholder={searchPlaceholder}
+          value={searchValue}
+          onChange={(event) => onSearchChange(event.target.value)}
+          aria-label={searchPlaceholder ?? 'Search'}
+        />
+      ) : null}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
     </section>
   )

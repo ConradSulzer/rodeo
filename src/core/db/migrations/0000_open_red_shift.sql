@@ -81,8 +81,16 @@ CREATE TABLE `scoreable` (
 	`id` text PRIMARY KEY NOT NULL,
 	`label` text NOT NULL,
 	`unit` text NOT NULL,
+	`order` integer DEFAULT 0 NOT NULL,
 	`created_at` integer NOT NULL,
 	`updated_at` integer NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `uniq_scoreable_label` ON `scoreable` (`label`);
+CREATE UNIQUE INDEX `uniq_scoreable_label` ON `scoreable` (`label`);--> statement-breakpoint
+CREATE TABLE `tournament` (
+	`id` text PRIMARY KEY DEFAULT 'meta' NOT NULL,
+	`name` text DEFAULT 'Untitled Tournament' NOT NULL,
+	`event_date` text,
+	`created_at` integer NOT NULL,
+	`updated_at` integer NOT NULL
+);

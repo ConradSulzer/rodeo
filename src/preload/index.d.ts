@@ -31,6 +31,12 @@ declare global {
         delete: (id: string) => Promise<boolean>
         get: (id: string) => Promise<Scoreable>
         list: () => Promise<Scoreable[]>
+        listViews: () => Promise<
+          (Scoreable & {
+            divisions: string[]
+          })[]
+        >
+        move: (id: string, direction: 'up' | 'down') => Promise<boolean>
       }
       categories: {
         create: (data: NewCategory) => Promise<string>
