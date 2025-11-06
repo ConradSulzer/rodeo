@@ -71,7 +71,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
           disabled={disabled}
           className={cn(
             'flex h-10 cursor-pointer items-center justify-between rounded-md border ro-border bg-transparent px-3 py-2 text-sm font-mono tracking-[0.15em] transition-colors disabled:cursor-not-allowed disabled:opacity-60',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ro-border-light)] focus-visible:ring-offset-2',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ro-border-light) focus-visible:ring-offset-2',
             'hover:ro-bg-muted',
             className
           )}

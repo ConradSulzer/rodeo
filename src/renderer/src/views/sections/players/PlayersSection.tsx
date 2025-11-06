@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { FiEdit2, FiTrash2, FiEye } from 'react-icons/fi'
 import type { Player, PatchPlayer, NewPlayer } from '@core/players/players'
-import { Button } from '../../components/ui/button'
 import {
   Table,
   TableBody,
@@ -10,10 +9,11 @@ import {
   TableHeader,
   TableHeaderCell,
   TableRow
-} from '../../components/ui/table'
-import { PlayerFormModal, type PlayerFormValues } from './players/PlayerFormModal'
-import { ConfirmDialog } from '../../components/ConfirmDialog'
-import { PlayerDetailsModal } from './players/PlayerDetailsModal'
+} from '@renderer/components/ui/table'
+import { PlayerFormModal, type PlayerFormValues } from './PlayerFormModal'
+import { Button } from '@renderer/components/ui/button'
+import { PlayerDetailsModal } from './PlayerDetailsModal'
+import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
 
 type FormState =
   | { open: false; mode: null; player?: undefined }
