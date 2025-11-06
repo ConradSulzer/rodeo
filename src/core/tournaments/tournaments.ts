@@ -71,6 +71,8 @@ export function updateTournamentMetadata(
 ): TournamentMetadata {
   const updates: Partial<typeof tournamentMeta.$inferInsert> = {}
 
+  ensureTournamentRecord(db)
+
   if (patch.name !== undefined) {
     const trimmed = patch.name.trim()
     updates.name = trimmed.length ? trimmed : 'Untitled Tournament'
