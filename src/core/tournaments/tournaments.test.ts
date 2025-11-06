@@ -23,6 +23,9 @@ describe('tournament metadata', () => {
         eventDate: '2025-08-19'
       }
 
+      // initializes the default record, needed it to exist before can update it
+      getTournamentMetadata(db)
+
       const updated = updateTournamentMetadata(db, patch)
       expect(updated.name).toBe('Rodeo Finals')
       expect(updated.eventDate).toBe('2025-08-19')
