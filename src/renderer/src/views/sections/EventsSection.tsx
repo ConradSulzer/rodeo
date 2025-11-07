@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
+import { FiEye } from 'react-icons/fi'
 import type { RodeoEvent } from '@core/events/events'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 import {
@@ -9,13 +10,16 @@ import {
 import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@renderer/components/ui/table'
 import { MdOutlineSubdirectoryArrowRight } from 'react-icons/md'
+import { Button } from '@renderer/components/ui/button'
+import { EventDetailsModal } from './events/EventDetailsModal'
 
-type EventRow = {
+export type EventRow = {
   id: string
   ts: number
   type: RodeoEvent['type']
   playerId: string
   playerName: string
+  scoreableId: string
   scoreableName: string
   value?: number
   note?: string
@@ -24,13 +28,13 @@ type EventRow = {
 
 type EventTypeFilter = 'all' | RodeoEvent['type']
 
-const columns: ReadonlyArray<CrudTableColumn<EventRow, never>> = [
+const columns: ReadonlyArray<CrudTableColumn<EventRow, 'actions'>> = [
   { key: 'ts', label: 'Time', sortable: true, align: 'left' },
   { key: 'playerName', label: 'Player', sortable: true },
   { key: 'scoreableName', label: 'Scoreable', sortable: false },
   { key: 'value' as keyof EventRow, label: 'Value', sortable: false, align: 'right' },
   { key: 'id', label: 'Event IDs', sortable: false },
-  { key: 'note', label: 'Note', sortable: false }
+  { key: 'actions', label: 'Actions', sortable: false, align: 'right' }
 ]
 
 const EVENT_TYPES: EventTypeFilter[] = ['all', 'ItemScored', 'ItemCorrected', 'ItemVoided']
@@ -51,6 +55,7 @@ export function EventsSection() {
   const [loading, setLoading] = useState(true)
   const [events, setEvents] = useState<EventRow[]>([])
   const [typeFilter, setTypeFilter] = useState<EventTypeFilter>('all')
+  const [detailsEvent, setDetailsEvent] = useState<EventRow | null>(null)
 
   const fetchEvents = useCallback(async () => {
     try {
@@ -66,6 +71,7 @@ export function EventsSection() {
           type: event.type,
           playerId: event.playerId,
           playerName: playerMap.get(event.playerId) ?? event.playerId,
+          scoreableId: event.scoreableId,
           scoreableName: event.scoreableName,
           value: 'value' in event ? event.value : undefined,
           note: event.note,
@@ -146,7 +152,18 @@ export function EventsSection() {
             )}
           </div>
         </TableCell>
-        <TableCell className="text-sm ro-text-muted">{event.note ?? '—'}</TableCell>
+        <TableCell align="right">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => setDetailsEvent(event)}
+            aria-label={`View event ${event.id}`}
+          >
+            <FiEye />
+          </Button>
+        </TableCell>
       </TableRow>
     ) as ReactNode
   }, [])
@@ -170,7 +187,7 @@ export function EventsSection() {
             <Table containerClassName="h-full">
               <TableHeader>
                 <TableRow>
-                  {renderCrudTableHeader<EventRow>({ columns, sort, toggleSort })}
+                  {renderCrudTableHeader<EventRow, 'actions'>({ columns, sort, toggleSort })}
                 </TableRow>
               </TableHeader>
               <TableBody>{results.map(renderRow)}</TableBody>
@@ -178,6 +195,7 @@ export function EventsSection() {
           </div>
         </div>
       )}
+      <EventDetailsModal event={detailsEvent} onClose={() => setDetailsEvent(null)} />
     </ManageSectionShell>
   )
 }
