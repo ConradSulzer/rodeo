@@ -12,6 +12,7 @@ import { CrudTableActions } from '@renderer/components/crud/CrudTableActions'
 import { CrudTableColumn, renderCrudTableHeader } from '@renderer/components/crud/CrudTableHeader'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 import type { Division } from '@core/tournaments/divisions'
+import { Pill } from '@renderer/components/ui/pill'
 
 type PlayerRow = Player & {
   divisions: string[]
@@ -300,7 +301,17 @@ export function PlayersSection() {
                       <TableCell>{player.displayName}</TableCell>
                       <TableCell>{player.email}</TableCell>
                       <TableCell>
-                        {player.divisions.length ? player.divisions.join(', ') : '—'}
+                        {player.divisions.length ? (
+                          <div className="flex flex-wrap gap-2">
+                            {player.divisions.map((division) => (
+                              <Pill variant="solid" key={division}>
+                                {division}
+                              </Pill>
+                            ))}
+                          </div>
+                        ) : (
+                          '—'
+                        )}
                       </TableCell>
                       <TableCell align="right">
                         <CrudTableActions
