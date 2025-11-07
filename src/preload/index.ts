@@ -5,6 +5,7 @@ import { NewPlayer, PatchPlayer } from '@core/players/players'
 import { NewScoreable, PatchScoreable } from '@core/tournaments/scoreables'
 import { NewCategory, PatchCategory } from '@core/tournaments/categories'
 import { NewDivision, PatchDivision, DivisionCategoryPatch } from '@core/tournaments/divisions'
+import type { ScoreEventInput } from '@core/events/events'
 import type { SerializableTournamentState } from '@core/tournaments/state'
 import { TOURNAMENT_STATE_CHANNEL } from '@core/ipc/channels'
 
@@ -70,6 +71,9 @@ const api = {
     move: (id: string, direction: 'up' | 'down') =>
       ipcRenderer.invoke('divisions:move', id, direction),
     reorder: (orderedIds: string[]) => ipcRenderer.invoke('divisions:reorder', orderedIds)
+  },
+  events: {
+    record: (entries: ScoreEventInput[]) => ipcRenderer.invoke('events:recordMany', entries)
   },
   tournaments: {
     open: (filePath: string) => ipcRenderer.invoke('tournaments:open', filePath),

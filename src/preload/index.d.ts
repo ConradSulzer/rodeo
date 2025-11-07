@@ -12,6 +12,7 @@ import {
 } from '@core/tournaments/divisions'
 import { NewScoreable, PatchScoreable, Scoreable } from '@core/tournaments/scoreables'
 import type { SerializableTournamentState } from '@core/tournaments/state'
+import type { ScoreEventInput } from '@core/events/events'
 
 declare global {
   interface Window {
@@ -82,6 +83,12 @@ declare global {
         listForPlayer: (playerId: string) => Promise<string[]>
         move: (id: string, direction: 'up' | 'down') => Promise<boolean>
         reorder: (orderedIds: string[]) => Promise<boolean>
+      }
+      events: {
+        record: (entries: ScoreEventInput[]) => Promise<{
+          success: boolean
+          errors: string[]
+        }>
       }
       tournaments: {
         open: (filePath: string) => Promise<boolean>
