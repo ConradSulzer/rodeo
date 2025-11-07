@@ -13,10 +13,10 @@ import { CrudTableActions } from '@renderer/components/crud/CrudTableActions'
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@renderer/components/ui/table'
 import { Button } from '@renderer/components/ui/button'
 import { Pill } from '@renderer/components/ui/pill'
-import { DragDropTable, DragHandle } from '@renderer/components/dnd/DragDropTable'
 import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
 import { CategoryFormModal, type CategoryFormValues } from './CategoryFormModal'
 import { CategoryDetailsModal } from './CategoryDetailsModal'
+import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
 
 type FormState =
   | { open: false; mode: null; category?: undefined }
@@ -35,13 +35,12 @@ type DeleteState = {
 }
 
 const columns: ReadonlyArray<CrudTableColumn<CategoryView, 'actions'>> = [
-  { key: 'order', label: '#', sortable: false },
-  { key: 'name', label: 'Category', sortable: false },
+  { key: 'name', label: 'Category', sortable: true },
   { key: 'scoreables', label: 'Scoreables', sortable: false },
   { key: 'actions', label: 'Actions', sortable: false, align: 'right' }
 ]
 
-const sortPlaceholder = { key: 'order' as keyof CategoryView & string, direction: 'asc' as const }
+const CATEGORY_FUZZY_FIELDS: Array<keyof CategoryView & string> = ['name', 'direction', 'id']
 
 export function CategoriesSection() {
   const [loading, setLoading] = useState(true)
@@ -79,12 +78,7 @@ export function CategoriesSection() {
   const fetchScoreables = useCallback(async () => {
     try {
       const list = await window.api.scoreables.list()
-      const sorted = [...list].sort((a, b) => {
-        if (a.order !== b.order) {
-          return (a.order ?? 0) - (b.order ?? 0)
-        }
-        return a.label.localeCompare(b.label)
-      })
+      const sorted = [...list].sort((a, b) => a.label.localeCompare(b.label))
       setScoreables(sorted)
     } catch (error) {
       console.error('Failed to load scoreables for categories form', error)
@@ -107,6 +101,18 @@ export function CategoriesSection() {
     fetchScoreables()
     fetchStandingRules()
   }, [fetchCategories, fetchScoreables, fetchStandingRules])
+
+  const {
+    results: filteredCategories,
+    query,
+    setQuery,
+    sort,
+    toggleSort
+  } = useUniversalSearchSort<CategoryView>({
+    items: categories,
+    searchKeys: CATEGORY_FUZZY_FIELDS,
+    initialSort: { key: 'name', direction: 'asc' }
+  })
 
   const openCreateModal = () => setFormState({ open: true, mode: 'create' })
 
@@ -216,21 +222,6 @@ export function CategoriesSection() {
     }
   }
 
-  const handleReorder = async (ordered: CategoryView[]) => {
-    setCategories(ordered)
-    try {
-      const success = await window.api.categories.reorder(ordered.map((item) => item.id))
-      if (!success) {
-        toast.error('Unable to reorder categories')
-      } else {
-        await fetchCategories(true)
-      }
-    } catch (error) {
-      console.error('Failed to reorder categories', error)
-      toast.error('Unable to reorder categories')
-    }
-  }
-
   const isEmpty = !loading && categories.length === 0
 
   const editModalCategory = useMemo(() => {
@@ -249,6 +240,9 @@ export function CategoriesSection() {
         onAdd={openCreateModal}
         addLabel="Add Category"
         refreshing={refreshing}
+        searchPlaceholder="Search categories"
+        searchValue={query}
+        onSearchChange={setQuery}
       >
         {loading ? (
           <div className="flex flex-1 items-center justify-center ro-text-muted">
@@ -269,82 +263,59 @@ export function CategoriesSection() {
                   <TableRow>
                     {renderCrudTableHeader<CategoryView, 'actions'>({
                       columns,
-                      sort: sortPlaceholder,
-                      toggleSort: () => {}
+                      sort,
+                      toggleSort
                     })}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <DragDropTable items={categories} onReorder={handleReorder}>
-                    {(category, { listeners, setActivatorNodeRef }) => (
-                      <>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <DragHandle
-                              listeners={listeners}
-                              setActivatorNodeRef={setActivatorNodeRef}
-                              label={`Reorder ${category.name}`}
-                            />
-                            <span className="text-sm">{category.order}</span>
+                  {filteredCategories.map((category) => (
+                    <TableRow key={category.id}>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          <span className="font-medium">{category.name}</span>
+                          <span className="text-[11px] uppercase tracking-[0.3em] ro-text-muted">
+                            {category.direction === 'asc' ? 'Lower is better' : 'Higher is better'}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {category.scoreables.length ? (
+                          <div className="flex flex-wrap gap-2">
+                            {category.scoreables.map((scoreable) => (
+                              <Pill key={scoreable.id} size="sm">
+                                {scoreable.label}
+                              </Pill>
+                            ))}
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col gap-2">
-                            <span className="font-medium">{category.name}</span>
-                            <span className="text-[11px] uppercase tracking-[0.3em] ro-text-muted">
-                              {category.direction === 'asc'
-                                ? 'Lower is better'
-                                : 'Higher is better'}
-                            </span>
-                            {category.rules.length ? (
-                              <div className="flex flex-wrap gap-2">
-                                {category.rules.map((rule, idx) => (
-                                  <Pill key={`${rule}-${idx}`} size="sm" variant="muted">
-                                    {rule}
-                                  </Pill>
-                                ))}
-                              </div>
-                            ) : null}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {category.scoreables.length ? (
-                            <div className="flex flex-wrap gap-2">
-                              {category.scoreables.map((scoreable) => (
-                                <Pill key={scoreable.id} size="sm">
-                                  {scoreable.label}
-                                </Pill>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-sm ro-text-muted">No scoreables</span>
-                          )}
-                        </TableCell>
-                        <TableCell align="right">
-                          <CrudTableActions
-                            actions={[
-                              {
-                                label: `View ${category.name}`,
-                                icon: <FiEye />,
-                                onClick: () => openDetails(category)
-                              },
-                              {
-                                label: `Edit ${category.name}`,
-                                icon: <FiEdit2 />,
-                                onClick: () => openEditModal(category)
-                              },
-                              {
-                                label: `Delete ${category.name}`,
-                                icon: <FiTrash2 />,
-                                onClick: () => requestDelete(category),
-                                tone: 'danger'
-                              }
-                            ]}
-                          />
-                        </TableCell>
-                      </>
-                    )}
-                  </DragDropTable>
+                        ) : (
+                          <span className="text-sm ro-text-muted">No scoreables</span>
+                        )}
+                      </TableCell>
+                      <TableCell align="right">
+                        <CrudTableActions
+                          actions={[
+                            {
+                              label: `View ${category.name}`,
+                              icon: <FiEye />,
+                              onClick: () => openDetails(category)
+                            },
+                            {
+                              label: `Edit ${category.name}`,
+                              icon: <FiEdit2 />,
+                              onClick: () => openEditModal(category)
+                            },
+                            {
+                              label: `Delete ${category.name}`,
+                              icon: <FiTrash2 />,
+                              onClick: () => requestDelete(category),
+                              tone: 'danger'
+                            }
+                          ]}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </div>

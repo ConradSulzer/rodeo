@@ -4,8 +4,6 @@ import {
   getScoreable,
   listAllScoreables,
   listScoreableViews,
-  moveScoreable,
-  reorderScoreables,
   NewScoreable,
   PatchScoreable,
   updateScoreable
@@ -47,14 +45,4 @@ ipcMain.handle('scoreables:list', () => {
 ipcMain.handle('scoreables:listViews', () => {
   const db = getTournamentDb()
   return listScoreableViews(db)
-})
-
-ipcMain.handle('scoreables:move', (_evt, id: string, direction: 'up' | 'down') => {
-  const db = getTournamentDb()
-  return withStandingsRefresh(db, () => moveScoreable(db, id, direction))
-})
-
-ipcMain.handle('scoreables:reorder', (_evt, orderedIds: string[]) => {
-  const db = getTournamentDb()
-  return withStandingsRefresh(db, () => reorderScoreables(db, orderedIds))
 })

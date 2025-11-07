@@ -36,7 +36,6 @@ const baseCategoryContext = (
       name: 'Test Category',
       direction,
       rules: [],
-      order: 0,
       createdAt: 0,
       updatedAt: 0
     },

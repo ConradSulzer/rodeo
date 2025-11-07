@@ -101,3 +101,11 @@ html [data-rich-colors='true'][data-sonner-toast][data-type='info'] {
   border-color: var(--ro-info) !important;
   color: var(--ro-info-dark) !important;
 }
+
+.ro-table-striped tbody tr:nth-child(odd) {
+  background-color: color-mix(in srgb, var(--ro-bg-middle) 15%, transparent);
+}
+
+.ro-table-striped tbody tr:nth-child(even) {
+  background-color: color-mix(in srgb, var(--ro-bg-dim) 100%, transparent);
+}

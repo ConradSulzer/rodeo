@@ -7,8 +7,6 @@ import {
   listCategoryIdsForScoreable,
   listCategoryViews,
   listScoreableIdsForCategory,
-  moveCategory,
-  reorderCategories,
   removeScoreableFromCategory,
   updateCategory,
   type NewCategory,
@@ -71,14 +69,4 @@ ipcMain.handle('categories:listScoreableIds', (_evt, categoryId: string) => {
 ipcMain.handle('categories:listForScoreable', (_evt, scoreableId: string) => {
   const db = getTournamentDb()
   return listCategoryIdsForScoreable(db, scoreableId)
-})
-
-ipcMain.handle('categories:move', (_evt, id: string, direction: 'up' | 'down') => {
-  const db = getTournamentDb()
-  return withStandingsRefresh(db, () => moveCategory(db, id, direction))
-})
-
-ipcMain.handle('categories:reorder', (_evt, orderedIds: string[]) => {
-  const db = getTournamentDb()
-  return withStandingsRefresh(db, () => reorderCategories(db, orderedIds))
 })

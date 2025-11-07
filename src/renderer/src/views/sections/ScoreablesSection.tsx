@@ -14,7 +14,8 @@ import { Button } from '@renderer/components/ui/button'
 import { ScoreableFormModal } from './scoreables/ScoreableFormModal'
 import { ScoreableDetailsModal } from './scoreables/ScoreableDetailsModal'
 import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
-import { DragHandle, DragDropTable } from '@renderer/components/dnd/DragDropTable'
+import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
+import { Pill } from '@renderer/components/ui/pill'
 
 type FormState =
   | { open: false; mode: null; scoreable?: undefined }
@@ -33,11 +34,13 @@ type DeleteState = {
 }
 
 const columns: ReadonlyArray<CrudTableColumn<ScoreableView, 'actions' | 'divisions'>> = [
-  { key: 'order', label: '#', sortable: false },
-  { key: 'label', label: 'Scoreable', sortable: false },
+  { key: 'label', label: 'Scoreable', sortable: true },
+  { key: 'unit', label: 'Unit', sortable: true },
   { key: 'divisions', label: 'Divisions', sortable: false },
   { key: 'actions', label: 'Actions', sortable: false, align: 'right' }
 ]
+
+const SCOREABLE_FUZZY_FIELDS: Array<keyof ScoreableView & string> = ['label', 'unit', 'id']
 
 export function ScoreablesSection() {
   const [loading, setLoading] = useState(true)
@@ -75,6 +78,18 @@ export function ScoreablesSection() {
   useEffect(() => {
     fetchScoreables()
   }, [fetchScoreables])
+
+  const {
+    results: filteredScoreables,
+    query,
+    setQuery,
+    sort,
+    toggleSort
+  } = useUniversalSearchSort<ScoreableView>({
+    items: scoreables,
+    searchKeys: SCOREABLE_FUZZY_FIELDS,
+    initialSort: { key: 'label', direction: 'asc' }
+  })
 
   const openCreateModal = () => {
     setFormState({ open: true, mode: 'create' })
@@ -164,21 +179,6 @@ export function ScoreablesSection() {
     }
   }
 
-  const handleReorder = async (ordered: ScoreableView[]) => {
-    setScoreables(ordered)
-    try {
-      const success = await window.api.scoreables.reorder(ordered.map((item) => item.id))
-      if (!success) {
-        toast.error('Unable to reorder scoreables')
-      } else {
-        await fetchScoreables(true)
-      }
-    } catch (error) {
-      console.error('Failed to reorder scoreables', error)
-      toast.error('Unable to reorder scoreables')
-    }
-  }
-
   const isEmpty = !loading && scoreables.length === 0
 
   return (
@@ -189,6 +189,9 @@ export function ScoreablesSection() {
         onAdd={openCreateModal}
         addLabel="Add Scoreable"
         refreshing={refreshing}
+        searchPlaceholder="Search scoreables"
+        searchValue={query}
+        onSearchChange={setQuery}
       >
         {loading ? (
           <div className="flex flex-1 items-center justify-center ro-text-muted">
@@ -209,54 +212,53 @@ export function ScoreablesSection() {
                   <TableRow>
                     {renderCrudTableHeader<ScoreableView, 'actions' | 'divisions'>({
                       columns,
-                      sort: { key: 'order', direction: 'asc' },
-                      toggleSort: () => {}
+                      sort,
+                      toggleSort
                     })}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <DragDropTable items={scoreables} onReorder={handleReorder}>
-                    {(scoreable, { listeners, setActivatorNodeRef }) => (
-                      <>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <DragHandle
-                              listeners={listeners}
-                              setActivatorNodeRef={setActivatorNodeRef}
-                              label={`Reorder ${scoreable.label}`}
-                            />
-                            <span className="text-sm">{scoreable.order}</span>
+                  {filteredScoreables.map((scoreable) => (
+                    <TableRow key={scoreable.id}>
+                      <TableCell>{scoreable.label}</TableCell>
+                      <TableCell>{scoreable.unit}</TableCell>
+                      <TableCell>
+                        {scoreable.divisions.length ? (
+                          <div className="flex flex-wrap gap-2">
+                            {scoreable.divisions.map((division) => (
+                              <Pill key={division} size="sm">
+                                {division}
+                              </Pill>
+                            ))}
                           </div>
-                        </TableCell>
-                        <TableCell>{scoreable.label}</TableCell>
-                        <TableCell>
-                          {scoreable.divisions.length ? scoreable.divisions.join(', ') : '—'}
-                        </TableCell>
-                        <TableCell align="right">
-                          <CrudTableActions
-                            actions={[
-                              {
-                                label: `View ${scoreable.label}`,
-                                icon: <FiEye />,
-                                onClick: () => openDetails(scoreable)
-                              },
-                              {
-                                label: `Edit ${scoreable.label}`,
-                                icon: <FiEdit2 />,
-                                onClick: () => openEditModal(scoreable)
-                              },
-                              {
-                                label: `Delete ${scoreable.label}`,
-                                icon: <FiTrash2 />,
-                                onClick: () => requestDelete(scoreable),
-                                tone: 'danger'
-                              }
-                            ]}
-                          />
-                        </TableCell>
-                      </>
-                    )}
-                  </DragDropTable>
+                        ) : (
+                          <span className="text-sm ro-text-muted">No divisions</span>
+                        )}
+                      </TableCell>
+                      <TableCell align="right">
+                        <CrudTableActions
+                          actions={[
+                            {
+                              label: `View ${scoreable.label}`,
+                              icon: <FiEye />,
+                              onClick: () => openDetails(scoreable)
+                            },
+                            {
+                              label: `Edit ${scoreable.label}`,
+                              icon: <FiEdit2 />,
+                              onClick: () => openEditModal(scoreable)
+                            },
+                            {
+                              label: `Delete ${scoreable.label}`,
+                              icon: <FiTrash2 />,
+                              onClick: () => requestDelete(scoreable),
+                              tone: 'danger'
+                            }
+                          ]}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </div>

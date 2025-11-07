@@ -36,8 +36,6 @@ declare global {
             divisions: string[]
           })[]
         >
-        move: (id: string, direction: 'up' | 'down') => Promise<boolean>
-        reorder: (orderedIds: string[]) => Promise<boolean>
       }
       categories: {
         create: (data: NewCategory) => Promise<string>
@@ -55,8 +53,6 @@ declare global {
         removeScoreable: (categoryId: string, scoreableId: string) => Promise<boolean>
         listScoreableIds: (categoryId: string) => Promise<string[]>
         listForScoreable: (scoreableId: string) => Promise<string[]>
-        move: (id: string, direction: 'up' | 'down') => Promise<boolean>
-        reorder: (orderedIds: string[]) => Promise<boolean>
       }
       divisions: {
         create: (data: NewDivision) => Promise<string>

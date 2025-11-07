@@ -20,7 +20,7 @@ export function Table({ className = '', containerClassName = '', children, ...pr
     >
       <table
         className={[
-          'relative min-w-full table-fixed border-separate border-spacing-0 text-sm',
+          'ro-table ro-table-striped relative min-w-full table-fixed border-separate border-spacing-0 text-sm',
           className
         ].join(' ')}
         {...props}
@@ -185,7 +185,7 @@ export function TableCell({ align = 'left', className = '', children, ...props }
   return (
     <td
       className={[
-        'px-4 py-2.5 align-middle text-sm ro-text-main first:rounded-l-xl last:rounded-r-xl',
+        'px-4 py-2.5 align-middle text-sm ro-text-main',
         align === 'center' ? 'text-center' : '',
         align === 'right' ? 'text-right' : '',
         className

@@ -37,10 +37,6 @@ export function CategoryDetailsModal({ open, category, onClose }: CategoryDetail
           </Field>
         </div>
 
-        <Field label={<Label>Order</Label>}>
-          <Input value={category.order} readOnly />
-        </Field>
-
         <div className="flex flex-col gap-2">
           <Label>Scoreables</Label>
           {hasScoreables ? (
