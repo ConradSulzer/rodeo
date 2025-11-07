@@ -11,7 +11,7 @@ import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@renderer/components/ui/table'
 import { MdOutlineSubdirectoryArrowRight } from 'react-icons/md'
 import { Button } from '@renderer/components/ui/button'
-import { EventDetailsModal } from './events/EventDetailsModal'
+import { EventDetailsModal } from './EventDetailsModal'
 
 export type EventRow = {
   id: string

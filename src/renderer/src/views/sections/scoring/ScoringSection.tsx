@@ -15,7 +15,7 @@ import { Table, TableBody, TableCell, TableHeader, TableRow } from '@renderer/co
 import { Button } from '@renderer/components/ui/button'
 import { Pill } from '@renderer/components/ui/pill'
 import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
-import { ScorePlayerModal, type ScoreEntry } from './scoring/ScorePlayerModal'
+import { ScorePlayerModal, type ScoreEntry } from './ScorePlayerModal'
 import { cn } from '@renderer/lib/utils'
 
 type PlayerRow = Player & {

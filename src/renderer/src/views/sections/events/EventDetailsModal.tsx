@@ -1,6 +1,6 @@
 import { Modal } from '@renderer/components/Modal'
 import { Button } from '@renderer/components/ui/button'
-import type { EventRow } from '../EventsSection'
+import type { EventRow } from './EventsSection'
 
 type EventDetailsModalProps = {
   event: EventRow | null
