@@ -230,7 +230,7 @@ export function ScoringSection() {
                     const hasRequirements = scoreables.length > 0
                     const scored = isPlayerScored(player.id, scoreables)
                     return (
-                      <TableRow key={player.id}>
+                      <TableRow key={player.id} className="ro-row-hover">
                         <TableCell>
                           <div className="flex flex-col">
                             <span className="font-medium">{player.displayName}</span>

@@ -109,3 +109,11 @@ html [data-rich-colors='true'][data-sonner-toast][data-type='info'] {
 .ro-table-striped tbody tr:nth-child(even) {
   background-color: color-mix(in srgb, var(--ro-bg-dim) 100%, transparent);
 }
+
+.ro-row-hover {
+  transition: box-shadow 0.15s ease;
+}
+
+.ro-row-hover:hover {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ro-info) 90%, transparent);
+}
