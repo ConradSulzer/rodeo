@@ -5,7 +5,7 @@ import { NewPlayer, PatchPlayer } from '@core/players/players'
 import { NewScoreable, PatchScoreable } from '@core/tournaments/scoreables'
 import { NewCategory, PatchCategory } from '@core/tournaments/categories'
 import { NewDivision, PatchDivision, DivisionCategoryPatch } from '@core/tournaments/divisions'
-import type { ScoreEventInput } from '@core/events/events'
+import type { RodeoEvent, ScoreEventInput } from '@core/events/events'
 import type { SerializableTournamentState } from '@core/tournaments/state'
 import { TOURNAMENT_STATE_CHANNEL } from '@core/ipc/channels'
 
@@ -73,7 +73,8 @@ const api = {
     reorder: (orderedIds: string[]) => ipcRenderer.invoke('divisions:reorder', orderedIds)
   },
   events: {
-    record: (entries: ScoreEventInput[]) => ipcRenderer.invoke('events:recordMany', entries)
+    record: (entries: ScoreEventInput[]) => ipcRenderer.invoke('events:recordMany', entries),
+    list: () => ipcRenderer.invoke('events:list') as Promise<RodeoEvent[]>
   },
   tournaments: {
     open: (filePath: string) => ipcRenderer.invoke('tournaments:open', filePath),

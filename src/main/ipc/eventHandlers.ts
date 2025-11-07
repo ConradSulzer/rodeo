@@ -1,6 +1,12 @@
 import { ipcMain } from 'electron'
 import { ulid } from 'ulid'
-import type { ItemCorrected, ItemScored, ItemVoided, ScoreEventInput } from '@core/events/events'
+import {
+  listAllEvents,
+  type ItemCorrected,
+  type ItemScored,
+  type ItemVoided,
+  type ScoreEventInput
+} from '@core/events/events'
 import { getTournamentDb } from '@core/tournaments/tournaments'
 import { getScoreable } from '@core/tournaments/scoreables'
 import { applyEvent } from '../state/tournamentStore'
@@ -66,4 +72,9 @@ ipcMain.handle('events:recordMany', async (_evt, submissions: ScoreEventInput[])
     success: errors.length === 0,
     errors
   }
+})
+
+ipcMain.handle('events:list', () => {
+  const db = getTournamentDb()
+  return listAllEvents(db)
 })

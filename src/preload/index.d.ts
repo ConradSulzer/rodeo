@@ -12,7 +12,7 @@ import {
 } from '@core/tournaments/divisions'
 import { NewScoreable, PatchScoreable, Scoreable } from '@core/tournaments/scoreables'
 import type { SerializableTournamentState } from '@core/tournaments/state'
-import type { ScoreEventInput } from '@core/events/events'
+import type { RodeoEvent, ScoreEventInput } from '@core/events/events'
 
 declare global {
   interface Window {
@@ -89,6 +89,7 @@ declare global {
           success: boolean
           errors: string[]
         }>
+        list: () => Promise<RodeoEvent[]>
       }
       tournaments: {
         open: (filePath: string) => Promise<boolean>
