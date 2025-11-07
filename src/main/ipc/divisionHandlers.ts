@@ -11,6 +11,8 @@ import {
   listDivisionViews,
   listDivisionsForCategory,
   listPlayerIdsForDivision,
+  moveDivision,
+  reorderDivisions,
   removeCategoryFromDivision,
   removePlayerFromDivision,
   updateDivision,
@@ -46,6 +48,16 @@ ipcMain.handle('divisions:get', (_evt, id: string) => {
 ipcMain.handle('divisions:list', () => {
   const db = getTournamentDb()
   return listAllDivisions(db)
+})
+
+ipcMain.handle('divisions:move', (_evt, id: string, direction: 'up' | 'down') => {
+  const db = getTournamentDb()
+  return withStandingsRefresh(db, () => moveDivision(db, id, direction))
+})
+
+ipcMain.handle('divisions:reorder', (_evt, orderedIds: string[]) => {
+  const db = getTournamentDb()
+  return withStandingsRefresh(db, () => reorderDivisions(db, orderedIds))
 })
 
 ipcMain.handle(

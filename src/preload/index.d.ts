@@ -84,6 +84,8 @@ declare global {
         removePlayer: (divisionId: string, playerId: string) => Promise<boolean>
         listPlayers: (divisionId: string) => Promise<string[]>
         listForPlayer: (playerId: string) => Promise<string[]>
+        move: (id: string, direction: 'up' | 'down') => Promise<boolean>
+        reorder: (orderedIds: string[]) => Promise<boolean>
       }
       tournaments: {
         open: (filePath: string) => Promise<boolean>

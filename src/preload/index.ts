@@ -72,7 +72,10 @@ const api = {
     removePlayer: (divisionId: string, playerId: string) =>
       ipcRenderer.invoke('divisions:removePlayer', divisionId, playerId),
     listPlayers: (divisionId: string) => ipcRenderer.invoke('divisions:listPlayers', divisionId),
-    listForPlayer: (playerId: string) => ipcRenderer.invoke('divisions:listForPlayer', playerId)
+    listForPlayer: (playerId: string) => ipcRenderer.invoke('divisions:listForPlayer', playerId),
+    move: (id: string, direction: 'up' | 'down') =>
+      ipcRenderer.invoke('divisions:move', id, direction),
+    reorder: (orderedIds: string[]) => ipcRenderer.invoke('divisions:reorder', orderedIds)
   },
   tournaments: {
     open: (filePath: string) => ipcRenderer.invoke('tournaments:open', filePath),
