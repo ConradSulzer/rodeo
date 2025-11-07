@@ -3,6 +3,7 @@ CREATE TABLE `category` (
 	`name` text NOT NULL,
 	`direction` text NOT NULL,
 	`rules` text DEFAULT '[]' NOT NULL,
+	`order` integer DEFAULT 0 NOT NULL,
 	`created_at` integer NOT NULL,
 	`updated_at` integer NOT NULL
 );

@@ -48,6 +48,7 @@ export const category = sqliteTable(
       .$type<string[]>()
       .notNull()
       .default([] as string[]),
+    order: integer('order', { mode: 'number' }).notNull().default(0),
     createdAt: integer('created_at', { mode: 'number' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'number' }).notNull()
   },

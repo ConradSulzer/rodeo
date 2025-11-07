@@ -1,12 +1,21 @@
 import { ulid } from 'ulid'
 import type { AppDatabase } from '@core/db/db'
-import { category as cat, categoryScoreable as catScoreable } from '@core/db/schema'
+import {
+  category as cat,
+  categoryScoreable as catScoreable,
+  scoreable as sc
+} from '@core/db/schema'
 import { and, asc, eq } from 'drizzle-orm'
+import type { Scoreable } from './scoreables'
 
 export type Category = typeof cat.$inferSelect
 type CategoryWritableFields = Omit<Category, 'id' | 'createdAt' | 'updatedAt'>
-export type NewCategory = Omit<CategoryWritableFields, 'rules'> & { rules?: string[] }
+export type NewCategory = Omit<CategoryWritableFields, 'rules' | 'order'> & {
+  rules?: string[]
+  order?: number
+}
 export type PatchCategory = Partial<Omit<CategoryWritableFields, 'rules'>> & { rules?: string[] }
+export type CategoryView = Category & { scoreables: Scoreable[] }
 
 const now = () => Date.now()
 
@@ -26,9 +35,10 @@ export function createCategory(db: AppDatabase, data: NewCategory): string {
   const t = now()
   const { rules, ...rest } = data
   const normalizedRules = normalizeCategoryRules(rules)
+  const nextOrder = data.order ?? getNextOrder(db)
 
   db.insert(cat)
-    .values({ id, ...rest, rules: normalizedRules, createdAt: t, updatedAt: t })
+    .values({ id, ...rest, rules: normalizedRules, order: nextOrder, createdAt: t, updatedAt: t })
     .run()
 
   return id
@@ -64,7 +74,13 @@ export function getCategory(db: AppDatabase, id: string): Category | undefined {
 }
 
 export function listAllCategories(db: AppDatabase): Category[] {
-  return db.select().from(cat).orderBy(asc(cat.name)).all()
+  return db.select().from(cat).orderBy(asc(cat.order), asc(cat.name)).all()
+}
+
+function getNextOrder(db: AppDatabase) {
+  const last = db.select({ maxOrder: cat.order }).from(cat).orderBy(asc(cat.order)).all()
+  const max = last.length ? (last[last.length - 1].maxOrder ?? 0) : 0
+  return max + 1
 }
 
 export function addScoreableToCategory(db: AppDatabase, categoryId: string, scoreableId: string) {
@@ -106,4 +122,91 @@ export function listCategoryIdsForScoreable(db: AppDatabase, scoreableId: string
     .where(eq(catScoreable.scoreableId, scoreableId))
     .all()
     .map((row) => row.categoryId)
+}
+
+export function listCategoryViews(db: AppDatabase): CategoryView[] {
+  const categories = listAllCategories(db)
+  if (!categories.length) return []
+
+  const scoreablesByCategory = db
+    .select({
+      categoryId: catScoreable.categoryId,
+      scoreableId: sc.id,
+      label: sc.label,
+      unit: sc.unit,
+      order: sc.order,
+      createdAt: sc.createdAt,
+      updatedAt: sc.updatedAt
+    })
+    .from(catScoreable)
+    .innerJoin(sc, eq(catScoreable.scoreableId, sc.id))
+    .orderBy(asc(catScoreable.categoryId), asc(sc.order), asc(sc.label))
+    .all()
+
+  const map = new Map<string, Scoreable[]>()
+  for (const row of scoreablesByCategory) {
+    const scoreable: Scoreable = {
+      id: row.scoreableId,
+      label: row.label ?? '',
+      unit: row.unit ?? '',
+      order: row.order ?? 0,
+      createdAt: row.createdAt ?? 0,
+      updatedAt: row.updatedAt ?? 0
+    }
+    const list = map.get(row.categoryId)
+    if (list) {
+      list.push(scoreable)
+    } else {
+      map.set(row.categoryId, [scoreable])
+    }
+  }
+
+  return categories.map((category) => ({
+    ...category,
+    scoreables: map.get(category.id) ?? []
+  }))
+}
+
+export function moveCategory(db: AppDatabase, id: string, direction: 'up' | 'down'): boolean {
+  const categories = listAllCategories(db)
+  const index = categories.findIndex((item) => item.id === id)
+  if (index === -1) return false
+
+  const targetIndex = direction === 'up' ? index - 1 : index + 1
+  if (targetIndex < 0 || targetIndex >= categories.length) return false
+
+  const current = categories[index]
+  const target = categories[targetIndex]
+
+  const nowTs = now()
+
+  const updatedCurrent = db
+    .update(cat)
+    .set({ order: target.order, updatedAt: nowTs })
+    .where(eq(cat.id, current.id))
+    .run()
+
+  const updatedTarget = db
+    .update(cat)
+    .set({ order: current.order, updatedAt: nowTs })
+    .where(eq(cat.id, target.id))
+    .run()
+
+  return updatedCurrent.changes > 0 && updatedTarget.changes > 0
+}
+
+export function reorderCategories(db: AppDatabase, orderedIds: string[]): boolean {
+  const existing = new Set(listAllCategories(db).map((cat) => cat.id))
+  const filtered = orderedIds.filter((id) => existing.has(id))
+  if (!filtered.length) return false
+
+  const updates = filtered.map((id, idx) =>
+    db
+      .update(cat)
+      .set({ order: idx + 1, updatedAt: now() })
+      .where(eq(cat.id, id))
+      .run()
+  )
+
+  return updates.some((result) => result.changes > 0)
 }

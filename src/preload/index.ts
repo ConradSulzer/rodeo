@@ -35,6 +35,7 @@ const api = {
     delete: (id: string) => ipcRenderer.invoke('categories:delete', id),
     get: (id: string) => ipcRenderer.invoke('categories:get', id),
     list: () => ipcRenderer.invoke('categories:list'),
+    listViews: () => ipcRenderer.invoke('categories:listViews'),
     listRules: () => ipcRenderer.invoke('categories:listRules'),
     addScoreable: (categoryId: string, scoreableId: string) =>
       ipcRenderer.invoke('categories:addScoreable', categoryId, scoreableId),
@@ -43,7 +44,10 @@ const api = {
     listScoreableIds: (categoryId: string) =>
       ipcRenderer.invoke('categories:listScoreableIds', categoryId),
     listForScoreable: (scoreableId: string) =>
-      ipcRenderer.invoke('categories:listForScoreable', scoreableId)
+      ipcRenderer.invoke('categories:listForScoreable', scoreableId),
+    move: (id: string, direction: 'up' | 'down') =>
+      ipcRenderer.invoke('categories:move', id, direction),
+    reorder: (orderedIds: string[]) => ipcRenderer.invoke('categories:reorder', orderedIds)
   },
   divisions: {
     create: (data: NewDivision) => ipcRenderer.invoke('divisions:create', data),

@@ -45,11 +45,18 @@ declare global {
         delete: (id: string) => Promise<boolean>
         get: (id: string) => Promise<Category>
         list: () => Promise<Category[]>
+        listViews: () => Promise<
+          (Category & {
+            scoreables: Scoreable[]
+          })[]
+        >
         listRules: () => Promise<StandingRuleSummary[]>
         addScoreable: (categoryId: string, scoreableId: string) => Promise<boolean>
         removeScoreable: (categoryId: string, scoreableId: string) => Promise<boolean>
         listScoreableIds: (categoryId: string) => Promise<string[]>
         listForScoreable: (scoreableId: string) => Promise<string[]>
+        move: (id: string, direction: 'up' | 'down') => Promise<boolean>
+        reorder: (orderedIds: string[]) => Promise<boolean>
       }
       divisions: {
         create: (data: NewDivision) => Promise<string>

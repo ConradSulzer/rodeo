@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "4148a65c-30c8-4d03-b3d9-db1d3f83f068",
+  "id": "c1ead5f9-5509-48cd-b9eb-997a6bf39792",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "category": {
@@ -35,6 +35,14 @@
           "notNull": true,
           "autoincrement": false,
           "default": "'[]'"
+        },
+        "order": {
+          "name": "order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
         },
         "created_at": {
           "name": "created_at",
