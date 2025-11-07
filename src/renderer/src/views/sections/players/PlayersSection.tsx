@@ -37,7 +37,6 @@ const columns: ReadonlyArray<CrudTableColumn<Player, 'actions'>> = [
 const FUZZY_FIELDS: Array<keyof Player & string> = [
   'displayName',
   'email',
-  'cellPhone',
   'firstName',
   'lastName',
   'id'
@@ -219,7 +218,7 @@ export function PlayersSection() {
       <ManageSectionShell
         title="Players"
         description="Manage the roster, eligibility, and division assignments for the event."
-        searchPlaceholder="Search by name or email"
+        searchPlaceholder="Search name, email or id"
         searchValue={query}
         onSearchChange={setQuery}
         onAdd={openCreateModal}

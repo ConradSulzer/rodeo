@@ -26,7 +26,8 @@ const api = {
     list: () => ipcRenderer.invoke('scoreables:list'),
     listViews: () => ipcRenderer.invoke('scoreables:listViews'),
     move: (id: string, direction: 'up' | 'down') =>
-      ipcRenderer.invoke('scoreables:move', id, direction)
+      ipcRenderer.invoke('scoreables:move', id, direction),
+    reorder: (orderedIds: string[]) => ipcRenderer.invoke('scoreables:reorder', orderedIds)
   },
   categories: {
     create: (data: NewCategory) => ipcRenderer.invoke('categories:create', data),

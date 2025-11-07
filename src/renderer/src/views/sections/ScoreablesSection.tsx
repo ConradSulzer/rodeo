@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { FiArrowDown, FiArrowUp, FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi'
+import { FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi'
 import type { ScoreableFormData } from '@core/scoreables/scoreableFormSchema'
 import type { NewScoreable, PatchScoreable, ScoreableView } from '@core/tournaments/scoreables'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
@@ -14,6 +14,7 @@ import { Button } from '@renderer/components/ui/button'
 import { ScoreableFormModal } from './scoreables/ScoreableFormModal'
 import { ScoreableDetailsModal } from './scoreables/ScoreableDetailsModal'
 import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
+import { DragHandle, DragDropTable } from '@renderer/components/dnd/DragDropTable'
 
 type FormState =
   | { open: false; mode: null; scoreable?: undefined }
@@ -49,7 +50,6 @@ export function ScoreablesSection() {
     open: false,
     deleting: false
   })
-  const [reorderingId, setReorderingId] = useState<string | null>(null)
 
   const fetchScoreables = useCallback(async (silent = false) => {
     if (silent) {
@@ -164,20 +164,18 @@ export function ScoreablesSection() {
     }
   }
 
-  const handleMove = async (scoreable: ScoreableView, direction: 'up' | 'down') => {
-    setReorderingId(scoreable.id)
+  const handleReorder = async (ordered: ScoreableView[]) => {
+    setScoreables(ordered)
     try {
-      const success = await window.api.scoreables.move(scoreable.id, direction)
+      const success = await window.api.scoreables.reorder(ordered.map((item) => item.id))
       if (!success) {
-        toast.error('Unable to reorder scoreable')
+        toast.error('Unable to reorder scoreables')
       } else {
         await fetchScoreables(true)
       }
     } catch (error) {
-      console.error('Failed to reorder scoreable', error)
-      toast.error('Unable to reorder scoreable')
-    } finally {
-      setReorderingId(null)
+      console.error('Failed to reorder scoreables', error)
+      toast.error('Unable to reorder scoreables')
     }
   }
 
@@ -217,38 +215,17 @@ export function ScoreablesSection() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {scoreables.map((scoreable, index) => {
-                    const isFirst = index === 0
-                    const isLast = index === scoreables.length - 1
-                    return (
-                      <TableRow key={scoreable.id}>
+                  <DragDropTable items={scoreables} onReorder={handleReorder}>
+                    {(scoreable, { listeners, setActivatorNodeRef }) => (
+                      <>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span className="w-6 text-sm">{scoreable.order}</span>
-                            <div className="flex flex-col gap-1">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={() => handleMove(scoreable, 'up')}
-                                disabled={isFirst || reorderingId === scoreable.id}
-                                aria-label={`Move ${scoreable.label} up`}
-                              >
-                                <FiArrowUp />
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={() => handleMove(scoreable, 'down')}
-                                disabled={isLast || reorderingId === scoreable.id}
-                                aria-label={`Move ${scoreable.label} down`}
-                              >
-                                <FiArrowDown />
-                              </Button>
-                            </div>
+                          <div className="flex items-center gap-3">
+                            <DragHandle
+                              listeners={listeners}
+                              setActivatorNodeRef={setActivatorNodeRef}
+                              label={`Reorder ${scoreable.label}`}
+                            />
+                            <span className="text-sm">{scoreable.order}</span>
                           </div>
                         </TableCell>
                         <TableCell>{scoreable.label}</TableCell>
@@ -277,9 +254,9 @@ export function ScoreablesSection() {
                             ]}
                           />
                         </TableCell>
-                      </TableRow>
-                    )
-                  })}
+                      </>
+                    )}
+                  </DragDropTable>
                 </TableBody>
               </Table>
             </div>

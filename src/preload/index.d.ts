@@ -37,6 +37,7 @@ declare global {
           })[]
         >
         move: (id: string, direction: 'up' | 'down') => Promise<boolean>
+        reorder: (orderedIds: string[]) => Promise<boolean>
       }
       categories: {
         create: (data: NewCategory) => Promise<string>

@@ -57,7 +57,7 @@ export function Sidebar() {
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-6 overflow-auto">
         <SidebarGroup label="Manage" items={MANAGE_ITEMS} />
-        <SidebarGroup label="Run Event" items={RUN_EVENT_ITEMS} />
+        <SidebarGroup label="Event" items={RUN_EVENT_ITEMS} />
       </CardContent>
       <CardFooter className="mt-auto flex items-center justify-between gap-3">
         <DarkModeToggle
@@ -87,7 +87,7 @@ type SidebarGroupProps = {
 function SidebarGroup({ label, items }: SidebarGroupProps) {
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="px-3 text-[10px] font-mono uppercase tracking-[0.3em] ro-text-main">
+      <h3 className="px-3 text-[10px] font-mono uppercase tracking-[0.3em] ro-text-muted">
         {label}
       </h3>
       <div className="flex flex-col gap-1">

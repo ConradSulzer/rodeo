@@ -94,7 +94,7 @@ export function TournamentSection() {
       </header>
       <form
         onSubmit={handleSubmit}
-        className="relative flex max-w-xl flex-col gap-5 rounded-2xl border ro-border-light ro-bg-dim p-6"
+        className="relative flex max-w-xl flex-col gap-5 rounded-md border ro-border-light ro-bg-dim p-6"
       >
         <fieldset className="flex flex-col gap-5" disabled={loading || saving}>
           <Field label={<Label htmlFor="tournament-name">Name</Label>}>
@@ -121,7 +121,7 @@ export function TournamentSection() {
           </Button>
         </div>
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center rounded-2xl ro-bg-main-60 text-sm ro-text-muted">
+          <div className="absolute inset-0 flex items-center justify-center rounded-md ro-bg-main-60 text-sm ro-text-muted">
             Loading...
           </div>
         )}

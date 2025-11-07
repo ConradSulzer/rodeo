@@ -47,7 +47,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
       onMouseDown={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-2xl border ro-border ro-bg-main shadow-[0_24px_60px_rgba(0,0,0,0.35)]"
+        className="w-full max-w-lg rounded-md border ro-border ro-bg-main shadow-[0_24px_60px_rgba(0,0,0,0.35)]"
         onMouseDown={(event) => event.stopPropagation()}
       >
         {title ? (

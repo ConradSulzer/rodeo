@@ -109,6 +109,22 @@ export function moveScoreable(db: AppDatabase, id: string, direction: 'up' | 'do
   return updatedCurrent.changes > 0 && updatedTarget.changes > 0
 }
 
+export function reorderScoreables(db: AppDatabase, orderedIds: string[]): boolean {
+  const existing = new Set(listAllScoreables(db).map((item) => item.id))
+  const filtered = orderedIds.filter((id) => existing.has(id))
+  if (!filtered.length) return false
+
+  const updates = filtered.map((id, idx) =>
+    db
+      .update(sc)
+      .set({ order: idx + 1, updatedAt: now() })
+      .where(eq(sc.id, id))
+      .run()
+  )
+
+  return updates.some((result) => result.changes > 0)
+}
+
 export function listScoreableViews(db: AppDatabase): ScoreableView[] {
   const scoreables = listAllScoreables(db)
   if (!scoreables.length) return []

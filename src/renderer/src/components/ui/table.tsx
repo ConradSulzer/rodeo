@@ -1,3 +1,4 @@
+import * as React from 'react'
 import type { HTMLAttributes, ReactNode, TableHTMLAttributes } from 'react'
 import { FiArrowDown, FiArrowUp } from 'react-icons/fi'
 import { cn } from '../../lib/utils'
@@ -13,7 +14,7 @@ export function Table({ className = '', containerClassName = '', children, ...pr
   return (
     <div
       className={cn(
-        'custom-scrollbar relative max-h-full overflow-auto rounded-2xl border ro-border ro-bg-dim',
+        'custom-scrollbar relative max-h-full overflow-auto rounded-md border ro-border ro-bg-dim',
         containerClassName
       )}
     >
@@ -63,13 +64,19 @@ type TableRowProps = HTMLAttributes<HTMLTableRowElement> & {
   children: ReactNode
 }
 
-export function TableRow({ className = '', children, ...props }: TableRowProps) {
-  return (
-    <tr className={['transition-colors hover:ro-bg-muted/70', className].join(' ')} {...props}>
+export const TableRow = React.forwardRef<HTMLTableRowElement, TableRowProps>(
+  ({ className = '', children, ...props }, ref) => (
+    <tr
+      ref={ref}
+      className={['transition-colors hover:ro-bg-muted/70', className].join(' ')}
+      {...props}
+    >
       {children}
     </tr>
   )
-}
+)
+
+TableRow.displayName = 'TableRow'
 
 type TableHeaderCellProps = HTMLAttributes<HTMLTableCellElement> & {
   children: ReactNode
@@ -143,13 +150,13 @@ export function SortableHeaderCell({
           type="button"
           onClick={handleClick}
           className={cn(
-            'flex w-full items-center gap-1 bg-transparent p-0 text-inherit uppercase tracking-[inherit] cursor-pointer',
+            'flex w-full space-x-2 items-center gap-1 bg-transparent p-0 text-inherit uppercase tracking-[inherit] cursor-pointer',
             justifyClass,
             alignmentClass,
             'focus:outline-none'
           )}
         >
-          <span className="flex-1">{children}</span>
+          <span>{children}</span>
           {arrow}
         </button>
       ) : (
