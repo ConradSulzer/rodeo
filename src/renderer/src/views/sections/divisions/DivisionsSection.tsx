@@ -2,7 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi'
 import type { Category } from '@core/tournaments/categories'
-import type { DivisionView, NewDivision, PatchDivision } from '@core/tournaments/divisions'
+import type {
+  DivisionCategoryView,
+  DivisionView,
+  NewDivision,
+  PatchDivision
+} from '@core/tournaments/divisions'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 import {
   type CrudTableColumn,
@@ -11,9 +16,9 @@ import {
 import { CrudTableActions } from '@renderer/components/crud/CrudTableActions'
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@renderer/components/ui/table'
 import { Button } from '@renderer/components/ui/button'
-import { Pill } from '@renderer/components/ui/pill'
 import { DragDropTable, DragHandle } from '@renderer/components/dnd/DragDropTable'
 import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
+import { DraggablePillList } from '@renderer/components/dnd/DraggablePillList'
 import { DivisionFormModal, type DivisionFormValues } from './DivisionFormModal'
 import { DivisionDetailsModal } from './DivisionDetailsModal'
 
@@ -217,6 +222,41 @@ export function DivisionsSection() {
     }
   }
 
+  const handleCategoryPillReorder = async (divisionId: string, orderedCategoryIds: string[]) => {
+    setDivisions((prev) =>
+      prev.map((division) => {
+        if (division.id !== divisionId) return division
+        const dictionary = new Map(division.categories.map((entry) => [entry.category.id, entry]))
+        const reordered: DivisionCategoryView[] = orderedCategoryIds
+          .map((categoryId, index) => {
+            const entry = dictionary.get(categoryId)
+            if (!entry) return null
+            return {
+              ...entry,
+              order: index + 1
+            }
+          })
+          .filter((entry): entry is DivisionCategoryView => entry !== null)
+        return {
+          ...division,
+          categories: reordered.length ? reordered : division.categories
+        }
+      })
+    )
+
+    try {
+      await Promise.all(
+        orderedCategoryIds.map((categoryId, index) =>
+          window.api.divisions.updateCategoryLink(divisionId, categoryId, { order: index + 1 })
+        )
+      )
+    } catch (error) {
+      console.error('Failed to reorder division categories', error)
+      toast.error('Unable to reorder categories')
+      fetchDivisions(true)
+    }
+  }
+
   const isEmpty = !loading && divisions.length === 0
 
   const editModalDivision = useMemo(() => {
@@ -275,22 +315,20 @@ export function DivisionsSection() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="flex flex-col gap-1">
-                            <span className="font-medium">{division.name}</span>
-                            <span className="text-[11px] uppercase tracking-[0.3em] ro-text-muted">
-                              {division.categories.length} categories
-                            </span>
-                          </div>
+                          <span className="font-medium">{division.name}</span>
                         </TableCell>
                         <TableCell>
                           {division.categories.length ? (
-                            <div className="flex flex-wrap gap-2">
-                              {division.categories.map((entry) => (
-                                <Pill key={entry.category.id} size="sm">
-                                  {entry.category.name}
-                                </Pill>
-                              ))}
-                            </div>
+                            <DraggablePillList
+                              items={division.categories.map((entry) => ({
+                                id: entry.category.id,
+                                label: entry.category.name,
+                                ariaLabel: `Reorder ${entry.category.name}`
+                              }))}
+                              onReorder={(ordered) =>
+                                handleCategoryPillReorder(division.id, ordered)
+                              }
+                            />
                           ) : (
                             <span className="text-sm ro-text-muted">No categories</span>
                           )}

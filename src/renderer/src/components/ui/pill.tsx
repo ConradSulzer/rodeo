@@ -2,7 +2,7 @@ import * as React from 'react'
 import { cn } from '../../lib/utils'
 
 export type PillProps = React.HTMLAttributes<HTMLSpanElement> & {
-  variant?: 'solid' | 'muted' | 'dashed'
+  variant?: 'solid' | 'muted' | 'dashed' | 'drag'
   size?: 'sm' | 'md'
   bgClassName?: string
   textClassName?: string
@@ -11,7 +11,8 @@ export type PillProps = React.HTMLAttributes<HTMLSpanElement> & {
 const variantClasses: Record<NonNullable<PillProps['variant']>, string> = {
   solid: 'border',
   muted: 'border border-(--ro-bg-muted)',
-  dashed: 'border border-dashed border-[var(--ro-border)]'
+  dashed: 'border border-dashed border-[var(--ro-border)]',
+  drag: 'border pl-0 pr-2'
 }
 
 const sizeClasses: Record<NonNullable<PillProps['size']>, string> = {
