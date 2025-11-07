@@ -12,29 +12,34 @@ import { CrudTableActions } from '@renderer/components/crud/CrudTableActions'
 import { CrudTableColumn, renderCrudTableHeader } from '@renderer/components/crud/CrudTableHeader'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 
+type PlayerRow = Player & {
+  divisions: string[]
+}
+
 type FormState =
   | { open: false; mode: null; player?: undefined }
   | { open: true; mode: 'create'; player?: undefined }
-  | { open: true; mode: 'edit'; player: Player }
+  | { open: true; mode: 'edit'; player: PlayerRow }
 
 type DeleteState = {
   open: boolean
-  player?: Player
+  player?: PlayerRow
   deleting: boolean
 }
 
 type DetailsState = {
   open: boolean
-  player?: Player
+  player?: PlayerRow
 }
 
-const columns: ReadonlyArray<CrudTableColumn<Player, 'actions'>> = [
+const columns: ReadonlyArray<CrudTableColumn<PlayerRow, 'actions'>> = [
   { key: 'displayName', label: 'Name', sortable: true },
   { key: 'email', label: 'Email', sortable: true },
+  { key: 'divisions', label: 'Divisions', sortable: false },
   { key: 'actions', label: 'Actions', sortable: false, align: 'right' }
 ]
 
-const FUZZY_FIELDS: Array<keyof Player & string> = [
+const FUZZY_FIELDS: Array<keyof PlayerRow & string> = [
   'displayName',
   'email',
   'firstName',
@@ -63,7 +68,7 @@ function buildPatch(values: PlayerFormValues, current: Player): PatchPlayer | nu
 export function PlayersSection() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const [players, setPlayers] = useState<Player[]>([])
+  const [players, setPlayers] = useState<PlayerRow[]>([])
   const [formState, setFormState] = useState<FormState>({ open: false, mode: null })
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [deleteState, setDeleteState] = useState<DeleteState>({
@@ -83,8 +88,12 @@ export function PlayersSection() {
       setLoading(true)
     }
     try {
-      const list = await window.api.players.list()
-      setPlayers(list)
+      const list = await window.api.players.listWithDivisions()
+      const normalized: PlayerRow[] = list.map(([player, divisions]) => ({
+        ...player,
+        divisions: divisions.map((division) => division.name)
+      }))
+      setPlayers(normalized)
     } catch (error) {
       console.error('Failed to load players', error)
       toast.error('Failed to load players')
@@ -107,7 +116,7 @@ export function PlayersSection() {
     setQuery,
     sort,
     toggleSort
-  } = useUniversalSearchSort<Player>({
+  } = useUniversalSearchSort<PlayerRow>({
     items: players,
     searchKeys: FUZZY_FIELDS,
     initialSort: {
@@ -120,7 +129,7 @@ export function PlayersSection() {
     setFormState({ open: true, mode: 'create' })
   }
 
-  const openEditModal = (player: Player) => {
+  const openEditModal = (player: PlayerRow) => {
     setFormState({ open: true, mode: 'edit', player })
   }
 
@@ -174,7 +183,7 @@ export function PlayersSection() {
     }
   }
 
-  const requestDeletePlayer = (player: Player) => {
+  const requestDeletePlayer = (player: PlayerRow) => {
     setDeleteState({ open: true, player, deleting: false })
   }
 
@@ -183,7 +192,7 @@ export function PlayersSection() {
     setDeleteState({ open: false, player: undefined, deleting: false })
   }
 
-  const openDetails = (player: Player) => {
+  const openDetails = (player: PlayerRow) => {
     setDetailsState({ open: true, player })
   }
 
@@ -218,7 +227,7 @@ export function PlayersSection() {
       <ManageSectionShell
         title="Players"
         description="Manage the roster, eligibility, and division assignments for the event."
-        searchPlaceholder="Search name, email or id"
+        searchPlaceholder="Search name, email, or division"
         searchValue={query}
         onSearchChange={setQuery}
         onAdd={openCreateModal}
@@ -242,7 +251,7 @@ export function PlayersSection() {
               <Table containerClassName="h-full">
                 <TableHeader>
                   <TableRow>
-                    {renderCrudTableHeader<Player, 'actions'>({
+                    {renderCrudTableHeader<PlayerRow, 'actions'>({
                       columns,
                       sort,
                       toggleSort
@@ -254,6 +263,9 @@ export function PlayersSection() {
                     <TableRow key={player.id}>
                       <TableCell>{player.displayName}</TableCell>
                       <TableCell>{player.email}</TableCell>
+                      <TableCell>
+                        {player.divisions.length ? player.divisions.join(', ') : '—'}
+                      </TableCell>
                       <TableCell align="right">
                         <CrudTableActions
                           actions={[

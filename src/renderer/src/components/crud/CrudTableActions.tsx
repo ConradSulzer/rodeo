@@ -29,10 +29,7 @@ export function CrudTableActions({ actions, className = '' }: CrudTableActionsPr
             type="button"
             variant="ghost"
             size="icon"
-            className={cn(
-              'h-7 w-7',
-              tone === 'danger' ? 'text-red-400 hover:text-red-300' : 'hover:ro-text-main'
-            )}
+            className={cn('h-7 w-7', tone === 'danger' ? 'ro-text-error' : 'hover:ro-text-main')}
             onClick={onClick}
             disabled={disabled}
             aria-label={ariaLabel ?? label}
