@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import type { Player } from '@core/players/players'
+import type { Division } from '@core/tournaments/divisions'
 import {
   playerFormSchema,
   type PlayerFormInput,
@@ -16,9 +17,10 @@ export type PlayerFormValues = PlayerFormData
 type PlayerFormModalProps = {
   open: boolean
   mode: 'create' | 'edit'
-  player?: Player
+  player?: Player & { divisionIds?: string[] }
   submitting?: boolean
-  onSubmit: (values: PlayerFormValues) => Promise<void>
+  onSubmit: (values: PlayerFormValues & { divisionIds: string[] }) => Promise<void>
+  divisions: Division[]
   onClose: () => void
 }
 
@@ -58,11 +60,13 @@ export function PlayerFormModal({
   player,
   submitting = false,
   onSubmit,
+  divisions,
   onClose
 }: PlayerFormModalProps) {
   const [values, setValues] = useState<PlayerFormInput>(emptyForm)
   const [errors, setErrors] = useState<ValidationErrors>({})
   const [displayNameLocked, setDisplayNameLocked] = useState<boolean>(false)
+  const [selectedDivisions, setSelectedDivisions] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (!open) return
@@ -70,6 +74,7 @@ export function PlayerFormModal({
     setValues(nextValues)
     setErrors({})
     setDisplayNameLocked(Boolean(player?.displayName))
+    setSelectedDivisions(new Set(player?.divisionIds ?? []))
   }, [open, player])
 
   const title = mode === 'create' ? 'Add Player' : 'Edit Player'
@@ -111,7 +116,10 @@ export function PlayerFormModal({
     const normalized = parsed.data
     setValues(normalized)
     setErrors({})
-    await onSubmit(normalized)
+    await onSubmit({
+      ...normalized,
+      divisionIds: Array.from(selectedDivisions)
+    })
   }
 
   return (
@@ -191,6 +199,39 @@ export function PlayerFormModal({
               placeholder="Optional"
             />
           </Field>
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label>Divisions</Label>
+          {divisions.length ? (
+            <div className="grid gap-2 md:grid-cols-2">
+              {divisions.map((division) => {
+                const checked = selectedDivisions.has(division.id)
+                return (
+                  <label key={division.id} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4"
+                      checked={checked}
+                      onChange={(event) => {
+                        setSelectedDivisions((prev) => {
+                          const next = new Set(prev)
+                          if (event.target.checked) {
+                            next.add(division.id)
+                          } else {
+                            next.delete(division.id)
+                          }
+                          return next
+                        })
+                      }}
+                    />
+                    <span>{division.name}</span>
+                  </label>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="text-xs ro-text-muted">No divisions available.</p>
+          )}
         </div>
         <div className="mt-2 flex justify-end gap-3">
           <Button

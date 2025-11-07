@@ -5,9 +5,11 @@ import { Label } from '../../../components/ui/label'
 import { Input } from '../../../components/ui/input'
 import { Button } from '../../../components/ui/button'
 
+type PlayerWithDivisions = Player & { divisions?: string[] }
+
 type PlayerDetailsModalProps = {
   open: boolean
-  player?: Player
+  player?: PlayerWithDivisions
   onClose: () => void
 }
 
@@ -58,6 +60,9 @@ export function PlayerDetailsModal({ open, player, onClose }: PlayerDetailsModal
             <Input value={formatTimestamp(player.updatedAt)} readOnly />
           </Field>
         </div>
+        <Field label={<Label>Divisions</Label>}>
+          <Input value={player.divisions?.length ? player.divisions.join(', ') : '—'} readOnly />
+        </Field>
         <div className="flex justify-end">
           <Button type="button" variant="outline-muted" size="sm" onClick={onClose}>
             Close

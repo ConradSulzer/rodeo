@@ -11,9 +11,11 @@ import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
 import { CrudTableActions } from '@renderer/components/crud/CrudTableActions'
 import { CrudTableColumn, renderCrudTableHeader } from '@renderer/components/crud/CrudTableHeader'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
+import type { Division } from '@core/tournaments/divisions'
 
 type PlayerRow = Player & {
   divisions: string[]
+  divisionIds: string[]
 }
 
 type FormState =
@@ -80,6 +82,7 @@ export function PlayersSection() {
     open: false,
     player: undefined
   })
+  const [divisionOptions, setDivisionOptions] = useState<Division[]>([])
 
   const fetchPlayers = useCallback(async (silent = false) => {
     if (silent) {
@@ -91,7 +94,8 @@ export function PlayersSection() {
       const list = await window.api.players.listWithDivisions()
       const normalized: PlayerRow[] = list.map(([player, divisions]) => ({
         ...player,
-        divisions: divisions.map((division) => division.name)
+        divisions: divisions.map((division) => division.name),
+        divisionIds: divisions.map((division) => division.id)
       }))
       setPlayers(normalized)
     } catch (error) {
@@ -109,6 +113,19 @@ export function PlayersSection() {
   useEffect(() => {
     fetchPlayers()
   }, [fetchPlayers])
+
+  useEffect(() => {
+    const loadDivisions = async () => {
+      try {
+        const list = await window.api.divisions.list()
+        setDivisionOptions(list)
+      } catch (error) {
+        console.error('Failed to load divisions', error)
+        toast.error('Failed to load divisions')
+      }
+    }
+    loadDivisions()
+  }, [])
 
   const {
     results: filteredPlayers,
@@ -138,7 +155,7 @@ export function PlayersSection() {
     setFormState({ open: false, mode: null })
   }
 
-  const handleFormSubmit = async (values: PlayerFormValues) => {
+  const handleFormSubmit = async (values: PlayerFormValues & { divisionIds: string[] }) => {
     if (!formState.open) return
 
     setFormSubmitting(true)
@@ -153,23 +170,42 @@ export function PlayersSection() {
           emergencyContact: values.emergencyContact || undefined
         }
 
-        await window.api.players.create(payload)
+        const playerId = await window.api.players.create(payload)
+        await Promise.all(
+          values.divisionIds.map((divisionId) =>
+            window.api.divisions.addPlayer(divisionId, playerId)
+          )
+        )
         toast.success('Player added')
       } else if (formState.mode === 'edit') {
         const player = formState.player
         if (!player) return
 
         const patch = buildPatch(values, player)
-        if (!patch) {
+        const currentDivisionIds = new Set(player.divisionIds)
+        const nextDivisionIds = new Set(values.divisionIds)
+
+        const toAdd = values.divisionIds.filter((id) => !currentDivisionIds.has(id))
+        const toRemove = player.divisionIds.filter((id) => !nextDivisionIds.has(id))
+
+        if (!patch && toAdd.length === 0 && toRemove.length === 0) {
           toast.info('No changes to save')
           setFormState({ open: false, mode: null })
           return
         }
 
-        const success = await window.api.players.update(player.id, patch)
-        if (!success) {
-          throw new Error('Update returned false')
+        if (patch) {
+          const success = await window.api.players.update(player.id, patch)
+          if (!success) {
+            throw new Error('Update returned false')
+          }
         }
+
+        await Promise.all([
+          ...toAdd.map((divisionId) => window.api.divisions.addPlayer(divisionId, player.id)),
+          ...toRemove.map((divisionId) => window.api.divisions.removePlayer(divisionId, player.id))
+        ])
+
         toast.success('Player updated')
       }
 
@@ -302,6 +338,7 @@ export function PlayersSection() {
         player={formState.open && formState.mode === 'edit' ? formState.player : undefined}
         submitting={formSubmitting}
         onSubmit={handleFormSubmit}
+        divisions={divisionOptions}
         onClose={closeFormModal}
       />
       <ConfirmDialog

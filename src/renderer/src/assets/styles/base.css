@@ -87,17 +87,17 @@ body,
 html [data-rich-colors='true'][data-sonner-toast][data-type='success'] {
   background-color: var(--ro-success) !important;
   border-color: var(--ro-success-hover) !important;
-  color: var(--ro-success-text) !important;
+  color: var(--ro-success-dark) !important;
 }
 
 html [data-rich-colors='true'][data-sonner-toast][data-type='error'] {
   background-color: var(--ro-error) !important;
   border-color: var(--ro-error) !important;
-  color: var(--ro-error-text) !important;
+  color: var(--ro-error-dark) !important;
 }
 
 html [data-rich-colors='true'][data-sonner-toast][data-type='info'] {
   background-color: var(--ro-info) !important;
   border-color: var(--ro-info) !important;
-  color: var(--ro-info-text) !important;
+  color: var(--ro-info-dark) !important;
 }
