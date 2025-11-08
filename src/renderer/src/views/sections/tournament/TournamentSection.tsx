@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
 import { toast } from 'sonner'
-import { Button } from '../../../components/ui/button'
-import { Input } from '../../../components/ui/input'
-import { DateInput } from '../../../components/ui/date_input'
-import { Label } from '../../../components/ui/label'
-import { Field } from '../../../components/ui/field'
+import { Button } from '@renderer/components/ui/button'
+import { Input } from '@renderer/components/ui/input'
+import { DateInput } from '@renderer/components/ui/date_input'
+import { Label } from '@renderer/components/ui/label'
+import { Field } from '@renderer/components/ui/field'
+import { PlayerImportButton } from './player_import/PlayerImportButton'
 
 type FormState = {
   name: string
@@ -85,47 +86,67 @@ export function TournamentSection() {
   }
 
   return (
-    <section className="flex flex-1 flex-col gap-6">
-      <header>
-        <h2 className="font-mono text-[16px] font-semibold uppercase tracking-[2px]">
-          {form.name || 'Untitled Tournament'}
-        </h2>
-        <p className="mt-2 text-sm ro-text-dim">Configure core details for this tournament.</p>
-      </header>
-      <form
-        onSubmit={handleSubmit}
-        className="relative flex max-w-xl flex-col gap-5 rounded-md border ro-border-light ro-bg-dim p-6"
-      >
-        <fieldset className="flex flex-col gap-5" disabled={loading || saving}>
-          <Field label={<Label htmlFor="tournament-name">Name</Label>}>
-            <Input
-              id="tournament-name"
-              type="text"
-              value={form.name}
-              onChange={handleChange('name')}
-              placeholder="Untitled Tournament"
-            />
-          </Field>
-          <Field label={<Label htmlFor="tournament-date">Event Date</Label>}>
-            <DateInput
-              id="tournament-date"
-              value={form.eventDate}
-              onChange={handleChange('eventDate')}
-              placeholder="Select date"
-            />
-          </Field>
-        </fieldset>
-        <div className="mt-4 flex justify-end gap-3">
-          <Button type="submit" size="sm" variant="positive" disabled={!isDirty || saving}>
-            {saving ? 'Saving...' : 'Save Changes'}
-          </Button>
-        </div>
-        {loading && (
-          <div className="absolute inset-0 flex items-center justify-center rounded-md ro-bg-main-60 text-sm ro-text-muted">
-            Loading...
+    <>
+      <section className="flex flex-1 flex-col gap-6">
+        <header>
+          <h2 className="font-mono text-[16px] font-semibold uppercase tracking-[2px]">
+            {form.name || 'Untitled Tournament'}
+          </h2>
+          <p className="mt-2 text-sm ro-text-dim">Configure core details for this tournament.</p>
+        </header>
+        <form
+          onSubmit={handleSubmit}
+          className="relative flex max-w-xl flex-col gap-5 rounded-md border ro-border-light ro-bg-dim p-6"
+        >
+          <fieldset className="flex flex-col gap-5" disabled={loading || saving}>
+            <Field label={<Label htmlFor="tournament-name">Name</Label>}>
+              <Input
+                id="tournament-name"
+                type="text"
+                value={form.name}
+                onChange={handleChange('name')}
+                placeholder="Untitled Tournament"
+              />
+            </Field>
+            <div className="flex justify-between">
+              <Field label={<Label htmlFor="tournament-date">Event Date</Label>}>
+                <DateInput
+                  id="tournament-date"
+                  value={form.eventDate}
+                  onChange={handleChange('eventDate')}
+                  placeholder="Select date"
+                />
+              </Field>
+              <div className="flex justify-end mt-7">
+                <Button type="submit" size="sm" variant="positive" disabled={!isDirty || saving}>
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </div>
+          </fieldset>
+
+          {loading && (
+            <div className="absolute inset-0 flex items-center justify-center rounded-md ro-bg-main-60 text-sm ro-text-muted">
+              Loading...
+            </div>
+          )}
+        </form>
+        <div className="flex flex-col gap-3 rounded-md border ro-border-light ro-bg-dim p-6">
+          <h3 className="font-mono text-xs font-semibold uppercase tracking-[0.25em]">
+            Player Import/Export
+          </h3>
+          <div className="flex justify-between items-center align-middle">
+            <p className="text-sm ro-text-dim">Import players from a CSV file.</p>
+            <PlayerImportButton />
           </div>
-        )}
-      </form>
-    </section>
+          <div className="flex justify-between items-center align-middle">
+            <p className="text-sm ro-text-dim">Export players to a CSV file.</p>
+            <Button variant="outline" size="sm" onClick={() => toast.info('Export coming soon')}>
+              Export Players
+            </Button>
+          </div>
+        </div>
+      </section>
+    </>
   )
 }

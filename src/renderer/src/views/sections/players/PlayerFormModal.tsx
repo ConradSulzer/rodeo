@@ -2,15 +2,16 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import type { Player } from '@core/players/players'
 import type { Division } from '@core/tournaments/divisions'
 import {
+  buildPlayerDisplayName,
   playerFormSchema,
   type PlayerFormInput,
   type PlayerFormData
 } from '@core/players/playerFormSchema'
-import { Modal } from '../../../components/Modal'
-import { Field } from '../../../components/ui/field'
-import { Label } from '../../../components/ui/label'
-import { Input } from '../../../components/ui/input'
-import { Button } from '../../../components/ui/button'
+import { Modal } from '@renderer/components/Modal'
+import { Field } from '@renderer/components/ui/field'
+import { Label } from '@renderer/components/ui/label'
+import { Input } from '@renderer/components/ui/input'
+import { Button } from '@renderer/components/ui/button'
 
 export type PlayerFormValues = PlayerFormData
 
@@ -47,13 +48,6 @@ function toInitialValues(player?: Player): PlayerFormInput {
   }
 }
 
-function buildDisplayName(firstName: string, lastName: string) {
-  return [firstName, lastName]
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .join(' ')
-}
-
 export function PlayerFormModal({
   open,
   mode,
@@ -85,7 +79,7 @@ export function PlayerFormModal({
       setValues((prev) => {
         const next = { ...prev, [key]: value }
         if ((key === 'firstName' || key === 'lastName') && !displayNameLocked) {
-          next.displayName = buildDisplayName(
+          next.displayName = buildPlayerDisplayName(
             key === 'firstName' ? value : next.firstName,
             key === 'lastName' ? value : next.lastName
           )

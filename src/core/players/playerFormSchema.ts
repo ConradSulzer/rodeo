@@ -2,6 +2,32 @@ import { z } from 'zod'
 
 const requiredString = (label: string) => z.string().trim().min(1, `${label} is required`)
 
+const capitalizeWord = (value: string) => {
+  const trimmed = value.trim()
+  if (!trimmed) return trimmed
+  return `${trimmed[0].toUpperCase()}${trimmed.slice(1).toLowerCase()}`
+}
+
+const capitalizeWords = (value: string) =>
+  value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(capitalizeWord)
+    .join(' ')
+
+const nameField = (label: string) =>
+  requiredString(label).transform((value) => capitalizeWord(value))
+
+const displayNameField = () =>
+  requiredString('Display name').transform((value) => capitalizeWords(value))
+
+export function buildPlayerDisplayName(firstName: string, lastName: string) {
+  return [firstName, lastName]
+    .map((part) => capitalizeWord(part))
+    .filter(Boolean)
+    .join(' ')
+}
+
 // helper: validate & format to "(###) ###-####" or "###-####"
 function formatUSPhone(value: string): string {
   const digits = value.replace(/\D/g, '')
@@ -42,9 +68,9 @@ const optionalPhone = z
   .transform((v) => (v ? formatUSPhone(v) : undefined))
 
 export const playerFormSchema = z.object({
-  firstName: requiredString('First name'),
-  lastName: requiredString('Last name'),
-  displayName: requiredString('Display name'),
+  firstName: nameField('First name'),
+  lastName: nameField('Last name'),
+  displayName: displayNameField(),
   email: z
     .string()
     .trim()
