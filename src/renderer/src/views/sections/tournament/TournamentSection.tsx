@@ -6,6 +6,9 @@ import { DateInput } from '@renderer/components/ui/date_input'
 import { Label } from '@renderer/components/ui/label'
 import { Field } from '@renderer/components/ui/field'
 import { PlayerImportButton } from './player_import/PlayerImportButton'
+import { SettingsImportButton } from './settings/SettingsImportButton'
+import { SettingsExportButton } from './settings/SettingsExportButton'
+import { ResultsExportButton } from './results/ResultsExportButton'
 
 type FormState = {
   name: string
@@ -136,11 +139,11 @@ export function TournamentSection() {
             <h3 className="font-mono text-xs font-semibold uppercase tracking-[0.25em]">
               Player Import/Export
             </h3>
-            <div className="flex justify-between items-center align-middle">
+            <div className="flex justify-between items-center">
               <p className="text-sm ro-text-dim">Import players from a CSV file.</p>
               <PlayerImportButton />
             </div>
-            <div className="flex justify-between items-center align-middle">
+            <div className="flex justify-between items-center">
               <p className="text-sm ro-text-dim">Export players to a CSV file.</p>
               <Button variant="outline" size="sm" onClick={() => toast.info('Export coming soon')}>
                 Export Players
@@ -149,21 +152,26 @@ export function TournamentSection() {
           </div>
           <div className="flex flex-col gap-3 rounded-md border ro-border-light ro-bg-dim p-6">
             <h3 className="font-mono text-xs font-semibold uppercase tracking-[0.25em]">
-              Tournament Import/Export
+              Template Settings
             </h3>
-            <div className="flex justify-between items-center align-middle">
+            <div className="flex justify-between items-center">
               <p className="text-sm ro-text-dim">
-                Import tournament settings like scoreables, categories and divisions.
+                Import scoreables, categories, and divisions from a template.
               </p>
-              <Button variant="outline" size="sm" onClick={() => toast.info('Export coming soon')}>
-                Import Settings
-              </Button>
+              <SettingsImportButton />
             </div>
-            <div className="flex justify-between items-center align-middle">
-              <p className="text-sm ro-text-dim">Export this tournament's settings.</p>
-              <Button variant="outline" size="sm" onClick={() => toast.info('Export coming soon')}>
-                Export Settings
-              </Button>
+            <div className="flex justify-between items-center">
+              <p className="text-sm ro-text-dim">Export the current tournament structure.</p>
+              <SettingsExportButton />
+            </div>
+          </div>
+          <div className="flex flex-col gap-3 rounded-md border ro-border-light ro-bg-dim p-6">
+            <h3 className="font-mono text-xs font-semibold uppercase tracking-[0.25em]">
+              Results Export
+            </h3>
+            <div className="flex justify-between items-center">
+              <p className="text-sm ro-text-dim">Download a CSV of player results.</p>
+              <ResultsExportButton />
             </div>
           </div>
         </div>

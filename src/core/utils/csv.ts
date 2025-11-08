@@ -116,3 +116,19 @@ export function toCsvBlob(rows: Record<string, unknown>[], config?: UnparseConfi
   const csv = toCsvString(rows, config)
   return new Blob([csv], { type: 'text/csv;charset=utf-8;' })
 }
+
+export function buildCsvExportFilename(tournamentName: string, suffix: string): string {
+  const safeName = tournamentName
+    ? tournamentName
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+    : 'tournament'
+  const now = new Date()
+  const datePart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+    now.getDate()
+  ).padStart(2, '0')}`
+  const timePart = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`
+  return `${safeName || 'tournament'}-${suffix}-${datePart}-at-${timePart}.csv`
+}
