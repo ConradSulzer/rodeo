@@ -323,10 +323,7 @@ export function PlayerImportModal({ open, file, onClose, onComplete }: PlayerImp
       const payload: PlayerFormData = parsedInput.data
       const key = buildPlayerKey(payload)
       if (seenKeys.has(key)) {
-        const reason = existingPlayerKeys.has(key)
-          ? 'existing roster entry'
-          : 'duplicate entry in this CSV'
-        duplicates.push(`Row ${row.rowNumber}: Skipped duplicate (${reason}).`)
+        duplicates.push(payload.displayName)
         continue
       }
       seenKeys.add(key)

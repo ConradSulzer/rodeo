@@ -131,19 +131,40 @@ export function TournamentSection() {
             </div>
           )}
         </form>
-        <div className="flex flex-col gap-3 rounded-md border ro-border-light ro-bg-dim p-6">
-          <h3 className="font-mono text-xs font-semibold uppercase tracking-[0.25em]">
-            Player Import/Export
-          </h3>
-          <div className="flex justify-between items-center align-middle">
-            <p className="text-sm ro-text-dim">Import players from a CSV file.</p>
-            <PlayerImportButton />
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 rounded-md border ro-border-light ro-bg-dim p-6">
+            <h3 className="font-mono text-xs font-semibold uppercase tracking-[0.25em]">
+              Player Import/Export
+            </h3>
+            <div className="flex justify-between items-center align-middle">
+              <p className="text-sm ro-text-dim">Import players from a CSV file.</p>
+              <PlayerImportButton />
+            </div>
+            <div className="flex justify-between items-center align-middle">
+              <p className="text-sm ro-text-dim">Export players to a CSV file.</p>
+              <Button variant="outline" size="sm" onClick={() => toast.info('Export coming soon')}>
+                Export Players
+              </Button>
+            </div>
           </div>
-          <div className="flex justify-between items-center align-middle">
-            <p className="text-sm ro-text-dim">Export players to a CSV file.</p>
-            <Button variant="outline" size="sm" onClick={() => toast.info('Export coming soon')}>
-              Export Players
-            </Button>
+          <div className="flex flex-col gap-3 rounded-md border ro-border-light ro-bg-dim p-6">
+            <h3 className="font-mono text-xs font-semibold uppercase tracking-[0.25em]">
+              Tournament Import/Export
+            </h3>
+            <div className="flex justify-between items-center align-middle">
+              <p className="text-sm ro-text-dim">
+                Import tournament settings like scoreables, categories and divisions.
+              </p>
+              <Button variant="outline" size="sm" onClick={() => toast.info('Export coming soon')}>
+                Import Settings
+              </Button>
+            </div>
+            <div className="flex justify-between items-center align-middle">
+              <p className="text-sm ro-text-dim">Export this tournament's settings.</p>
+              <Button variant="outline" size="sm" onClick={() => toast.info('Export coming soon')}>
+                Export Settings
+              </Button>
+            </div>
           </div>
         </div>
       </section>
