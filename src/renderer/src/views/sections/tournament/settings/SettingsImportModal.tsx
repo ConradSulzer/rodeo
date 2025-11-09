@@ -264,8 +264,7 @@ async function importTemplateData(
       }
       const id = await window.api.categories.create({
         name,
-        direction: row.direction,
-        description: row.description ?? ''
+        direction: row.direction
       })
       categoryNameToId.set(name, id)
       for (const scoreableName of row.scoreables) {

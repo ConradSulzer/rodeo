@@ -9,11 +9,7 @@ const capitalizeWord = (value: string) => {
 }
 
 const capitalizeWords = (value: string) =>
-  value
-    .split(/\s+/)
-    .filter(Boolean)
-    .map(capitalizeWord)
-    .join(' ')
+  value.split(/\s+/).filter(Boolean).map(capitalizeWord).join(' ')
 
 const nameField = (label: string) =>
   requiredString(label).transform((value) => capitalizeWord(value))
