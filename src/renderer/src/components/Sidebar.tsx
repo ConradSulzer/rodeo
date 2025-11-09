@@ -22,6 +22,7 @@ const MANAGE_ITEMS: NavItem[] = [
 
 const RUN_EVENT_ITEMS: NavItem[] = [
   { label: 'Scoring', path: 'scoring' },
+  { label: 'Standings', path: 'standings' },
   { label: 'Results', path: 'results' },
   { label: 'Leaderboard', path: 'leaderboard' },
   { label: 'Events', path: 'events' }
