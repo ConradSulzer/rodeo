@@ -27,6 +27,9 @@ export function ManageSectionShell({
   refreshing = false,
   actions
 }: ManageSectionShellProps) {
+  const canSearchInline =
+    typeof searchValue === 'string' && typeof onSearchChange === 'function' && !onAdd && !actions
+
   return (
     <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
       <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -34,8 +37,17 @@ export function ManageSectionShell({
           <h2 className="font-mono text-[16px] font-semibold uppercase tracking-[2px]">{title}</h2>
           {description ? <p className="mt-2 max-w-2xl text-sm ro-text-dim">{description}</p> : null}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 md:justify-end">
           {actions}
+          {canSearchInline ? (
+            <SearchInput
+              placeholder={searchPlaceholder}
+              value={searchValue}
+              onChange={(event) => onSearchChange(event.target.value)}
+              aria-label={searchPlaceholder ?? 'Search'}
+              className="w-full md:w-96"
+            />
+          ) : null}
           {refreshing ? (
             <span className="text-xs uppercase tracking-[0.3em] ro-text-muted">Refreshing...</span>
           ) : null}
@@ -46,7 +58,7 @@ export function ManageSectionShell({
           ) : null}
         </div>
       </header>
-      {typeof searchValue === 'string' && onSearchChange ? (
+      {typeof searchValue === 'string' && onSearchChange && !canSearchInline ? (
         <SearchInput
           placeholder={searchPlaceholder}
           value={searchValue}

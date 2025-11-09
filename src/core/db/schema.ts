@@ -43,6 +43,10 @@ export const category = sqliteTable(
     id: text('id').primaryKey(),
     name: text('name').notNull(),
     direction: text('direction', { enum: ['asc', 'desc'] }).notNull(),
+    showScoreablesCount: integer('show_scoreables_count', { mode: 'boolean' })
+      .notNull()
+      .default(false),
+    scoreablesCountName: text('scoreables_count_name').notNull().default(''),
     rules: text('rules', { mode: 'json' })
       .$type<string[]>()
       .notNull()

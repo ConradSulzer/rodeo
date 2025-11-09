@@ -1,10 +1,10 @@
 import type { CategoryView } from '@core/tournaments/categories'
-import { Modal } from '../../../components/Modal'
-import { Field } from '../../../components/ui/field'
-import { Label } from '../../../components/ui/label'
-import { Input } from '../../../components/ui/input'
-import { Button } from '../../../components/ui/button'
-import { Pill } from '../../../components/ui/pill'
+import { Modal } from '@renderer/components/Modal'
+import { Field } from '@renderer/components/ui/field'
+import { Label } from '@renderer/components/ui/label'
+import { Input } from '@renderer/components/ui/input'
+import { Button } from '@renderer/components/ui/button'
+import { Pill } from '@renderer/components/ui/pill'
 
 type CategoryDetailsModalProps = {
   open: boolean
@@ -35,6 +35,14 @@ export function CategoryDetailsModal({ open, category, onClose }: CategoryDetail
               readOnly
             />
           </Field>
+          <Field label={<Label>Scoreable Count Display</Label>}>
+            <Input value={category.showScoreablesCount ? 'Shown' : 'Hidden'} readOnly />
+          </Field>
+          {category.showScoreablesCount ? (
+            <Field label={<Label>Count Column Name</Label>}>
+              <Input value={category.scoreablesCountName || ''} readOnly />
+            </Field>
+          ) : null}
         </div>
 
         <div className="flex flex-col gap-2">

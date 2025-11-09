@@ -2,8 +2,9 @@ CREATE TABLE `category` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
 	`direction` text NOT NULL,
+	`show_scoreables_count` integer DEFAULT false NOT NULL,
+	`scoreables_count_name` text DEFAULT '' NOT NULL,
 	`rules` text DEFAULT '[]' NOT NULL,
-	`order` integer DEFAULT 0 NOT NULL,
 	`created_at` integer NOT NULL,
 	`updated_at` integer NOT NULL
 );
@@ -82,7 +83,6 @@ CREATE TABLE `scoreable` (
 	`id` text PRIMARY KEY NOT NULL,
 	`label` text NOT NULL,
 	`unit` text NOT NULL,
-	`order` integer DEFAULT 0 NOT NULL,
 	`created_at` integer NOT NULL,
 	`updated_at` integer NOT NULL
 );

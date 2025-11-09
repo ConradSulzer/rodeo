@@ -37,7 +37,9 @@ const baseCategoryContext = (
       direction,
       rules: [],
       createdAt: 0,
-      updatedAt: 0
+      updatedAt: 0,
+      showScoreablesCount: false,
+      scoreablesCountName: ''
     },
     depth: 1,
     order: 0,

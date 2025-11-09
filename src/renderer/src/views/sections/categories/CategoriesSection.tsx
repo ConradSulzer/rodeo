@@ -139,11 +139,14 @@ export function CategoriesSection() {
     if (!formState.open) return
     setFormSubmitting(true)
     try {
+      const trimmedCountName = values.scoreablesCountName.trim()
       if (formState.mode === 'create') {
         const payload: NewCategory = {
           name: values.name,
           direction: values.direction,
-          rules: values.rules
+          rules: values.rules,
+          showScoreablesCount: values.showScoreablesCount,
+          scoreablesCountName: values.showScoreablesCount ? trimmedCountName : ''
         }
         const categoryId: string = await window.api.categories.create(payload)
         if (values.scoreableIds.length) {
@@ -161,6 +164,16 @@ export function CategoriesSection() {
         if (values.direction !== category.direction) patch.direction = values.direction
         if (!areStringArraysEqual(values.rules, category.rules)) {
           patch.rules = values.rules
+        }
+        if (values.showScoreablesCount !== Boolean(category.showScoreablesCount)) {
+          patch.showScoreablesCount = values.showScoreablesCount
+          if (!values.showScoreablesCount) {
+            patch.scoreablesCountName = ''
+          }
+        }
+        const previousCountName = category.scoreablesCountName ?? ''
+        if (values.showScoreablesCount && trimmedCountName !== previousCountName) {
+          patch.scoreablesCountName = trimmedCountName
         }
 
         let changed = false
