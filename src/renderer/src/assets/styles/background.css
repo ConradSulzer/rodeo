@@ -25,6 +25,14 @@
     background-color: var(--ro-bg-secondary);
   }
 
+  .ro-bg-muted-40 {
+    background-color: color-mix(in srgb, var(--ro-bg-muted) 40%, transparent);
+  }
+
+  .ro-bg-main-60 {
+    background-color: color-mix(in srgb, var(--ro-bg-main) 60%, transparent);
+  }
+
   .ro-bg-success {
     background-color: var(--ro-success);
   }

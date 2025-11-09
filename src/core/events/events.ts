@@ -39,6 +39,16 @@ export type RodeoEvent = ItemScored | ItemCorrected | ItemVoided
 
 type EventRow = InferSelectModel<typeof ev>
 
+export type ScoreEventInput = {
+  playerId: string
+  scoreableId: string
+  scoreableName?: string
+  value?: number | null
+  priorEventId?: EventId
+  note?: string
+  void?: boolean
+}
+
 export function appendEvents(db: AppDatabase, events: RodeoEvent[]) {
   db.transaction((tx) => {
     for (const e of events) tx.insert(ev).values(encode(e)).run()

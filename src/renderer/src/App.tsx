@@ -1,21 +1,22 @@
 import type { JSX } from 'react'
 import { Toaster } from 'sonner'
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { HomeView } from './views/HomeView'
-import { MainView } from './views/MainView'
-import { TournamentSection } from './views/sections/TournamentSection'
-import { PlayersSection } from './views/sections/PlayersSection'
-import { ScoreablesSection } from './views/sections/ScoreablesSection'
-import { CategoriesSection } from './views/sections/CategoriesSection'
-import { DivisionsSection } from './views/sections/DivisionsSection'
-import { ScoringSection } from './views/sections/ScoringSection'
-import { ResultsSection } from './views/sections/ResultsSection'
-import { LeaderboardSection } from './views/sections/LeaderboardSection'
+import { HomeView } from '@renderer/views/HomeView'
+import { MainView } from '@renderer/views/MainView'
+import { TournamentSection } from '@renderer/views/sections/tournament/TournamentSection'
+import { PlayersSection } from '@renderer/views/sections/players/PlayersSection'
+import { ScoreablesSection } from '@renderer/views/sections/scoreables/ScoreablesSection'
+import { CategoriesSection } from '@renderer/views/sections/categories/CategoriesSection'
+import { DivisionsSection } from '@renderer/views/sections/divisions/DivisionsSection'
+import { ScoringSection } from '@renderer/views/sections/scoring/ScoringSection'
+import { ResultsSection } from '@renderer/views/sections/results/ResultsSection'
+import { LeaderboardSection } from '@renderer/views/sections/leaderboard/LeaderboardSection'
+import { EventsSection } from '@renderer/views/sections/events/EventsSection'
 
 function App(): JSX.Element {
   return (
     <HashRouter>
-      <main className="flex min-h-full w-full justify-center">
+      <main className="flex h-screen w-full justify-center items-stretch">
         <Routes>
           <Route path="/" element={<HomeView />} />
           <Route path="/app" element={<MainView />}>
@@ -28,6 +29,7 @@ function App(): JSX.Element {
             <Route path="scoring" element={<ScoringSection />} />
             <Route path="results" element={<ResultsSection />} />
             <Route path="leaderboard" element={<LeaderboardSection />} />
+            <Route path="events" element={<EventsSection />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

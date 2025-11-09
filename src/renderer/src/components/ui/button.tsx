@@ -18,11 +18,11 @@ const buttonVariants = cva(
           'hover:opacity-75 cursor-pointer'
         ].join(' '),
         destructive: [
-          'border border-transparent ro-bg-error ro-text-error',
+          'border border-transparent ro-bg-error ro-text-error-dark',
           'hover:opacity-75 cursor-pointer'
         ].join(' '),
         positive: [
-          'border border-transparent ro-bg-success ro-text-success',
+          'border border-transparent ro-bg-success ro-text-success-dark',
           'hover:opacity-75 cursor-pointer'
         ].join(' '),
         outline: [
@@ -34,7 +34,7 @@ const buttonVariants = cva(
           'hover:opacity-75 cursor-pointer'
         ].join(' '),
         info: [
-          'border border-transparent ro-bg-info ro-text-info',
+          'border border-transparent ro-bg-info ro-text-info-dark',
           'hover:opacity-75 cursor-pointer'
         ].join(' '),
         ghost: [

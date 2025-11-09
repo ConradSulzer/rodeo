@@ -5,6 +5,7 @@ import { NewPlayer, PatchPlayer } from '@core/players/players'
 import { NewScoreable, PatchScoreable } from '@core/tournaments/scoreables'
 import { NewCategory, PatchCategory } from '@core/tournaments/categories'
 import { NewDivision, PatchDivision, DivisionCategoryPatch } from '@core/tournaments/divisions'
+import type { RodeoEvent, ScoreEventInput } from '@core/events/events'
 import type { SerializableTournamentState } from '@core/tournaments/state'
 import { TOURNAMENT_STATE_CHANNEL } from '@core/ipc/channels'
 
@@ -23,7 +24,8 @@ const api = {
     update: (id: string, data: PatchScoreable) => ipcRenderer.invoke('scoreables:update', id, data),
     delete: (id: string) => ipcRenderer.invoke('scoreables:delete', id),
     get: (id: string) => ipcRenderer.invoke('scoreables:get', id),
-    list: () => ipcRenderer.invoke('scoreables:list')
+    list: () => ipcRenderer.invoke('scoreables:list'),
+    listViews: () => ipcRenderer.invoke('scoreables:listViews')
   },
   categories: {
     create: (data: NewCategory) => ipcRenderer.invoke('categories:create', data),
@@ -31,6 +33,7 @@ const api = {
     delete: (id: string) => ipcRenderer.invoke('categories:delete', id),
     get: (id: string) => ipcRenderer.invoke('categories:get', id),
     list: () => ipcRenderer.invoke('categories:list'),
+    listViews: () => ipcRenderer.invoke('categories:listViews'),
     listRules: () => ipcRenderer.invoke('categories:listRules'),
     addScoreable: (categoryId: string, scoreableId: string) =>
       ipcRenderer.invoke('categories:addScoreable', categoryId, scoreableId),
@@ -64,12 +67,22 @@ const api = {
     removePlayer: (divisionId: string, playerId: string) =>
       ipcRenderer.invoke('divisions:removePlayer', divisionId, playerId),
     listPlayers: (divisionId: string) => ipcRenderer.invoke('divisions:listPlayers', divisionId),
-    listForPlayer: (playerId: string) => ipcRenderer.invoke('divisions:listForPlayer', playerId)
+    listForPlayer: (playerId: string) => ipcRenderer.invoke('divisions:listForPlayer', playerId),
+    move: (id: string, direction: 'up' | 'down') =>
+      ipcRenderer.invoke('divisions:move', id, direction),
+    reorder: (orderedIds: string[]) => ipcRenderer.invoke('divisions:reorder', orderedIds)
+  },
+  events: {
+    record: (entries: ScoreEventInput[]) => ipcRenderer.invoke('events:recordMany', entries),
+    list: () => ipcRenderer.invoke('events:list') as Promise<RodeoEvent[]>
   },
   tournaments: {
     open: (filePath: string) => ipcRenderer.invoke('tournaments:open', filePath),
     openDialog: () => ipcRenderer.invoke('tournaments:dialog:openExisting'),
     createDialog: () => ipcRenderer.invoke('tournaments:dialog:create'),
+    getMetadata: () => ipcRenderer.invoke('tournaments:meta:get'),
+    updateMetadata: (patch: { name?: string; eventDate?: string | null }) =>
+      ipcRenderer.invoke('tournaments:meta:update', patch),
     close: () => ipcRenderer.invoke('tournaments:close'),
     getState: () =>
       ipcRenderer.invoke('tournaments:state:get') as Promise<SerializableTournamentState>,

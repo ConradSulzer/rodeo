@@ -1,4 +1,11 @@
-import { closeTournament, openTournament } from '@core/tournaments/tournaments'
+import {
+  closeTournament,
+  getTournamentDb,
+  getTournamentMetadata,
+  openTournament,
+  updateTournamentMetadata,
+  type TournamentMetadataPatch
+} from '@core/tournaments/tournaments'
 import { ipcMain } from 'electron'
 import { hydrate, clear, getSerializableState } from '../state/tournamentStore'
 import { showOpenFileDialog, showSaveFileDialog } from './utils/dialogs'
@@ -16,6 +23,16 @@ ipcMain.handle('tournaments:dialog:openExisting', () =>
 ipcMain.handle('tournaments:dialog:create', () =>
   showSaveFileDialog({ title: 'Create Tournament', defaultName: 'tournament', extension: 'rodeo' })
 )
+
+ipcMain.handle('tournaments:meta:get', () => {
+  const db = getTournamentDb()
+  return getTournamentMetadata(db)
+})
+
+ipcMain.handle('tournaments:meta:update', (_evt, patch: TournamentMetadataPatch) => {
+  const db = getTournamentDb()
+  return updateTournamentMetadata(db, patch ?? {})
+})
 
 ipcMain.handle('tournaments:close', () => {
   // close current tournament DB connection

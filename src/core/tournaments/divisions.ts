@@ -290,3 +290,48 @@ export function listDivisionIdsForPlayer(db: AppDatabase, playerId: string): str
     .all()
     .map((row) => row.divisionId)
 }
+
+export function moveDivision(db: AppDatabase, id: string, direction: 'up' | 'down') {
+  const divisions = listAllDivisions(db)
+  const index = divisions.findIndex((division) => division.id === id)
+  if (index === -1) return false
+
+  const targetIndex = direction === 'up' ? index - 1 : index + 1
+  if (targetIndex < 0 || targetIndex >= divisions.length) return false
+
+  const current = divisions[index]
+  const target = divisions[targetIndex]
+  const timestamp = now()
+
+  const updatedCurrent = db
+    .update(dv)
+    .set({ order: target.order, updatedAt: timestamp })
+    .where(eq(dv.id, current.id))
+    .run()
+
+  const updatedTarget = db
+    .update(dv)
+    .set({ order: current.order, updatedAt: timestamp })
+    .where(eq(dv.id, target.id))
+    .run()
+
+  return updatedCurrent.changes > 0 && updatedTarget.changes > 0
+}
+
+export function reorderDivisions(db: AppDatabase, orderedIds: string[]) {
+  if (!orderedIds.length) return false
+  const existingIds = new Set(listAllDivisions(db).map((division) => division.id))
+  const filtered = orderedIds.filter((id) => existingIds.has(id))
+  if (!filtered.length) return false
+
+  const timestamp = now()
+  const updates = filtered.map((id, index) =>
+    db
+      .update(dv)
+      .set({ order: index + 1, updatedAt: timestamp })
+      .where(eq(dv.id, id))
+      .run()
+  )
+
+  return updates.some((result) => result.changes > 0)
+}

@@ -7,6 +7,7 @@ import './ipc/tournamentHandlers'
 import './ipc/categoryHandlers'
 import './ipc/divisionHandlers'
 import './ipc/scoreablesHandlers'
+import './ipc/eventHandlers'
 import { subscribe } from './state/tournamentStore'
 import { TOURNAMENT_STATE_CHANNEL } from '@core/ipc/channels'
 

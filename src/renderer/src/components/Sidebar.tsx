@@ -23,7 +23,8 @@ const MANAGE_ITEMS: NavItem[] = [
 const RUN_EVENT_ITEMS: NavItem[] = [
   { label: 'Scoring', path: 'scoring' },
   { label: 'Results', path: 'results' },
-  { label: 'Leaderboard', path: 'leaderboard' }
+  { label: 'Leaderboard', path: 'leaderboard' },
+  { label: 'Events', path: 'events' }
 ]
 
 export function Sidebar() {
@@ -46,18 +47,18 @@ export function Sidebar() {
   }
 
   return (
-    <Card className="flex h-full w-72 flex-col">
+    <Card className="flex h-full w-72 flex-col overflow-hidden">
       <CardHeader className="items-center">
         <div className="flex flex-col items-center gap-4">
           <img src={logo} alt="Rodeo logo" className="h-20 w-auto" />
-          <CardTitle className="font-press-play text-base uppercase tracking-[0.6em]">
-            Rodeo
+          <CardTitle>
+            <div className="font-press-play text-lg uppercase tracking-[0.5em]">Rodeo</div>
           </CardTitle>
         </div>
       </CardHeader>
-      <CardContent className="flex flex-1 flex-col gap-6">
+      <CardContent className="flex flex-1 flex-col gap-6 overflow-auto">
         <SidebarGroup label="Manage" items={MANAGE_ITEMS} />
-        <SidebarGroup label="Run Event" items={RUN_EVENT_ITEMS} />
+        <SidebarGroup label="Event" items={RUN_EVENT_ITEMS} />
       </CardContent>
       <CardFooter className="mt-auto flex items-center justify-between gap-3">
         <DarkModeToggle
@@ -87,7 +88,7 @@ type SidebarGroupProps = {
 function SidebarGroup({ label, items }: SidebarGroupProps) {
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="px-3 text-[10px] font-mono uppercase tracking-[0.3em] ro-text-main">
+      <h3 className="px-3 text-[10px] font-mono uppercase tracking-[0.3em] ro-text-muted">
         {label}
       </h3>
       <div className="flex flex-col gap-1">

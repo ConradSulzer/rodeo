@@ -1,11 +1,14 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { cn } from '../lib/utils'
 
 type ModalProps = {
   open: boolean
   onClose: () => void
   title?: string
   children: React.ReactNode
+  contentClassName?: string
+  bodyClassName?: string
 }
 
 const modalRootId = 'rodeo-modal-root'
@@ -20,7 +23,14 @@ function ensureModalRoot(): HTMLElement {
   return root
 }
 
-export function Modal({ open, onClose, title, children }: ModalProps) {
+export function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  contentClassName,
+  bodyClassName
+}: ModalProps) {
   useEffect(() => {
     if (!open) return
 
@@ -47,7 +57,10 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
       onMouseDown={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-2xl border ro-border ro-bg-main shadow-[0_24px_60px_rgba(0,0,0,0.35)]"
+        className={cn(
+          'flex w-full flex-col overflow-hidden rounded-md border ro-border ro-bg-main shadow-[0_24px_60px_rgba(0,0,0,0.35)]',
+          contentClassName
+        )}
         onMouseDown={(event) => event.stopPropagation()}
       >
         {title ? (
@@ -55,7 +68,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
             <h2 className="text-lg font-semibold uppercase tracking-[0.25em]">{title}</h2>
           </header>
         ) : null}
-        <div className="px-6 py-5">{children}</div>
+        <div className={cn('flex-1 overflow-y-auto px-6 py-5', bodyClassName)}>{children}</div>
       </div>
     </div>,
     ensureModalRoot()

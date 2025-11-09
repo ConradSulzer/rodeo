@@ -34,6 +34,18 @@ body {
     width: 2.5rem;
   }
 
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   .ro-outline-focus {
     outline: none;
   }
@@ -75,17 +87,33 @@ body,
 html [data-rich-colors='true'][data-sonner-toast][data-type='success'] {
   background-color: var(--ro-success) !important;
   border-color: var(--ro-success-hover) !important;
-  color: var(--ro-success-text) !important;
+  color: var(--ro-success-dark) !important;
 }
 
 html [data-rich-colors='true'][data-sonner-toast][data-type='error'] {
   background-color: var(--ro-error) !important;
   border-color: var(--ro-error) !important;
-  color: var(--ro-error-text) !important;
+  color: var(--ro-error-dark) !important;
 }
 
 html [data-rich-colors='true'][data-sonner-toast][data-type='info'] {
   background-color: var(--ro-info) !important;
   border-color: var(--ro-info) !important;
-  color: var(--ro-info-text) !important;
+  color: var(--ro-info-dark) !important;
+}
+
+.ro-table-striped tbody tr:nth-child(odd) {
+  background-color: color-mix(in srgb, var(--ro-bg-middle) 15%, transparent);
+}
+
+.ro-table-striped tbody tr:nth-child(even) {
+  background-color: color-mix(in srgb, var(--ro-bg-dim) 100%, transparent);
+}
+
+.ro-row-hover {
+  transition: box-shadow 0.15s ease;
+}
+
+.ro-row-hover:hover {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ro-info) 90%, transparent);
 }

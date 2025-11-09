@@ -1,12 +1,20 @@
 import { ulid } from 'ulid'
 import type { AppDatabase } from '@core/db/db'
-import { category as cat, categoryScoreable as catScoreable } from '@core/db/schema'
+import {
+  category as cat,
+  categoryScoreable as catScoreable,
+  scoreable as sc
+} from '@core/db/schema'
 import { and, asc, eq } from 'drizzle-orm'
+import type { Scoreable } from './scoreables'
 
 export type Category = typeof cat.$inferSelect
 type CategoryWritableFields = Omit<Category, 'id' | 'createdAt' | 'updatedAt'>
-export type NewCategory = Omit<CategoryWritableFields, 'rules'> & { rules?: string[] }
+export type NewCategory = Omit<CategoryWritableFields, 'rules'> & {
+  rules?: string[]
+}
 export type PatchCategory = Partial<Omit<CategoryWritableFields, 'rules'>> & { rules?: string[] }
+export type CategoryView = Category & { scoreables: Scoreable[] }
 
 const now = () => Date.now()
 
@@ -26,7 +34,6 @@ export function createCategory(db: AppDatabase, data: NewCategory): string {
   const t = now()
   const { rules, ...rest } = data
   const normalizedRules = normalizeCategoryRules(rules)
-
   db.insert(cat)
     .values({ id, ...rest, rules: normalizedRules, createdAt: t, updatedAt: t })
     .run()
@@ -106,4 +113,45 @@ export function listCategoryIdsForScoreable(db: AppDatabase, scoreableId: string
     .where(eq(catScoreable.scoreableId, scoreableId))
     .all()
     .map((row) => row.categoryId)
+}
+
+export function listCategoryViews(db: AppDatabase): CategoryView[] {
+  const categories = listAllCategories(db)
+  if (!categories.length) return []
+
+  const scoreablesByCategory = db
+    .select({
+      categoryId: catScoreable.categoryId,
+      scoreableId: sc.id,
+      label: sc.label,
+      unit: sc.unit,
+      createdAt: sc.createdAt,
+      updatedAt: sc.updatedAt
+    })
+    .from(catScoreable)
+    .innerJoin(sc, eq(catScoreable.scoreableId, sc.id))
+    .orderBy(asc(catScoreable.categoryId), asc(sc.label))
+    .all()
+
+  const map = new Map<string, Scoreable[]>()
+  for (const row of scoreablesByCategory) {
+    const scoreable: Scoreable = {
+      id: row.scoreableId,
+      label: row.label ?? '',
+      unit: row.unit ?? '',
+      createdAt: row.createdAt ?? 0,
+      updatedAt: row.updatedAt ?? 0
+    }
+    const list = map.get(row.categoryId)
+    if (list) {
+      list.push(scoreable)
+    } else {
+      map.set(row.categoryId, [scoreable])
+    }
+  }
+
+  return categories.map((category) => ({
+    ...category,
+    scoreables: map.get(category.id) ?? []
+  }))
 }

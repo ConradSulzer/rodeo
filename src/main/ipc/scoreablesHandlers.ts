@@ -3,6 +3,7 @@ import {
   deleteScoreable,
   getScoreable,
   listAllScoreables,
+  listScoreableViews,
   NewScoreable,
   PatchScoreable,
   updateScoreable
@@ -39,4 +40,9 @@ ipcMain.handle('scoreables:list', () => {
   const scoreables = listAllScoreables(db)
 
   return scoreables
+})
+
+ipcMain.handle('scoreables:listViews', () => {
+  const db = getTournamentDb()
+  return listScoreableViews(db)
 })

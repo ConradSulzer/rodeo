@@ -12,6 +12,7 @@ import {
 } from '@core/tournaments/divisions'
 import { NewScoreable, PatchScoreable, Scoreable } from '@core/tournaments/scoreables'
 import type { SerializableTournamentState } from '@core/tournaments/state'
+import type { RodeoEvent, ScoreEventInput } from '@core/events/events'
 
 declare global {
   interface Window {
@@ -31,6 +32,11 @@ declare global {
         delete: (id: string) => Promise<boolean>
         get: (id: string) => Promise<Scoreable>
         list: () => Promise<Scoreable[]>
+        listViews: () => Promise<
+          (Scoreable & {
+            divisions: string[]
+          })[]
+        >
       }
       categories: {
         create: (data: NewCategory) => Promise<string>
@@ -38,6 +44,11 @@ declare global {
         delete: (id: string) => Promise<boolean>
         get: (id: string) => Promise<Category>
         list: () => Promise<Category[]>
+        listViews: () => Promise<
+          (Category & {
+            scoreables: Scoreable[]
+          })[]
+        >
         listRules: () => Promise<StandingRuleSummary[]>
         addScoreable: (categoryId: string, scoreableId: string) => Promise<boolean>
         removeScoreable: (categoryId: string, scoreableId: string) => Promise<boolean>
@@ -70,11 +81,34 @@ declare global {
         removePlayer: (divisionId: string, playerId: string) => Promise<boolean>
         listPlayers: (divisionId: string) => Promise<string[]>
         listForPlayer: (playerId: string) => Promise<string[]>
+        move: (id: string, direction: 'up' | 'down') => Promise<boolean>
+        reorder: (orderedIds: string[]) => Promise<boolean>
+      }
+      events: {
+        record: (entries: ScoreEventInput[]) => Promise<{
+          success: boolean
+          errors: string[]
+        }>
+        list: () => Promise<RodeoEvent[]>
       }
       tournaments: {
         open: (filePath: string) => Promise<boolean>
         openDialog: () => Promise<string | null>
         createDialog: () => Promise<string | null>
+        getMetadata: () => Promise<{
+          id: string
+          name: string
+          eventDate: string | null
+          createdAt: number
+          updatedAt: number
+        }>
+        updateMetadata: (patch: { name?: string; eventDate?: string | null }) => Promise<{
+          id: string
+          name: string
+          eventDate: string | null
+          createdAt: number
+          updatedAt: number
+        }>
         close: () => Promise<boolean>
         getState: () => Promise<SerializableTournamentState>
         subscribe: (listener: (snapshot: SerializableTournamentState) => void) => () => void

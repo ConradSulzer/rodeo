@@ -5,6 +5,7 @@ import {
   getCategory,
   listAllCategories,
   listCategoryIdsForScoreable,
+  listCategoryViews,
   listScoreableIdsForCategory,
   removeScoreableFromCategory,
   updateCategory,
@@ -39,6 +40,11 @@ ipcMain.handle('categories:get', (_evt, id: string) => {
 ipcMain.handle('categories:list', () => {
   const db = getTournamentDb()
   return listAllCategories(db)
+})
+
+ipcMain.handle('categories:listViews', () => {
+  const db = getTournamentDb()
+  return listCategoryViews(db)
 })
 
 ipcMain.handle('categories:listRules', () => {

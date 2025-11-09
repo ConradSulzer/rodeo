@@ -24,19 +24,19 @@
 
   /* === Semantic Tokens === */
   --ro-success: #61e294;
-  --ro-success-text: var(--color-emerald-900);
+  --ro-success-dark: var(--color-emerald-900);
   --ro-success-hover: #4fcb7d;
 
   --ro-error: #fe654f;
-  --ro-error-text: var(--color-rose-900);
+  --ro-error-dark: var(--color-rose-900);
   --ro-error-hover: #f34b33;
 
   --ro-warning: #ffcf56;
-  --ro-warning-text: var(--color-amber-900);
+  --ro-warning-dark: var(--color-amber-900);
   --ro-warning-hover: #f3b620;
 
   --ro-info: var(--color-blue-300);
-  --ro-info-text: var(--color-sky-900);
+  --ro-info-dark: var(--color-sky-900);
   --ro-info-hover: var(--color-blue-400);
   --ro-info-soft: rgba(125, 211, 252, 0.15);
 
