@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "c1ead5f9-5509-48cd-b9eb-997a6bf39792",
+  "id": "2ca58660-900b-4d6e-b8b6-0838b7677a2d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "category": {
@@ -28,6 +28,22 @@
           "notNull": true,
           "autoincrement": false
         },
+        "show_scoreables_count": {
+          "name": "show_scoreables_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "scoreables_count_name": {
+          "name": "scoreables_count_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "''"
+        },
         "rules": {
           "name": "rules",
           "type": "text",
@@ -35,14 +51,6 @@
           "notNull": true,
           "autoincrement": false,
           "default": "'[]'"
-        },
-        "order": {
-          "name": "order",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 0
         },
         "created_at": {
           "name": "created_at",
@@ -588,14 +596,6 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
-        },
-        "order": {
-          "name": "order",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 0
         },
         "created_at": {
           "name": "created_at",

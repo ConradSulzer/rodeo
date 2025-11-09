@@ -2,24 +2,28 @@ import { useEffect, useState, type FormEvent } from 'react'
 import type { Category } from '@core/tournaments/categories'
 import type { Scoreable } from '@core/tournaments/scoreables'
 import type { StandingRuleSummary } from '@core/tournaments/standingRules'
-import { Modal } from '../../../components/Modal'
-import { Field } from '../../../components/ui/field'
-import { Label } from '../../../components/ui/label'
-import { Input } from '../../../components/ui/input'
-import { Button } from '../../../components/ui/button'
+import { Modal } from '@renderer/components/Modal'
+import { Field } from '@renderer/components/ui/field'
+import { Label } from '@renderer/components/ui/label'
+import { Input } from '@renderer/components/ui/input'
+import { Button } from '@renderer/components/ui/button'
 
 export type CategoryFormValues = {
   name: string
   direction: 'asc' | 'desc'
   rules: string[]
   scoreableIds: string[]
+  showScoreablesCount: boolean
+  scoreablesCountName: string
 }
 
 const defaultValues: CategoryFormValues = {
   name: '',
   direction: 'asc',
   rules: [],
-  scoreableIds: []
+  scoreableIds: [],
+  showScoreablesCount: false,
+  scoreablesCountName: ''
 }
 
 type CategoryFormModalProps = {
@@ -44,7 +48,7 @@ export function CategoryFormModal({
   onClose
 }: CategoryFormModalProps) {
   const [values, setValues] = useState<CategoryFormValues>(defaultValues)
-  const [errors, setErrors] = useState<{ name?: string }>()
+  const [errors, setErrors] = useState<{ name?: string; scoreablesCountName?: string }>()
 
   useEffect(() => {
     if (!open) return
@@ -54,7 +58,9 @@ export function CategoryFormModal({
         name: category.name,
         direction: category.direction as 'asc' | 'desc',
         rules: category.rules ?? [],
-        scoreableIds: category.scoreableIds ?? []
+        scoreableIds: category.scoreableIds ?? [],
+        showScoreablesCount: Boolean(category.showScoreablesCount),
+        scoreablesCountName: category.scoreablesCountName ?? ''
       })
     } else {
       setValues(defaultValues)
@@ -68,15 +74,25 @@ export function CategoryFormModal({
     event.preventDefault()
     if (submitting) return
 
-    if (!values.name.trim()) {
-      setErrors({ name: 'Name is required' })
+    const nextErrors: { name?: string; scoreablesCountName?: string } = {}
+    const trimmedName = values.name.trim()
+    if (!trimmedName) {
+      nextErrors.name = 'Name is required'
+    }
+    const trimmedCountName = values.scoreablesCountName.trim()
+    if (values.showScoreablesCount && !trimmedCountName) {
+      nextErrors.scoreablesCountName = 'Column name is required'
+    }
+    if (Object.keys(nextErrors).length) {
+      setErrors(nextErrors)
       return
     }
 
     await onSubmit({
       ...values,
-      name: values.name.trim(),
-      rules: values.rules.filter((rule) => rule.trim().length)
+      name: trimmedName,
+      rules: values.rules.filter((rule) => rule.trim().length),
+      scoreablesCountName: trimmedCountName
     })
   }
 
@@ -168,6 +184,44 @@ export function CategoryFormModal({
           ) : (
             <p className="text-xs ro-text-muted">No scoreables available.</p>
           )}
+        </div>
+        <div className="flex flex-col gap-3 rounded-md border border-dashed border-muted-foreground/30 px-3 py-3">
+          <label className="flex items-center gap-3 text-sm font-medium ro-text-main">
+            <input
+              type="checkbox"
+              className="h-4 w-4"
+              checked={values.showScoreablesCount}
+              onChange={(event) =>
+                setValues((prev) => ({
+                  ...prev,
+                  showScoreablesCount: event.target.checked
+                }))
+              }
+            />
+            Display scoreable count column
+          </label>
+          <p className="text-xs ro-text-muted">
+            Adds a standings column showing how many scoreables each angler submitted for this
+            category.
+          </p>
+          {values.showScoreablesCount ? (
+            <Field
+              label={<Label htmlFor="category-scoreables-count-name">Count Column Name</Label>}
+              error={errors?.scoreablesCountName}
+            >
+              <Input
+                id="category-scoreables-count-name"
+                placeholder="e.g. Total Fish"
+                value={values.scoreablesCountName}
+                onChange={(event) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    scoreablesCountName: event.target.value
+                  }))
+                }
+              />
+            </Field>
+          ) : null}
         </div>
         <div className="mt-2 flex justify-end gap-3">
           <Button

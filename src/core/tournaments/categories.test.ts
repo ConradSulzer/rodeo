@@ -39,6 +39,34 @@ describe('categories data access', () => {
     })
   })
 
+  it('stores scoreable count preferences on create/update', () => {
+    withInMemoryDb((db) => {
+      const id = createCategory(db, {
+        name: 'Tally',
+        direction: 'desc',
+        showScoreablesCount: true,
+        scoreablesCountName: 'Fish Count'
+      })
+
+      const created = getCategory(db, id)
+      expect(created?.showScoreablesCount).toBe(true)
+      expect(created?.scoreablesCountName).toBe('Fish Count')
+
+      updateCategory(db, id, {
+        scoreablesCountName: ' Total Fish ',
+        showScoreablesCount: true
+      })
+
+      const renamed = getCategory(db, id)
+      expect(renamed?.scoreablesCountName).toBe('Total Fish')
+
+      updateCategory(db, id, { showScoreablesCount: false })
+      const hidden = getCategory(db, id)
+      expect(hidden?.showScoreablesCount).toBe(false)
+      expect(hidden?.scoreablesCountName).toBe('')
+    })
+  })
+
   it('updates a category and refreshes updatedAt', () => {
     withInMemoryDb((db) => {
       const id = createCategory(db, baseCategory)

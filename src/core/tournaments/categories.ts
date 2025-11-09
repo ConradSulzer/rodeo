@@ -10,10 +10,12 @@ import type { Scoreable } from './scoreables'
 
 export type Category = typeof cat.$inferSelect
 type CategoryWritableFields = Omit<Category, 'id' | 'createdAt' | 'updatedAt'>
-export type NewCategory = Omit<CategoryWritableFields, 'rules'> & {
-  rules?: string[]
-}
-export type PatchCategory = Partial<Omit<CategoryWritableFields, 'rules'>> & { rules?: string[] }
+type CategoryOptionalFields = 'rules' | 'showScoreablesCount' | 'scoreablesCountName'
+export type NewCategory = Omit<CategoryWritableFields, CategoryOptionalFields> &
+  Partial<Pick<CategoryWritableFields, CategoryOptionalFields>> & {
+    rules?: string[]
+  }
+export type PatchCategory = Partial<CategoryWritableFields>
 export type CategoryView = Category & { scoreables: Scoreable[] }
 
 const now = () => Date.now()
@@ -29,13 +31,31 @@ function normalizeCategoryRules(rules?: string[]): string[] {
   return Array.from(new Set(cleaned))
 }
 
+function normalizeScoreablesCountName(scoreablesCountName?: string): string {
+  return scoreablesCountName?.trim() ?? ''
+}
+
 export function createCategory(db: AppDatabase, data: NewCategory): string {
   const id = ulid()
   const t = now()
-  const { rules, ...rest } = data
+  const {
+    rules,
+    showScoreablesCount = false,
+    scoreablesCountName,
+    ...rest
+  } = data
   const normalizedRules = normalizeCategoryRules(rules)
+  const normalizedCountName = normalizeScoreablesCountName(scoreablesCountName)
   db.insert(cat)
-    .values({ id, ...rest, rules: normalizedRules, createdAt: t, updatedAt: t })
+    .values({
+      id,
+      ...rest,
+      rules: normalizedRules,
+      showScoreablesCount,
+      scoreablesCountName: showScoreablesCount ? normalizedCountName : '',
+      createdAt: t,
+      updatedAt: t
+    })
     .run()
 
   return id
@@ -44,11 +64,22 @@ export function createCategory(db: AppDatabase, data: NewCategory): string {
 export function updateCategory(db: AppDatabase, id: string, patch: PatchCategory) {
   if (!Object.keys(patch).length) return false
 
-  const { rules, ...rest } = patch
+  const { rules, showScoreablesCount, scoreablesCountName, ...rest } = patch
   const updateData: Partial<typeof cat.$inferInsert> = { ...rest }
 
   if (rules !== undefined) {
     updateData.rules = normalizeCategoryRules(rules)
+  }
+
+  if (showScoreablesCount !== undefined) {
+    updateData.showScoreablesCount = showScoreablesCount
+    if (!showScoreablesCount) {
+      updateData.scoreablesCountName = ''
+    } else if (scoreablesCountName !== undefined) {
+      updateData.scoreablesCountName = normalizeScoreablesCountName(scoreablesCountName)
+    }
+  } else if (scoreablesCountName !== undefined) {
+    updateData.scoreablesCountName = normalizeScoreablesCountName(scoreablesCountName)
   }
 
   if (!Object.keys(updateData).length) return false
