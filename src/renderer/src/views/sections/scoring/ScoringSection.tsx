@@ -142,12 +142,12 @@ export function ScoringSection() {
     setModalSubmitting(true)
     try {
       const payload = entries.map((entry) => ({
+        kind: 'item' as const,
         playerId: modalState.player.id,
         scoreableId: entry.scoreableId,
-        scoreableName: entry.scoreableName,
-        value: entry.value,
-        priorEventId: entry.priorEventId,
-        void: entry.void
+        state: entry.state,
+        value: entry.state === 'value' ? (entry.value ?? null) : null,
+        priorEventId: entry.priorEventId
       }))
       const result = await window.api.events.record(payload)
       if (!result.success) {
@@ -164,6 +164,37 @@ export function ScoringSection() {
     } catch (error) {
       console.error('Failed to record scores', error)
       toast.error('Unable to record scores')
+      setModalSubmitting(false)
+    }
+  }
+
+  const handleVoidScorecard = async () => {
+    if (!modalState.open) return
+    setModalSubmitting(true)
+    try {
+      const payload = [
+        {
+          kind: 'scorecard-void' as const,
+          playerId: modalState.player.id
+        }
+      ]
+      const result = await window.api.events.record(payload)
+      if (!result.success) {
+        if (result.errors.length) {
+          result.errors.forEach((message) => toast.error(message))
+        } else {
+          toast.error('Unable to void scorecard')
+        }
+        setModalSubmitting(false)
+        return
+      }
+      toast.success('Scorecard voided')
+      closeModal()
+      await fetchResults()
+    } catch (error) {
+      console.error('Failed to void scorecard', error)
+      toast.error('Unable to void scorecard')
+    } finally {
       setModalSubmitting(false)
     }
   }
@@ -277,6 +308,7 @@ export function ScoringSection() {
         existingResults={modalState.open ? modalState.existingResults : undefined}
         submitting={modalSubmitting}
         onSubmit={handleSaveScores}
+        onVoidScorecard={modalState.open ? handleVoidScorecard : undefined}
         onClose={closeModal}
       />
     </>

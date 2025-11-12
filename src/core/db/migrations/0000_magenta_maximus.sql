@@ -42,9 +42,10 @@ CREATE INDEX `division_category_category` ON `division_category` (`category_id`)
 CREATE TABLE `event` (
 	`id` text PRIMARY KEY NOT NULL,
 	`type` text NOT NULL,
+	`state` text,
 	`ts` integer NOT NULL,
 	`player_id` text NOT NULL,
-	`scoreable_id` text NOT NULL,
+	`scoreable_id` text,
 	`scoreable_name` text DEFAULT '' NOT NULL,
 	`prior_event_id` text,
 	`note` text,

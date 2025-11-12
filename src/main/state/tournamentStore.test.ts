@@ -3,7 +3,7 @@ import type { AppDatabase } from '@core/db/db'
 import type { ItemResult, Results } from '@core/tournaments/results'
 import type { DivisionView } from '@core/tournaments/divisions'
 import type { DivisionStanding } from '@core/tournaments/standings'
-import type { ItemScored } from '@core/events/events'
+import type { ItemStateChanged } from '@core/events/events'
 import * as resultsModule from '@core/tournaments/results'
 import * as divisionsModule from '@core/tournaments/divisions'
 import * as standingsModule from '@core/tournaments/standings'
@@ -21,7 +21,7 @@ import {
 const db = {} as AppDatabase
 
 const sampleItem: ItemResult = {
-  name: 'Weight',
+  status: 'value',
   value: 10,
   srcEventId: 'event-1',
   createdAt: 1,
@@ -233,13 +233,13 @@ describe('refreshStandings', () => {
 })
 
 describe('applyEvent', () => {
-  const baseEvent: ItemScored = {
-    type: 'ItemScored',
+  const baseEvent: ItemStateChanged = {
+    type: 'ItemStateChanged',
     id: 'event-1',
     ts: Date.now(),
     playerId: 'player-1',
     scoreableId: 'scoreable-1',
-    scoreableName: 'Weight',
+    state: 'value',
     value: 12
   }
 

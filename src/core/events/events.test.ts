@@ -9,9 +9,8 @@ import {
   listEventsForPlayer,
   listEventsForPlayerItem,
   sortEventsByTime,
-  type ItemCorrected,
-  type ItemScored,
-  type ItemVoided
+  type ItemStateChanged,
+  type ScorecardVoided
 } from './events'
 import { createPlayer, type NewPlayer } from '@core/players/players'
 import { createScoreable, type NewScoreable } from '@core/tournaments/scoreables'
@@ -30,20 +29,19 @@ const makeScoreableData = (suffix: string): NewScoreable => ({
   unit: `unit-${suffix}`
 })
 
-const makeScored = (
+const makeItemEvent = (
   base: {
     playerId: ULID
     scoreableId: ULID
-    scoreableName?: string
   },
-  overrides: Partial<Omit<ItemScored, 'type'>> = {}
-): ItemScored => ({
-  type: 'ItemScored',
+  overrides: Partial<Omit<ItemStateChanged, 'type'>> = {}
+): ItemStateChanged => ({
+  type: 'ItemStateChanged',
   id: ulid(),
   ts: baseTs,
   playerId: base.playerId,
   scoreableId: base.scoreableId,
-  scoreableName: base.scoreableName ?? 'Scoreable',
+  state: 'value',
   value: 42,
   note: 'initial',
   ...overrides
@@ -54,7 +52,7 @@ describe('events data access', () => {
     withInMemoryDb((db) => {
       const playerId = createPlayer(db, makePlayerData('A'))
       const scoreableId = createScoreable(db, makeScoreableData('A'))
-      const event = makeScored({ playerId, scoreableId, scoreableName: 'Speed' })
+      const event = makeItemEvent({ playerId, scoreableId })
 
       appendEvent(db, event)
 
@@ -66,27 +64,24 @@ describe('events data access', () => {
     withInMemoryDb((db) => {
       const playerId = createPlayer(db, makePlayerData('A'))
       const scoreableId = createScoreable(db, makeScoreableData('A'))
-      const scored = makeScored(
-        { playerId, scoreableId, scoreableName: 'Time' },
-        { ts: baseTs + 10 }
-      )
-      const corrected: ItemCorrected = {
-        type: 'ItemCorrected',
+      const scored = makeItemEvent({ playerId, scoreableId }, { ts: baseTs + 10 })
+      const corrected: ItemStateChanged = {
+        type: 'ItemStateChanged',
         id: ulid(),
         ts: baseTs + 20,
         playerId,
         scoreableId,
-        scoreableName: 'Time',
+        state: 'value',
         priorEventId: scored.id,
         value: 30
       }
-      const voided: ItemVoided = {
-        type: 'ItemVoided',
+      const voided: ItemStateChanged = {
+        type: 'ItemStateChanged',
         id: ulid(),
         ts: baseTs + 30,
         playerId,
         scoreableId,
-        scoreableName: 'Time',
+        state: 'empty',
         priorEventId: corrected.id,
         note: 'duplicate entry'
       }
@@ -104,26 +99,26 @@ describe('events data access', () => {
       const scoreableA = createScoreable(db, makeScoreableData('A'))
       const scoreableB = createScoreable(db, makeScoreableData('B'))
 
-      const scoredA = makeScored(
-        { playerId: playerA, scoreableId: scoreableA, scoreableName: 'Time' },
+      const scoredA = makeItemEvent(
+        { playerId: playerA, scoreableId: scoreableA },
         { ts: baseTs + 1 }
       )
-      const correctedA: ItemCorrected = {
-        type: 'ItemCorrected',
+      const correctedA: ItemStateChanged = {
+        type: 'ItemStateChanged',
         id: ulid(),
         ts: baseTs + 2,
         playerId: playerA,
         scoreableId: scoreableA,
-        scoreableName: 'Time',
+        state: 'value',
         priorEventId: scoredA.id,
         value: 25
       }
-      const scoredOtherItem = makeScored(
-        { playerId: playerA, scoreableId: scoreableB, scoreableName: 'Points' },
+      const scoredOtherItem = makeItemEvent(
+        { playerId: playerA, scoreableId: scoreableB },
         { ts: baseTs + 3, value: 90 }
       )
-      const scoredOtherPlayer = makeScored(
-        { playerId: playerB, scoreableId: scoreableA, scoreableName: 'Time' },
+      const scoredOtherPlayer = makeItemEvent(
+        { playerId: playerB, scoreableId: scoreableA },
         { ts: baseTs + 4, note: undefined }
       )
 
@@ -137,15 +132,15 @@ describe('events data access', () => {
   it('sorts events by timestamp then id', () => {
     const playerId = ulid()
     const scoreableId = ulid()
-    const e1 = makeScored(
+    const e1 = makeItemEvent(
       { playerId, scoreableId },
       { id: '00000000000000000000000001' as ULID, ts: 100 }
     )
-    const e2 = makeScored(
+    const e2 = makeItemEvent(
       { playerId, scoreableId },
       { id: '00000000000000000000000002' as ULID, ts: 90 }
     )
-    const e3 = makeScored(
+    const e3 = makeItemEvent(
       { playerId, scoreableId },
       { id: '00000000000000000000000003' as ULID, ts: 100 }
     )
@@ -156,5 +151,27 @@ describe('events data access', () => {
       '00000000000000000000000001',
       '00000000000000000000000003'
     ])
+  })
+  it('records scorecard void events', () => {
+    withInMemoryDb((db) => {
+      const playerId = createPlayer(db, makePlayerData('A'))
+      const scoreableId = createScoreable(db, makeScoreableData('A'))
+      const scored = makeItemEvent({ playerId, scoreableId })
+      appendEvent(db, scored)
+
+      const voidEvent: ScorecardVoided = {
+        type: 'ScorecardVoided',
+        id: ulid(),
+        ts: baseTs + 100,
+        playerId,
+        note: 'Wrong angler'
+      }
+
+      appendEvent(db, voidEvent)
+
+      const events = listAllEvents(db)
+      expect(events).toHaveLength(2)
+      expect(events[1]).toEqual(voidEvent)
+    })
   })
 })

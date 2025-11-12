@@ -23,7 +23,9 @@ const EMPTY_STATE: SerializableTournamentState = {
   results: []
 }
 
-export function getState(): TournamentState | null {
+export function getState(): TournamentState {
+  if (!state) throw new Error('Tournament store is not hydrated')
+
   return state
 }
 

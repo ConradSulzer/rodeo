@@ -1,20 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import type { Player } from '@core/players/players'
 import type { Scoreable } from '@core/tournaments/scoreables'
 import type { ItemResult } from '@core/tournaments/results'
-import { Modal } from '../../../components/Modal'
-import { Field } from '../../../components/ui/field'
-import { Label } from '../../../components/ui/label'
-import { Input } from '../../../components/ui/input'
-import { Button } from '../../../components/ui/button'
-import { Pill } from '../../../components/ui/pill'
+import { Modal } from '@renderer/components/Modal'
+import { Field } from '@renderer/components/ui/field'
+import { Label } from '@renderer/components/ui/label'
+import { Input } from '@renderer/components/ui/input'
+import { Button } from '@renderer/components/ui/button'
+import { Pill } from '@renderer/components/ui/pill'
 
 export type ScoreEntry = {
   scoreableId: string
-  scoreableName: string
+  state: 'value' | 'empty'
   value?: number
   priorEventId?: string
-  void?: boolean
 }
 
 type ScorePlayerModalProps = {
@@ -23,6 +23,7 @@ type ScorePlayerModalProps = {
   scoreables: Scoreable[]
   existingResults?: Map<string, ItemResult>
   onSubmit: (entries: ScoreEntry[]) => Promise<void>
+  onVoidScorecard?: () => Promise<void>
   submitting: boolean
   onClose: () => void
 }
@@ -35,12 +36,14 @@ export function ScorePlayerModal({
   scoreables,
   existingResults,
   onSubmit,
+  onVoidScorecard,
   submitting,
   onClose
 }: ScorePlayerModalProps) {
   const [values, setValues] = useState<Record<string, string>>({})
   const [errors, setErrors] = useState<FormErrors>({})
-  const [voided, setVoided] = useState<Set<string>>(new Set())
+  const [empties, setEmpties] = useState<Set<string>>(new Set())
+  const [voiding, setVoiding] = useState(false)
 
   const hasRequirements = scoreables.length > 0
 
@@ -49,22 +52,30 @@ export function ScorePlayerModal({
     setErrors({})
     if (!scoreables.length) {
       setValues({})
-      setVoided(new Set())
+      setEmpties(new Set())
       return
     }
-    const initial: Record<string, string> = {}
+    const initialValues: Record<string, string> = {}
+    const initialEmpties = new Set<string>()
     for (const scoreable of scoreables) {
       const existing = existingResults?.get(scoreable.id)
-      initial[scoreable.id] = existing ? String(existing.value) : ''
+      if (existing?.status === 'value' && typeof existing.value === 'number') {
+        initialValues[scoreable.id] = String(existing.value)
+      } else {
+        initialValues[scoreable.id] = ''
+      }
+      if (existing?.status === 'empty') {
+        initialEmpties.add(scoreable.id)
+      }
     }
-    setValues(initial)
-    setVoided(new Set())
+    setValues(initialValues)
+    setEmpties(initialEmpties)
   }, [open, scoreables, existingResults])
 
   const title = player ? `Score ${player.displayName}` : 'Score Player'
 
   const handleValueChange = (scoreableId: string, next: string) => {
-    setVoided((prev) => {
+    setEmpties((prev) => {
       if (!prev.has(scoreableId)) return prev
       const copy = new Set(prev)
       copy.delete(scoreableId)
@@ -73,13 +84,11 @@ export function ScorePlayerModal({
     setValues((prev) => ({ ...prev, [scoreableId]: next }))
   }
 
-  const toggleVoid = (scoreableId: string, existing?: ItemResult) => {
-    if (!existing) return
-    setVoided((prev) => {
+  const toggleEmpty = (scoreableId: string) => {
+    setEmpties((prev) => {
       const copy = new Set(prev)
       if (copy.has(scoreableId)) {
         copy.delete(scoreableId)
-        setValues((current) => ({ ...current, [scoreableId]: String(existing.value) }))
       } else {
         copy.add(scoreableId)
         setValues((current) => ({ ...current, [scoreableId]: '' }))
@@ -97,18 +106,15 @@ export function ScorePlayerModal({
 
     for (const scoreable of scoreables) {
       const existing = existingResults?.get(scoreable.id)
-      const isVoided = voided.has(scoreable.id)
+      const isEmpty = empties.has(scoreable.id)
       const raw = values[scoreable.id]?.trim()
 
-      if (isVoided) {
-        if (existing) {
-          submissions.push({
-            scoreableId: scoreable.id,
-            scoreableName: scoreable.label,
-            priorEventId: existing.srcEventId,
-            void: true
-          })
-        }
+      if (isEmpty) {
+        submissions.push({
+          scoreableId: scoreable.id,
+          state: 'empty',
+          priorEventId: existing?.srcEventId
+        })
         continue
       }
 
@@ -123,20 +129,12 @@ export function ScorePlayerModal({
         continue
       }
 
-      if (existing) {
-        if (parsed !== existing.value) {
-          submissions.push({
-            scoreableId: scoreable.id,
-            scoreableName: scoreable.label,
-            value: parsed,
-            priorEventId: existing.srcEventId
-          })
-        }
-      } else {
+      if (!existing || existing.status !== 'value' || existing.value !== parsed) {
         submissions.push({
           scoreableId: scoreable.id,
-          scoreableName: scoreable.label,
-          value: parsed
+          state: 'value',
+          value: parsed,
+          priorEventId: existing?.srcEventId
         })
       }
     }
@@ -167,7 +165,7 @@ export function ScorePlayerModal({
       <div className="flex flex-col gap-4">
         {scoreables.map((scoreable) => {
           const existing = existingResults?.get(scoreable.id)
-          const isVoided = voided.has(scoreable.id)
+          const isEmpty = empties.has(scoreable.id)
           return (
             <Field
               key={scoreable.id}
@@ -175,38 +173,53 @@ export function ScorePlayerModal({
               error={errors[scoreable.id]}
               description={
                 existing
-                  ? isVoided
-                    ? 'This score will be voided.'
-                    : 'Clear the value or use Void to remove this score.'
+                  ? existing.status === 'empty'
+                    ? 'Previously marked empty.'
+                    : 'Update the value or mark empty.'
                   : undefined
               }
             >
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <Input
                   id={`score-${scoreable.id}`}
                   type="number"
                   step="any"
                   value={values[scoreable.id] ?? ''}
                   onChange={(event) => handleValueChange(scoreable.id, event.target.value)}
-                  disabled={isVoided}
                 />
-                {existing ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={isVoided ? 'positive' : 'outline'}
-                    onClick={() => toggleVoid(scoreable.id, existing)}
-                  >
-                    {isVoided ? 'Restore' : 'Void'}
-                  </Button>
-                ) : null}
+                <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] ro-text-muted">
+                  <input
+                    type="checkbox"
+                    checked={isEmpty}
+                    onChange={() => toggleEmpty(scoreable.id)}
+                    className="h-4 w-4"
+                  />
+                  Empty
+                </label>
               </div>
             </Field>
           )
         })}
       </div>
     )
-  }, [errors, existingResults, scoreables, values, voided])
+  }, [errors, existingResults, scoreables, values, empties])
+
+  const handleVoidScorecard = async () => {
+    if (!onVoidScorecard || !player) return
+    const confirmed = window.confirm(
+      `Void all scores for ${player.displayName}? This cannot be undone.`
+    )
+    if (!confirmed) return
+    try {
+      setVoiding(true)
+      await onVoidScorecard()
+    } catch (error) {
+      console.error('Failed to void scorecard', error)
+      toast.error('Unable to void scorecard')
+    } finally {
+      setVoiding(false)
+    }
+  }
 
   return (
     <Modal open={open} onClose={onClose} title={title}>
@@ -220,7 +233,20 @@ export function ScorePlayerModal({
           </div>
         ) : null}
         {content}
-        <div className="flex justify-end gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {onVoidScorecard ? (
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={handleVoidScorecard}
+              disabled={submitting || voiding}
+            >
+              {voiding ? 'Voiding...' : 'Void Scorecard'}
+            </Button>
+          ) : (
+            <span />
+          )}
           <Button
             type="button"
             variant="outline-muted"

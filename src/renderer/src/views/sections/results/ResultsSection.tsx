@@ -141,7 +141,13 @@ export function ResultsSection() {
                       return (
                         <TableCell key={scoreable.id}>
                           {result ? (
-                            <span className="font-mono text-sm">{result.value}</span>
+                            result.status === 'empty' ? (
+                              <span className="text-xs font-semibold uppercase tracking-[0.2em] ro-text-muted">
+                                Empty
+                              </span>
+                            ) : (
+                              <span className="font-mono text-sm">{result.value}</span>
+                            )
                           ) : (
                             <span className="text-sm ro-text-muted">—</span>
                           )}

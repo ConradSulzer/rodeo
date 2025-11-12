@@ -66,7 +66,7 @@ function computeCategoryStanding(
 
     for (const scoreable of categoryView.scoreables) {
       const item = playerItems.get(scoreable.id)
-      if (!item) continue
+      if (!item || item.status !== 'value' || item.value === undefined) continue
       total += item.value
       itemCount += 1
       earliestTs = earliestTs === null ? item.createdAt : Math.min(earliestTs, item.createdAt)

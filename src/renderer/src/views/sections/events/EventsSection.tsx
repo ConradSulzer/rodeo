@@ -19,8 +19,9 @@ export type EventRow = {
   type: RodeoEvent['type']
   playerId: string
   playerName: string
-  scoreableId: string
-  scoreableName: string
+  scoreableId?: string
+  scoreableLabel?: string
+  state?: 'value' | 'empty'
   value?: number
   note?: string
   priorEventId?: string
@@ -31,13 +32,13 @@ type EventTypeFilter = 'all' | RodeoEvent['type']
 const columns: ReadonlyArray<CrudTableColumn<EventRow, 'actions'>> = [
   { key: 'ts', label: 'Time', sortable: true, align: 'left' },
   { key: 'playerName', label: 'Player', sortable: true },
-  { key: 'scoreableName', label: 'Scoreable', sortable: false },
+  { key: 'scoreableLabel', label: 'Scoreable', sortable: false },
   { key: 'value' as keyof EventRow, label: 'Value', sortable: false, align: 'right' },
   { key: 'id', label: 'Event IDs', sortable: false },
   { key: 'actions', label: 'Actions', sortable: false, align: 'right' }
 ]
 
-const EVENT_TYPES: EventTypeFilter[] = ['all', 'ItemScored', 'ItemCorrected', 'ItemVoided']
+const EVENT_TYPES: EventTypeFilter[] = ['all', 'ItemStateChanged', 'ScorecardVoided']
 
 const renderTimestamp = (ts: number) => {
   const timeString = new Date(ts).toLocaleString()
@@ -59,11 +60,13 @@ export function EventsSection() {
 
   const fetchEvents = useCallback(async () => {
     try {
-      const [rawEvents, players] = await Promise.all([
+      const [rawEvents, players, scoreables] = await Promise.all([
         window.api.events.list(),
-        window.api.players.list()
+        window.api.players.list(),
+        window.api.scoreables.list()
       ])
       const playerMap = new Map(players.map((player) => [player.id, player.displayName]))
+      const scoreableMap = new Map(scoreables.map((scoreable) => [scoreable.id, scoreable.label]))
       const rows: EventRow[] = rawEvents
         .map((event) => ({
           id: event.id,
@@ -71,9 +74,14 @@ export function EventsSection() {
           type: event.type,
           playerId: event.playerId,
           playerName: playerMap.get(event.playerId) ?? event.playerId,
-          scoreableId: event.scoreableId,
-          scoreableName: event.scoreableName,
-          value: 'value' in event ? event.value : undefined,
+          scoreableId: 'scoreableId' in event ? event.scoreableId : undefined,
+          scoreableLabel:
+            'scoreableId' in event && event.scoreableId
+              ? (scoreableMap.get(event.scoreableId) ?? event.scoreableId)
+              : undefined,
+          state: event.type === 'ItemStateChanged' ? event.state : undefined,
+          value:
+            event.type === 'ItemStateChanged' && event.state === 'value' ? event.value : undefined,
           note: event.note,
           priorEventId: 'priorEventId' in event ? event.priorEventId : undefined
         }))
@@ -114,7 +122,7 @@ export function EventsSection() {
       >
         {EVENT_TYPES.map((type) => (
           <option key={type} value={type}>
-            {type === 'all' ? 'All Events' : type.replace('Item', '')}
+            {type === 'all' ? 'All Events' : type}
           </option>
         ))}
       </select>
@@ -135,12 +143,24 @@ export function EventsSection() {
           </div>
         </TableCell>
         <TableCell>
-          <div className="flex flex-col">
-            <span className="font-medium">{event.scoreableName}</span>
-            <span className="text-xs ro-text-muted">{event.type.replace('Item', '')}</span>
-          </div>
+          {event.scoreableLabel ? (
+            <div className="flex flex-col">
+              <span className="font-medium">{event.scoreableLabel}</span>
+              <span className="text-xs ro-text-muted">{event.type}</span>
+            </div>
+          ) : (
+            <span className="text-xs ro-text-muted">{event.type}</span>
+          )}
         </TableCell>
-        <TableCell align="right">{typeof event.value === 'number' ? event.value : '—'}</TableCell>
+        <TableCell align="right">
+          {event.type === 'ScorecardVoided'
+            ? '—'
+            : event.state === 'empty'
+              ? 'Empty'
+              : typeof event.value === 'number'
+                ? event.value
+                : '—'}
+        </TableCell>
         <TableCell className="font-mono text-xs ro-text-main break-all">
           <div className="flex flex-col">
             <span>{event.id}</span>

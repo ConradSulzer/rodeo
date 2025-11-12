@@ -11,7 +11,7 @@ import { createScoreable } from './scoreables'
 import { createPlayer } from '@core/players/players'
 import { computeDivisionStanding } from './standings'
 import { recordEvent, type Results } from './results'
-import type { ItemScored } from '@core/events/events'
+import type { ItemStateChanged } from '@core/events/events'
 import { ulid } from 'ulid'
 
 const basePlayer = (suffix: string) => ({
@@ -48,13 +48,13 @@ describe('standings computation', () => {
         playerId: string,
         value: number,
         offset = 0
-      ): ItemScored => ({
-        type: 'ItemScored',
+      ): ItemStateChanged => ({
+        type: 'ItemStateChanged',
         id: ulid(),
         ts: baseTs + offset,
         playerId,
         scoreableId,
-        scoreableName: 'Score',
+        state: 'value',
         value
       })
 
@@ -109,13 +109,13 @@ describe('standings computation', () => {
         playerId: string,
         value: number,
         offset = 0
-      ): ItemScored => ({
-        type: 'ItemScored',
+      ): ItemStateChanged => ({
+        type: 'ItemStateChanged',
         id: ulid(),
         ts: baseTs + offset,
         playerId,
         scoreableId,
-        scoreableName: 'Score',
+        state: 'value',
         value
       })
 
@@ -163,13 +163,13 @@ describe('standings computation', () => {
         playerId: string,
         value: number,
         offset = 0
-      ): ItemScored => ({
-        type: 'ItemScored',
+      ): ItemStateChanged => ({
+        type: 'ItemStateChanged',
         id: ulid(),
         ts: baseTs + offset,
         playerId,
         scoreableId,
-        scoreableName: 'Score',
+        state: 'value',
         value
       })
 
@@ -225,13 +225,13 @@ describe('standings computation', () => {
         playerId: string,
         value: number,
         offset = 0
-      ): ItemScored => ({
-        type: 'ItemScored',
+      ): ItemStateChanged => ({
+        type: 'ItemStateChanged',
         id: ulid(),
         ts: baseTs + offset,
         playerId,
         scoreableId,
-        scoreableName: 'Score',
+        state: 'value',
         value
       })
 
@@ -267,13 +267,13 @@ describe('standings computation', () => {
 
       const results: Results = new Map()
       const baseTs = Date.now()
-      const makeEvent = (playerId: string, value: number, tsOffset: number): ItemScored => ({
-        type: 'ItemScored',
+      const makeEvent = (playerId: string, value: number, tsOffset: number): ItemStateChanged => ({
+        type: 'ItemStateChanged',
         id: ulid(),
         ts: baseTs + tsOffset,
         playerId,
         scoreableId,
-        scoreableName: 'Fish',
+        state: 'value',
         value
       })
 

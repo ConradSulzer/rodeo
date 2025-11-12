@@ -1,80 +1,80 @@
 import { ipcMain } from 'electron'
-import { ulid } from 'ulid'
-import {
-  listAllEvents,
-  type ItemCorrected,
-  type ItemScored,
-  type ItemVoided,
-  type ScoreEventInput
-} from '@core/events/events'
+
+import { listAllEvents, getEvent, type EventId, RodeoEvent } from '@core/events/events'
 import { getTournamentDb } from '@core/tournaments/tournaments'
-import { getScoreable } from '@core/tournaments/scoreables'
-import { applyEvent } from '../state/tournamentStore'
+import { cloneResults, type Results } from '@core/tournaments/results'
+import {
+  scoreEventAttrsSchema,
+  type ScoreEventAttrs,
+  toDomainEvents
+} from '@core/events/eventInputs'
+import { AppDatabase } from '@core/db/db'
+import { applyEvent, getState } from '../state/tournamentStore'
+import { Timestamp } from '@core/types/Shared'
+import { applyBatch } from '@core/events/eventReducer'
 
-ipcMain.handle('events:recordMany', async (_evt, submissions: ScoreEventInput[]) => {
+ipcMain.handle('events:recordMany', async (_evt, submissions: ScoreEventAttrs[]) => {
   const db = getTournamentDb()
-  const errors: string[] = []
+  const state = getState()
+  const prep = await prepare(db, state.results, submissions, Date.now())
 
-  for (const submission of submissions) {
-    const scoreable = getScoreable(db, submission.scoreableId)
-    const scoreableName = submission.scoreableName ?? scoreable?.label ?? 'Scoreable'
-    if (!scoreable) {
-      errors.push(`Scoreable not found for ${submission.scoreableId}`)
-      continue
-    }
+  if (!prep.ok) {
+    return { success: false, errors: prep.errors }
+  }
 
-    const baseEvent = {
-      id: ulid(),
-      ts: Date.now(),
-      playerId: submission.playerId,
-      scoreableId: submission.scoreableId,
-      scoreableName,
-      note: submission.note
-    }
+  const applyErrors = []
 
-    let event: ItemScored | ItemCorrected | ItemVoided | null = null
-
-    const hasValue = submission.value !== undefined && submission.value !== null
-
-    if (submission.void && submission.priorEventId) {
-      event = {
-        type: 'ItemVoided',
-        ...baseEvent,
-        priorEventId: submission.priorEventId
-      }
-    } else if (submission.priorEventId !== undefined && hasValue) {
-      event = {
-        type: 'ItemCorrected',
-        ...baseEvent,
-        priorEventId: submission.priorEventId,
-        value: submission.value as number
-      }
-    } else if (hasValue) {
-      event = {
-        type: 'ItemScored',
-        ...baseEvent,
-        value: submission.value as number
-      }
-    }
-
-    if (!event) {
-      errors.push('Invalid score submission payload')
-      continue
-    }
-
-    const result = applyEvent(db, event)
-    if (result.length) {
-      errors.push(...result.map((err) => err.message))
+  for (const event of prep.events) {
+    const errs = applyEvent(db, event)
+    if (errs.length) {
+      return { success: false, errors: errs.map((e) => e.message) }
     }
   }
 
-  return {
-    success: errors.length === 0,
-    errors
-  }
+  if (!applyErrors.length) return { success: false, errors: applyErrors }
+
+  return { success: true, errors: [] }
 })
 
 ipcMain.handle('events:list', () => {
   const db = getTournamentDb()
   return listAllEvents(db)
 })
+
+type PrepOk = { ok: true; events: RodeoEvent[]; nextResults: Results }
+type PrepErr = { ok: false; errors: string[] }
+
+async function prepare(
+  db: AppDatabase,
+  current: Results,
+  submissions: ScoreEventAttrs[],
+  ts: Timestamp
+): Promise<PrepOk | PrepErr> {
+  // 1) validate attrs via Zod
+  const parsed: ScoreEventAttrs[] = []
+  const errs: string[] = []
+
+  for (const s of submissions) {
+    const r = scoreEventAttrsSchema.safeParse(s)
+    if (!r.success) {
+      errs.push(...r.error.issues.map((i) => i.message))
+    } else {
+      parsed.push(r.data)
+    }
+  }
+  if (errs.length) return { ok: false, errors: errs }
+
+  // 2) materialize events
+  const events = toDomainEvents(parsed, ts)
+
+  // 3) simulate on a clone
+  const sim = cloneResults(current)
+  const resolve = (id: EventId) => getEvent(db, id)
+  const { errors } = applyBatch(sim, events, resolve)
+
+  if (errors.length) {
+    return { ok: false, errors: errors.map((e) => e.message) }
+  }
+
+  return { ok: true, events, nextResults: sim }
+}
