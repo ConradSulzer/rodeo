@@ -6,6 +6,7 @@ import type { Division, DivisionView } from '@core/tournaments/divisions'
 import type { Scoreable } from '@core/tournaments/scoreables'
 import type { SerializableTournamentState } from '@core/tournaments/state'
 import type { ItemResult } from '@core/tournaments/results'
+import type { ItemScoreEventInput } from '@core/events/events'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 import {
   type CrudTableColumn,
@@ -15,7 +16,7 @@ import { Table, TableBody, TableCell, TableHeader, TableRow } from '@renderer/co
 import { Button } from '@renderer/components/ui/button'
 import { Pill } from '@renderer/components/ui/pill'
 import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
-import { ScorePlayerModal, type ScoreEntry } from './ScorePlayerModal'
+import { ScorePlayerModal, type SubmissionResult } from './ScorePlayerModal'
 import { cn } from '@renderer/lib/utils'
 
 type PlayerRow = Player & {
@@ -137,33 +138,30 @@ export function ScoringSection() {
     setModalSubmitting(false)
   }
 
-  const handleSaveScores = async (entries: ScoreEntry[]) => {
-    if (!modalState.open) return
+  const handleSaveScores = async (entries: ItemScoreEventInput[]): Promise<SubmissionResult> => {
+    if (!modalState.open) {
+      return { success: false, errors: ['Score modal is not open'] }
+    }
     setModalSubmitting(true)
     try {
-      const payload = entries.map((entry) => ({
-        kind: 'item' as const,
-        playerId: modalState.player.id,
-        scoreableId: entry.scoreableId,
-        state: entry.state,
-        value: entry.state === 'value' ? (entry.value ?? null) : null,
-        priorEventId: entry.priorEventId
-      }))
-      const result = await window.api.events.record(payload)
+      const result = await window.api.events.record(entries)
       if (!result.success) {
         if (result.errors.length) {
           result.errors.forEach((message) => toast.error(message))
         } else {
           toast.error('Unable to record scores')
         }
-        return
+        return result
       }
       toast.success('Scores saved')
       closeModal()
       await fetchResults()
+      return result
     } catch (error) {
       console.error('Failed to record scores', error)
       toast.error('Unable to record scores')
+      return { success: false, errors: ['Unable to record scores'] }
+    } finally {
       setModalSubmitting(false)
     }
   }

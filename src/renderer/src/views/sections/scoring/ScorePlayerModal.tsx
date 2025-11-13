@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import type { Player } from '@core/players/players'
 import type { Scoreable } from '@core/tournaments/scoreables'
 import type { ItemResult } from '@core/tournaments/results'
+import type { ItemScoreEventInput } from '@core/events/events'
 import { Modal } from '@renderer/components/Modal'
 import { Field } from '@renderer/components/ui/field'
 import { Label } from '@renderer/components/ui/label'
@@ -10,11 +11,9 @@ import { Input } from '@renderer/components/ui/input'
 import { Button } from '@renderer/components/ui/button'
 import { Pill } from '@renderer/components/ui/pill'
 
-export type ScoreEntry = {
-  scoreableId: string
-  state: 'value' | 'empty'
-  value?: number
-  priorEventId?: string
+export type SubmissionResult = {
+  success: boolean
+  errors: string[]
 }
 
 type ScorePlayerModalProps = {
@@ -22,13 +21,11 @@ type ScorePlayerModalProps = {
   player?: Player
   scoreables: Scoreable[]
   existingResults?: Map<string, ItemResult>
-  onSubmit: (entries: ScoreEntry[]) => Promise<void>
+  onSubmit: (entries: ItemScoreEventInput[]) => Promise<SubmissionResult>
   onVoidScorecard?: () => Promise<void>
   submitting: boolean
   onClose: () => void
 }
-
-type FormErrors = Record<string, string | undefined>
 
 export function ScorePlayerModal({
   open,
@@ -41,22 +38,25 @@ export function ScorePlayerModal({
   onClose
 }: ScorePlayerModalProps) {
   const [values, setValues] = useState<Record<string, string>>({})
-  const [errors, setErrors] = useState<FormErrors>({})
   const [empties, setEmpties] = useState<Set<string>>(new Set())
+  const [submissionErrors, setSubmissionErrors] = useState<string[]>([])
   const [voiding, setVoiding] = useState(false)
 
   const hasRequirements = scoreables.length > 0
 
   useEffect(() => {
     if (!open) return
-    setErrors({})
+    setSubmissionErrors([])
+
     if (!scoreables.length) {
       setValues({})
       setEmpties(new Set())
       return
     }
+
     const initialValues: Record<string, string> = {}
     const initialEmpties = new Set<string>()
+
     for (const scoreable of scoreables) {
       const existing = existingResults?.get(scoreable.id)
       if (existing?.status === 'value' && typeof existing.value === 'number') {
@@ -68,6 +68,7 @@ export function ScorePlayerModal({
         initialEmpties.add(scoreable.id)
       }
     }
+
     setValues(initialValues)
     setEmpties(initialEmpties)
   }, [open, scoreables, existingResults])
@@ -99,49 +100,40 @@ export function ScorePlayerModal({
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+
     if (!player || !hasRequirements) return
 
-    const nextErrors: FormErrors = {}
-    const submissions: ScoreEntry[] = []
+    const submissions: ItemScoreEventInput[] = []
 
     for (const scoreable of scoreables) {
       const existing = existingResults?.get(scoreable.id)
       const isEmpty = empties.has(scoreable.id)
-      const raw = values[scoreable.id]?.trim()
+      const raw = values[scoreable.id]?.trim() ?? ''
+      const parsed = raw === '' ? undefined : Number(raw)
+
+      const base: Omit<ItemScoreEventInput, 'state' | 'value'> = {
+        kind: 'item',
+        playerId: player.id,
+        scoreableId: scoreable.id,
+        priorEventId: existing?.srcEventId,
+        field: scoreable.label
+      }
 
       if (isEmpty) {
         submissions.push({
-          scoreableId: scoreable.id,
-          state: 'empty',
-          priorEventId: existing?.srcEventId
+          ...base,
+          state: 'empty'
         })
-        continue
-      }
-
-      if (!raw) {
-        nextErrors[scoreable.id] = 'Required'
-        continue
-      }
-
-      const parsed = Number(raw)
-      if (!Number.isFinite(parsed)) {
-        nextErrors[scoreable.id] = 'Must be a number'
         continue
       }
 
       if (!existing || existing.status !== 'value' || existing.value !== parsed) {
         submissions.push({
-          scoreableId: scoreable.id,
+          ...base,
           state: 'value',
-          value: parsed,
-          priorEventId: existing?.srcEventId
+          value: parsed
         })
       }
-    }
-
-    setErrors(nextErrors)
-    if (Object.values(nextErrors).some(Boolean)) {
-      return
     }
 
     if (!submissions.length) {
@@ -149,7 +141,19 @@ export function ScorePlayerModal({
       return
     }
 
-    await onSubmit(submissions)
+    setSubmissionErrors([])
+
+    try {
+      const result = await onSubmit(submissions)
+
+      if (!result.success) {
+        setSubmissionErrors(result.errors.length ? result.errors : ['Unable to save scores'])
+      }
+    } catch (error) {
+      console.error('Failed to submit scores', error)
+
+      setSubmissionErrors(['Unable to save scores'])
+    }
   }
 
   const content = useMemo(() => {
@@ -162,7 +166,7 @@ export function ScorePlayerModal({
     }
 
     return (
-      <div className="flex flex-col gap-4">
+      <div className="grid w-full gap-6 grid-cols-2">
         {scoreables.map((scoreable) => {
           const existing = existingResults?.get(scoreable.id)
           const isEmpty = empties.has(scoreable.id)
@@ -170,7 +174,6 @@ export function ScorePlayerModal({
             <Field
               key={scoreable.id}
               label={<Label htmlFor={`score-${scoreable.id}`}>{scoreable.label}</Label>}
-              error={errors[scoreable.id]}
               description={
                 existing
                   ? existing.status === 'empty'
@@ -194,7 +197,7 @@ export function ScorePlayerModal({
                     onChange={() => toggleEmpty(scoreable.id)}
                     className="h-4 w-4"
                   />
-                  Empty
+                  None
                 </label>
               </div>
             </Field>
@@ -202,7 +205,7 @@ export function ScorePlayerModal({
         })}
       </div>
     )
-  }, [errors, existingResults, scoreables, values, empties])
+  }, [existingResults, scoreables, values, empties])
 
   const handleVoidScorecard = async () => {
     if (!onVoidScorecard || !player) return
@@ -222,31 +225,41 @@ export function ScorePlayerModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={title}>
+    <Modal open={open} onClose={onClose}>
       <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
         {player ? (
-          <div className="flex flex-wrap items-center gap-3 text-sm ro-text-muted">
-            <Pill variant="muted" size="md">
-              {player.displayName}
-            </Pill>
-            <span>{player.email}</span>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-3 text-sm ro-text-muted">
+              <Pill variant="muted" size="md">
+                {player.displayName}
+              </Pill>
+              <span>{player.email}</span>
+            </div>
+            {onVoidScorecard ? (
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                onClick={handleVoidScorecard}
+                disabled={submitting || voiding}
+              >
+                {voiding ? 'Voiding...' : 'Void Scorecard'}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+        {submissionErrors.length ? (
+          <div className="rounded-md border border-dashed ro-border ro-bg-dim p-3 text-sm ro-text-error">
+            <div className="font-semibold">Unable to save scores</div>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              {submissionErrors.map((message, index) => (
+                <li key={`${message}-${index}`}>{message}</li>
+              ))}
+            </ul>
           </div>
         ) : null}
         {content}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {onVoidScorecard ? (
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              onClick={handleVoidScorecard}
-              disabled={submitting || voiding}
-            >
-              {voiding ? 'Voiding...' : 'Void Scorecard'}
-            </Button>
-          ) : (
-            <span />
-          )}
+        <div className="flex flex-wrap items-center justify-end gap-3">
           <Button
             type="button"
             variant="outline-muted"
