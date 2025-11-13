@@ -9,7 +9,7 @@ type EventError = {
 
 type ResolveFn = (id: EventId) => RodeoEvent | undefined
 
-export function applyEvent(results: Results, e: RodeoEvent, resolve: ResolveFn): EventError[] {
+export function reduceEvent(results: Results, e: RodeoEvent, resolve: ResolveFn): EventError[] {
   const errors: EventError[] = []
 
   // Void clears the player's scorecard
@@ -67,14 +67,14 @@ export function applyEvent(results: Results, e: RodeoEvent, resolve: ResolveFn):
   return errors
 }
 
-export function applyBatch(
+export function reduceBatch(
   results: Results,
   events: RodeoEvent[],
   resolve: ResolveFn
 ): { results: Results; errors: EventError[] } {
   const errors: EventError[] = []
   for (const e of sortEventsByTime(events)) {
-    errors.push(...applyEvent(results, e, resolve))
+    errors.push(...reduceEvent(results, e, resolve))
   }
   return { results, errors }
 }

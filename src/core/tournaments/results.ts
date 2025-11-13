@@ -1,12 +1,5 @@
-import { applyBatch, applyEvent } from '@core/events/eventReducer'
-import {
-  appendEvent,
-  EventId,
-  getEvent,
-  listAllEvents,
-  ItemState,
-  RodeoEvent
-} from '@core/events/events'
+import { reduceBatch } from '@core/events/eventReducer'
+import { EventId, getEvent, listAllEvents, ItemState } from '@core/events/events'
 import { Timestamp } from '@core/types/Shared'
 import { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 
@@ -74,16 +67,5 @@ export function buildResults(db: BetterSQLite3Database) {
   const resolve = (id: ULID) => getEvent(db, id)
   const emptyResults: Results = new Map()
 
-  return applyBatch(emptyResults, events, resolve)
-}
-
-/**
- * Record an event to a given DB. Apply that event to the given results map.
- */
-export function recordEvent(db: BetterSQLite3Database, results: Results, event: RodeoEvent) {
-  appendEvent(db, event)
-
-  const resolve = (id: ULID) => getEvent(db, id)
-
-  return applyEvent(results, event, resolve)
+  return reduceBatch(emptyResults, events, resolve)
 }

@@ -10,6 +10,8 @@ export type EventId = ULID
 
 export type ItemState = 'value' | 'empty'
 
+export type { ItemScoreEventInput, ScorecardVoidEventInput, ScoreEventInput } from './eventInputs'
+
 export interface BaseEvent {
   id: EventId
   ts: Timestamp

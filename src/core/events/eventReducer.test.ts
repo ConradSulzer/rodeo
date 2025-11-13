@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ulid } from 'ulid'
-import { applyBatch, applyEvent } from './eventReducer'
+import { reduceBatch, reduceEvent } from './eventReducer'
 import { type ItemStateChanged, type RodeoEvent, type ScorecardVoided } from './events'
 import type { Results } from '@core/tournaments/results'
 
@@ -25,7 +25,7 @@ describe('eventReducer', () => {
 
     const scored = makeItemEvent()
 
-    const errors = applyEvent(results, scored, (id) => lookup.get(id))
+    const errors = reduceEvent(results, scored, (id) => lookup.get(id))
 
     expect(errors).toHaveLength(0)
     const items = results.get(scored.playerId)
@@ -44,10 +44,10 @@ describe('eventReducer', () => {
     const lookup = new Map<string, RodeoEvent>()
     const scored = makeItemEvent()
 
-    applyEvent(results, scored, (id) => lookup.get(id))
+    reduceEvent(results, scored, (id) => lookup.get(id))
 
     const duplicate = { ...scored, id: ulid(), value: 15, ts: scored.ts + 1 }
-    const errors = applyEvent(results, duplicate, (id) => lookup.get(id))
+    const errors = reduceEvent(results, duplicate, (id) => lookup.get(id))
 
     expect(errors).toHaveLength(1)
     expect(errors[0].message).toContain('already exists')
@@ -62,7 +62,7 @@ describe('eventReducer', () => {
     const scored = makeItemEvent()
 
     lookup.set(scored.id, scored)
-    applyEvent(results, scored, (id) => lookup.get(id))
+    reduceEvent(results, scored, (id) => lookup.get(id))
 
     const corrected: ItemStateChanged = {
       type: 'ItemStateChanged',
@@ -77,7 +77,7 @@ describe('eventReducer', () => {
     }
 
     lookup.set(corrected.id, corrected)
-    const correctionErrors = applyEvent(results, corrected, (id) => lookup.get(id))
+    const correctionErrors = reduceEvent(results, corrected, (id) => lookup.get(id))
     expect(correctionErrors).toHaveLength(0)
 
     const itemAfterCorrection = results.get(scored.playerId)?.get(scored.scoreableId)
@@ -98,7 +98,7 @@ describe('eventReducer', () => {
       note: 'bad data'
     }
 
-    const voidErrors = applyEvent(results, voided, (id) => lookup.get(id))
+    const voidErrors = reduceEvent(results, voided, (id) => lookup.get(id))
     expect(voidErrors).toHaveLength(0)
     expect(results.get(scored.playerId)?.get(scored.scoreableId)?.status).toBe('empty')
   })
@@ -108,7 +108,7 @@ describe('eventReducer', () => {
     const lookup = new Map<string, RodeoEvent>()
     const scored = makeItemEvent()
     lookup.set(scored.id, scored)
-    applyEvent(results, scored, (id) => lookup.get(id))
+    reduceEvent(results, scored, (id) => lookup.get(id))
 
     const staleCorrection: ItemStateChanged = {
       type: 'ItemStateChanged',
@@ -121,7 +121,7 @@ describe('eventReducer', () => {
       value: 5
     }
 
-    const staleErrors = applyEvent(results, staleCorrection, (id) => lookup.get(id))
+    const staleErrors = reduceEvent(results, staleCorrection, (id) => lookup.get(id))
     expect(staleErrors).toHaveLength(1)
     expect(staleErrors[0].message).toContain('older than the current result')
 
@@ -130,7 +130,7 @@ describe('eventReducer', () => {
       ts: scored.ts + 5,
       priorEventId: ulid()
     }
-    const missingErrors = applyEvent(results, missingPrior, () => undefined)
+    const missingErrors = reduceEvent(results, missingPrior, () => undefined)
     expect(missingErrors).toHaveLength(1)
     expect(missingErrors[0].message).toContain('No prior event exists')
   })
@@ -164,7 +164,7 @@ describe('eventReducer', () => {
     lookup.set(corrected.id, corrected)
     lookup.set(voided.id, voided)
 
-    const { errors } = applyBatch(results, [voided, scored, corrected], (id) => lookup.get(id))
+    const { errors } = reduceBatch(results, [voided, scored, corrected], (id) => lookup.get(id))
     expect(errors.filter(Boolean)).toHaveLength(0)
     expect(results.get(scored.playerId)?.get(scored.scoreableId)?.status).toBe('empty')
   })
@@ -175,14 +175,14 @@ describe('eventReducer', () => {
 
     const first = makeItemEvent()
     lookup.set(first.id, first)
-    applyEvent(results, first, (id) => lookup.get(id))
+    reduceEvent(results, first, (id) => lookup.get(id))
 
     const second = makeItemEvent({
       playerId: first.playerId,
       scoreableId: ulid()
     })
     lookup.set(second.id, second)
-    applyEvent(results, second, (id) => lookup.get(id))
+    reduceEvent(results, second, (id) => lookup.get(id))
 
     const voidEvent: ScorecardVoided = {
       type: 'ScorecardVoided',
@@ -191,7 +191,7 @@ describe('eventReducer', () => {
       playerId: first.playerId
     }
 
-    const errors = applyEvent(results, voidEvent, (id) => lookup.get(id))
+    const errors = reduceEvent(results, voidEvent, (id) => lookup.get(id))
     expect(errors).toHaveLength(0)
     expect(results.get(first.playerId)?.size).toBe(0)
   })

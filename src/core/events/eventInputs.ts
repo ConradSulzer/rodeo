@@ -1,98 +1,125 @@
 import { z } from 'zod'
-import type { Timestamp } from '@core/types/Shared'
-import { ulid } from 'ulid'
-import { EventId, ItemStateChanged, RodeoEvent, ScorecardVoided } from './events'
+import { ulid, type ULID } from 'ulid'
+import { getScoreable } from '@core/tournaments/scoreables'
+import { cloneResults, type Results } from '@core/tournaments/results'
+import { reduceEvent } from './eventReducer'
+import { getEvent } from './events'
+import type { EventId, RodeoEvent } from './events'
+import type { AppDatabase } from '@core/db/db'
 
-export const itemStateSchema = z.enum(['value', 'empty'])
-export type ItemState = z.infer<typeof itemStateSchema>
-
-type IdGen = () => EventId
-const defaultId: IdGen = () => ulid()
-
-const baseItemFields = {
-  kind: z.literal('item'),
-  playerId: z.string().min(1),
-  scoreableId: z.string().min(1),
-  priorEventId: z.string().min(1).optional(),
-  note: z.string().optional()
-} as const
-
-// key in on the 'state' field and require 'value' if 'state == value'
-export const itemScoreEventAttrsSchema = z.discriminatedUnion('state', [
-  z.object({
-    ...baseItemFields,
-    state: z.literal('value'),
-    value: z.preprocess(
-      // allow number or strings for value
-      // convert empty strings to undefined because coerce() turns them into 0
-      (raw) => {
-        if (typeof raw === 'string' && raw.trim() === '') {
-          return undefined
-        }
-        return raw
-      },
-      z.coerce.number({ error: 'Must be a number.' })
-    )
-  }),
-  z.object({
-    ...baseItemFields,
-    state: z.literal('empty'),
-    value: z.undefined().optional()
+const itemInputSchema = z
+  .object({
+    kind: z.literal('item'),
+    playerId: z.string().min(1, 'Player required'),
+    scoreableId: z.string().min(1, 'Scoreable required'),
+    state: z.union([z.literal('value'), z.literal('empty')]),
+    value: z.number().nullable().optional(),
+    priorEventId: z.string().min(1).optional(),
+    note: z.string().optional()
   })
-])
+  .superRefine((data, ctx) => {
+    if (data.state === 'value' && (data.value === undefined || data.value === null)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Value required when state is value',
+        path: ['value']
+      })
+    }
+  })
 
-export const scorecardVoidEventAttrsSchema = z.object({
+const voidInputSchema = z.object({
   kind: z.literal('scorecard-void'),
-  playerId: z.string().min(1),
+  playerId: z.string().min(1, 'Player required'),
   note: z.string().optional()
 })
 
-// union keyed on 'kind'
-export const scoreEventAttrsSchema = z.discriminatedUnion('kind', [
-  itemScoreEventAttrsSchema,
-  scorecardVoidEventAttrsSchema
-])
+const scoreEventSchema = z.union([itemInputSchema, voidInputSchema])
 
-export type ItemScoreEventAttrs = z.infer<typeof itemScoreEventAttrsSchema>
-export type ScorecardVoidEventAttrs = z.infer<typeof scorecardVoidEventAttrsSchema>
-export type ScoreEventAttrs = z.infer<typeof scoreEventAttrsSchema>
+export type ItemScoreEventInput = z.infer<typeof itemInputSchema>
+export type ScorecardVoidEventInput = z.infer<typeof voidInputSchema>
+export type ScoreEventInput = ItemScoreEventInput | ScorecardVoidEventInput
 
-//Build a RodeoEvent from our validated event attrs above
-export function toDomainEvent(
-  input: ScoreEventAttrs,
-  ts: Timestamp,
-  genId: IdGen = defaultId
-): RodeoEvent {
-  if (input.kind === 'scorecard-void') {
-    const e: ScorecardVoided = {
-      type: 'ScorecardVoided',
-      id: genId(),
-      ts,
-      playerId: input.playerId,
+type ValidationResult =
+  | { success: true; events: RodeoEvent[] }
+  | { success: false; errors: string[] }
+
+/**
+ * Takes in event form inputs, validates them again Zod, verifies their respective
+ * scoreables exists where applicable, turns the inputs into RodeoEvents, simulates
+ * applying them to a clone of current results and if all is successful, returns an
+ * object with those events.
+ */
+export async function buildEventsFromInputs(
+  db: AppDatabase,
+  submissions: ScoreEventInput[],
+  results: Results
+): Promise<ValidationResult> {
+  const errors: string[] = []
+  const parsedInputs: ScoreEventInput[] = []
+
+  for (const submission of submissions) {
+    const parsed = scoreEventSchema.safeParse(submission)
+
+    if (!parsed.success) {
+      errors.push(...parsed.error.issues.map((issue) => issue.message))
+      continue
+    }
+
+    const data = parsed.data
+
+    // Ensure the scoreable this event is for exists.
+    if (data.kind === 'item') {
+      const scoreable = getScoreable(db, data.scoreableId)
+
+      if (!scoreable) {
+        errors.push(`Scoreable not found for ${data.scoreableId}`)
+        continue
+      }
+    }
+
+    parsedInputs.push(data as ScoreEventInput)
+  }
+
+  if (errors.length) return { success: false, errors }
+
+  const events: RodeoEvent[] = parsedInputs.map((input) => {
+    if (input.kind === 'scorecard-void') {
+      return {
+        type: 'ScorecardVoided',
+        id: ulid(),
+        ts: Date.now(),
+        playerId: input.playerId as ULID,
+        note: input.note
+      }
+    }
+
+    return {
+      type: 'ItemStateChanged',
+      id: ulid(),
+      ts: Date.now(),
+      playerId: input.playerId as ULID,
+      scoreableId: input.scoreableId as ULID,
+      state: input.state,
+      value: input.state === 'value' ? (input.value as number) : undefined,
+      priorEventId: input.priorEventId as EventId | undefined,
       note: input.note
     }
-    return e
+  })
+
+  const simulation = cloneResults(results)
+  const resolve = (id: EventId) => getEvent(db, id)
+
+  for (const event of events) {
+    const simErrors = reduceEvent(simulation, event, resolve)
+    if (simErrors.length) {
+      errors.push(...simErrors.map((err) => err.message))
+      break
+    }
   }
 
-  // kind === 'item'
-  const e: ItemStateChanged = {
-    type: 'ItemStateChanged',
-    id: genId(),
-    ts,
-    playerId: input.playerId,
-    scoreableId: input.scoreableId,
-    state: input.state,
-    value: input.state === 'value' ? input.value : undefined,
-    priorEventId: input.priorEventId,
-    note: input.note
+  if (errors.length) {
+    return { success: false, errors }
   }
-  return e
-}
 
-export function toDomainEvents(
-  inputs: ScoreEventAttrs[],
-  ts: Timestamp,
-  genId: IdGen = defaultId
-): RodeoEvent[] {
-  return inputs.map((i) => toDomainEvent(i, ts, genId))
+  return { success: true, events }
 }
