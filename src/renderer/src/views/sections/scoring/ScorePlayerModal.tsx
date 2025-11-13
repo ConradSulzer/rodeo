@@ -73,8 +73,6 @@ export function ScorePlayerModal({
     setEmpties(initialEmpties)
   }, [open, scoreables, existingResults])
 
-  const title = player ? `Score ${player.displayName}` : 'Score Player'
-
   const handleValueChange = (scoreableId: string, next: string) => {
     setEmpties((prev) => {
       if (!prev.has(scoreableId)) return prev
@@ -166,7 +164,7 @@ export function ScorePlayerModal({
     }
 
     return (
-      <div className="grid w-full gap-6 grid-cols-2">
+      <div className="grid gap-x-20 gap-y-8 grid-cols-2">
         {scoreables.map((scoreable) => {
           const existing = existingResults?.get(scoreable.id)
           const isEmpty = empties.has(scoreable.id)
@@ -182,7 +180,7 @@ export function ScorePlayerModal({
                   : undefined
               }
             >
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-3">
                 <Input
                   id={`score-${scoreable.id}`}
                   type="number"
@@ -190,15 +188,15 @@ export function ScorePlayerModal({
                   value={values[scoreable.id] ?? ''}
                   onChange={(event) => handleValueChange(scoreable.id, event.target.value)}
                 />
-                <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] ro-text-muted">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] ro-text-muted">
                   <input
                     type="checkbox"
                     checked={isEmpty}
                     onChange={() => toggleEmpty(scoreable.id)}
                     className="h-4 w-4"
                   />
-                  None
-                </label>
+                  <label>None</label>
+                </div>
               </div>
             </Field>
           )
@@ -225,27 +223,14 @@ export function ScorePlayerModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose}>
+    <Modal open={open} onClose={onClose} contentClassName="max-w-150">
       <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
         {player ? (
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-3 text-sm ro-text-muted">
-              <Pill variant="muted" size="md">
-                {player.displayName}
-              </Pill>
-              <span>{player.email}</span>
-            </div>
-            {onVoidScorecard ? (
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                onClick={handleVoidScorecard}
-                disabled={submitting || voiding}
-              >
-                {voiding ? 'Voiding...' : 'Void Scorecard'}
-              </Button>
-            ) : null}
+          <div className="flex flex-col w-full justify-start gap-3 text-sm ro-text-muted">
+            <Pill size="md" className="w-fit">
+              {player.displayName}
+            </Pill>
+            <span>{player.email}</span>
           </div>
         ) : null}
         {submissionErrors.length ? (
@@ -259,24 +244,37 @@ export function ScorePlayerModal({
           </div>
         ) : null}
         {content}
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          <Button
-            type="button"
-            variant="outline-muted"
-            size="sm"
-            onClick={onClose}
-            disabled={submitting}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            size="sm"
-            variant="positive"
-            disabled={submitting || !hasRequirements}
-          >
-            {submitting ? 'Saving...' : 'Save Scores'}
-          </Button>
+        <div className="flex items-center justify-between gap-3 mt-12">
+          {onVoidScorecard ? (
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={handleVoidScorecard}
+              disabled={submitting || voiding}
+            >
+              {voiding ? 'Voiding...' : 'Void Scorecard'}
+            </Button>
+          ) : null}
+          <div className="flex gap-3">
+            <Button
+              type="button"
+              variant="outline-muted"
+              size="sm"
+              onClick={onClose}
+              disabled={submitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              variant="positive"
+              disabled={submitting || !hasRequirements}
+            >
+              {submitting ? 'Saving...' : 'Save Scores'}
+            </Button>
+          </div>
         </div>
       </form>
     </Modal>

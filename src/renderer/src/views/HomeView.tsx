@@ -88,7 +88,12 @@ export function HomeView(): JSX.Element {
           </Button>
         </CardContent>
       </Card>
-      <Modal open={showRecents} onClose={() => setShowRecents(false)} title="Choose Recent:">
+      <Modal
+        open={showRecents}
+        onClose={() => setShowRecents(false)}
+        title="Choose Recent:"
+        contentClassName="max-w-fit"
+      >
         {recents.length ? (
           <div className="flex flex-col gap-3">
             {recents.map((filePath) => (

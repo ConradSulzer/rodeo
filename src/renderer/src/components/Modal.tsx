@@ -58,7 +58,7 @@ export function Modal({
     >
       <div
         className={cn(
-          'flex w-full flex-col overflow-hidden rounded-md border ro-border ro-bg-main shadow-[0_24px_60px_rgba(0,0,0,0.35)]',
+          'flex w-full flex-col overflow-hidden rounded-md border ro-border ro-bg-modal shadow-[0_24px_60px_rgba(0,0,0,0.35)]',
           contentClassName
         )}
         onMouseDown={(event) => event.stopPropagation()}

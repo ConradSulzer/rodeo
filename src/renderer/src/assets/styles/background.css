@@ -51,4 +51,12 @@
   .ro-bg-info-10 {
     background-color: var(--ro-info) / 10;
   }
+
+  .ro-bg-modal {
+    background-color: var(--ro-bg-modal);
+  }
+
+  .ro-bg-input {
+    background-color: var(--ro-bg-input);
+  }
 }
