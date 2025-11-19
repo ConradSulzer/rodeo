@@ -236,6 +236,8 @@ export function CategoriesSection() {
   }
 
   const isEmpty = !loading && categories.length === 0
+  const categoryCount = categories.length
+  const categoryCountLabel = loading ? '—' : categoryCount.toLocaleString()
 
   const editModalCategory = useMemo(() => {
     if (!formState.open || formState.mode !== 'edit' || !formState.category) return undefined
@@ -249,6 +251,7 @@ export function CategoriesSection() {
     <>
       <ManageSectionShell
         title="Categories"
+        titleAdornment={<Pill>{categoryCountLabel}</Pill>}
         description="Group scoreables into logical buckets for scoring."
         onAdd={openCreateModal}
         addLabel="Add Category"

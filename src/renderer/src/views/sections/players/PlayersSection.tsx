@@ -258,11 +258,14 @@ export function PlayersSection() {
   }
 
   const isEmpty = !loading && filteredPlayers.length === 0
+  const playerCount = players.length
+  const playerCountLabel = loading ? '—' : playerCount.toLocaleString()
 
   return (
     <>
       <ManageSectionShell
         title="Players"
+        titleAdornment={<Pill>{playerCountLabel}</Pill>}
         description="Manage the roster, eligibility, and division assignments for the event."
         searchPlaceholder="Search name, email, or division"
         searchValue={query}

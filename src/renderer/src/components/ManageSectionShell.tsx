@@ -4,6 +4,7 @@ import { SearchInput } from './ui/search_input'
 
 type ManageSectionShellProps = {
   title: string
+  titleAdornment?: ReactNode
   description?: string
   children: ReactNode
   searchPlaceholder?: string
@@ -17,6 +18,7 @@ type ManageSectionShellProps = {
 
 export function ManageSectionShell({
   title,
+  titleAdornment,
   description,
   children,
   searchPlaceholder,
@@ -34,7 +36,12 @@ export function ManageSectionShell({
     <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
       <header className="flex gap-4 flex-row items-start justify-between">
         <div>
-          <h2 className="font-mono text-[16px] font-semibold uppercase tracking-[2px]">{title}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="font-mono text-[16px] font-semibold uppercase tracking-[2px]">
+              {title}
+            </h2>
+            {titleAdornment ? <div className="flex items-center">{titleAdornment}</div> : null}
+          </div>
           {description ? <p className="mt-2 max-w-2xl text-sm ro-text-dim">{description}</p> : null}
         </div>
         <div className="flex flex-wrap items-center gap-3 md:justify-end">

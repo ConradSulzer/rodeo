@@ -21,6 +21,7 @@ import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
 import { DraggablePillList } from '@renderer/components/dnd/DraggablePillList'
 import { DivisionFormModal, type DivisionFormValues } from './DivisionFormModal'
 import { DivisionDetailsModal } from './DivisionDetailsModal'
+import { Pill } from '@renderer/components/ui/pill'
 
 type FormState =
   | { open: false; mode: null; division?: undefined }
@@ -258,6 +259,8 @@ export function DivisionsSection() {
   }
 
   const isEmpty = !loading && divisions.length === 0
+  const divisionCount = divisions.length
+  const divisionCountLabel = loading ? '—' : divisionCount.toLocaleString()
 
   const editModalDivision = useMemo(() => {
     if (!formState.open || formState.mode !== 'edit' || !formState.division) return undefined
@@ -271,6 +274,7 @@ export function DivisionsSection() {
     <>
       <ManageSectionShell
         title="Divisions"
+        titleAdornment={<Pill>{divisionCountLabel}</Pill>}
         description="Group categories into divisions to manage scoring."
         onAdd={openCreateModal}
         addLabel="Add Division"

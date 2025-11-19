@@ -9,7 +9,7 @@ import { reduceEvent } from '@core/events/eventReducer'
 import type { ULID } from 'ulid'
 
 /**
- * A callback that runs with `state` when store `state` changes.
+ * A listener is a function that is called with `state` when store `state` changes.
  */
 type Listener = (serializedState: SerializableTournamentState) => void
 

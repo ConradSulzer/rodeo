@@ -180,11 +180,14 @@ export function ScoreablesSection() {
   }
 
   const isEmpty = !loading && scoreables.length === 0
+  const scoreableCount = scoreables.length
+  const scoreableCountLabel = loading ? '—' : scoreableCount.toLocaleString()
 
   return (
     <>
       <ManageSectionShell
         title="Scoreables"
+        titleAdornment={<Pill>{scoreableCountLabel}</Pill>}
         description="Manage scoreable metrics available for scoring."
         onAdd={openCreateModal}
         addLabel="Add Scoreable"
