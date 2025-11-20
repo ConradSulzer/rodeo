@@ -29,6 +29,16 @@ const itemInputSchema = z
         path: ['value']
       })
     }
+
+    if (data.state === 'value' && data.value !== undefined && data.value !== null) {
+      if (data.value !== Number(data.value.toFixed(3))) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Value can have at most three decimal places.',
+          path: ['value']
+        })
+      }
+    }
   })
 
 const voidInputSchema = z.object({

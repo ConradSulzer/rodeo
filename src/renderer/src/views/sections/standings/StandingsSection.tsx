@@ -254,9 +254,7 @@ export function StandingsSection() {
                 {showCountColumn ? (
                   <TableCell className="text-right font-mono text-sm">{entry.itemCount}</TableCell>
                 ) : null}
-                <TableCell className="text-right font-mono text-sm">
-                  {Number.isFinite(entry.total) ? entry.total : '—'}
-                </TableCell>
+                <TableCell className="text-right font-mono text-sm">{entry.total}</TableCell>
               </TableRow>
             )
           })}
