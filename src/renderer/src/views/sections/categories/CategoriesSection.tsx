@@ -1,9 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi'
 import type { CategoryView, NewCategory, PatchCategory } from '@core/tournaments/categories'
-import type { Scoreable } from '@core/tournaments/scoreables'
-import type { StandingRuleSummary } from '@core/tournaments/standingRules'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 import {
   type CrudTableColumn,
@@ -17,6 +15,10 @@ import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
 import { CategoryFormModal, type CategoryFormValues } from './CategoryFormModal'
 import { CategoryDetailsModal } from './CategoryDetailsModal'
 import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
+import { useCategoryViewsQuery, useStandingRulesQuery } from '@renderer/queries/categories'
+import { useScoreablesListQuery } from '@renderer/queries/scoreables'
+import { useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@renderer/queries/queryKeys'
 
 type FormState =
   | { open: false; mode: null; category?: undefined }
@@ -40,67 +42,20 @@ const columns: ReadonlyArray<CrudTableColumn<CategoryView, 'actions'>> = [
   { key: 'actions', label: 'Actions', sortable: false, align: 'right' }
 ]
 
-const CATEGORY_FUZZY_FIELDS: Array<keyof CategoryView & string> = ['name', 'direction', 'id']
+const CATEGORY_FUZZY_FIELDS: Array<keyof CategoryView & string> = ['name', 'id']
 
 export function CategoriesSection() {
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [categories, setCategories] = useState<CategoryView[]>([])
-  const [scoreables, setScoreables] = useState<Scoreable[]>([])
-  const [standingRules, setStandingRules] = useState<StandingRuleSummary[]>([])
-
+  const queryClient = useQueryClient()
   const [formState, setFormState] = useState<FormState>({ open: false, mode: null })
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [detailsState, setDetailsState] = useState<DetailsState>({ open: false })
   const [deleteState, setDeleteState] = useState<DeleteState>({ open: false, deleting: false })
+  const { data: categories = [], isLoading, isFetching } = useCategoryViewsQuery()
+  const { data: scoreables = [] } = useScoreablesListQuery()
+  const { data: standingRules = [] } = useStandingRulesQuery()
 
-  const fetchCategories = useCallback(async (silent = false) => {
-    if (silent) {
-      setRefreshing(true)
-    } else {
-      setLoading(true)
-    }
-    try {
-      const views = await window.api.categories.listViews()
-      setCategories(views)
-    } catch (error) {
-      console.error('Failed to load categories', error)
-      toast.error('Failed to load categories')
-    } finally {
-      if (silent) {
-        setRefreshing(false)
-      } else {
-        setLoading(false)
-      }
-    }
-  }, [])
-
-  const fetchScoreables = useCallback(async () => {
-    try {
-      const list = await window.api.scoreables.list()
-      const sorted = [...list].sort((a, b) => a.label.localeCompare(b.label))
-      setScoreables(sorted)
-    } catch (error) {
-      console.error('Failed to load scoreables for categories form', error)
-      toast.error('Failed to load scoreables')
-    }
-  }, [])
-
-  const fetchStandingRules = useCallback(async () => {
-    try {
-      const rules = await window.api.categories.listRules()
-      setStandingRules(rules)
-    } catch (error) {
-      console.error('Failed to load standing rules', error)
-      toast.error('Failed to load standing rules')
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchCategories()
-    fetchScoreables()
-    fetchStandingRules()
-  }, [fetchCategories, fetchScoreables, fetchStandingRules])
+  const invalidateCategories = () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.categories.views() })
 
   const {
     results: filteredCategories,
@@ -207,7 +162,7 @@ export function CategoriesSection() {
         toast.success('Category updated')
       }
 
-      await fetchCategories(true)
+      await invalidateCategories()
       setFormState({ open: false, mode: null })
     } catch (error) {
       console.error('Failed to submit category form', error)
@@ -227,7 +182,7 @@ export function CategoriesSection() {
       }
       toast.success(`Deleted ${deleteState.category.name}`)
       setDeleteState({ open: false, deleting: false, category: undefined })
-      await fetchCategories(true)
+      await invalidateCategories()
     } catch (error) {
       console.error('Failed to delete category', error)
       toast.error('Could not delete category')
@@ -235,9 +190,10 @@ export function CategoriesSection() {
     }
   }
 
-  const isEmpty = !loading && categories.length === 0
+  const refreshing = isFetching && !isLoading
+  const isEmpty = !isLoading && categories.length === 0
   const categoryCount = categories.length
-  const categoryCountLabel = loading ? '—' : categoryCount.toLocaleString()
+  const categoryCountLabel = isLoading ? '—' : categoryCount.toLocaleString()
 
   const editModalCategory = useMemo(() => {
     if (!formState.open || formState.mode !== 'edit' || !formState.category) return undefined
@@ -260,7 +216,7 @@ export function CategoriesSection() {
         searchValue={query}
         onSearchChange={setQuery}
       >
-        {loading ? (
+        {isLoading ? (
           <div className="flex flex-1 items-center justify-center ro-text-muted">
             Loading categories...
           </div>

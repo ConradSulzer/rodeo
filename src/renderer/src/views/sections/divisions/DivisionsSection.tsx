@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi'
-import type { Category } from '@core/tournaments/categories'
 import type {
   DivisionCategoryView,
   DivisionView,
@@ -22,6 +21,10 @@ import { DraggablePillList } from '@renderer/components/dnd/DraggablePillList'
 import { DivisionFormModal, type DivisionFormValues } from './DivisionFormModal'
 import { DivisionDetailsModal } from './DivisionDetailsModal'
 import { Pill } from '@renderer/components/ui/pill'
+import { useDivisionViewsQuery } from '@renderer/queries/divisions'
+import { useCategoryListQuery } from '@renderer/queries/categories'
+import { useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@renderer/queries/queryKeys'
 
 type FormState =
   | { open: false; mode: null; division?: undefined }
@@ -49,52 +52,25 @@ const columns: ReadonlyArray<CrudTableColumn<DivisionView, 'actions' | 'categori
 const sortPlaceholder = { key: 'order' as keyof DivisionView & string, direction: 'asc' as const }
 
 export function DivisionsSection() {
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
+  const queryClient = useQueryClient()
   const [divisions, setDivisions] = useState<DivisionView[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
 
   const [formState, setFormState] = useState<FormState>({ open: false, mode: null })
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [detailsState, setDetailsState] = useState<DetailsState>({ open: false })
   const [deleteState, setDeleteState] = useState<DeleteState>({ open: false, deleting: false })
 
-  const fetchDivisions = useCallback(async (silent = false) => {
-    if (silent) {
-      setRefreshing(true)
-    } else {
-      setLoading(true)
-    }
-    try {
-      const views = await window.api.divisions.listViews()
-      setDivisions(views)
-    } catch (error) {
-      console.error('Failed to load divisions', error)
-      toast.error('Failed to load divisions')
-    } finally {
-      if (silent) {
-        setRefreshing(false)
-      } else {
-        setLoading(false)
-      }
-    }
-  }, [])
-
-  const fetchCategories = useCallback(async () => {
-    try {
-      const list = await window.api.categories.list()
-      const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name))
-      setCategories(sorted)
-    } catch (error) {
-      console.error('Failed to load categories', error)
-      toast.error('Failed to load categories')
-    }
-  }, [])
+  const { data: divisionData = [], isLoading, isFetching } = useDivisionViewsQuery()
+  const { data: categoriesList = [] } = useCategoryListQuery()
 
   useEffect(() => {
-    fetchDivisions()
-    fetchCategories()
-  }, [fetchDivisions, fetchCategories])
+    setDivisions(divisionData)
+  }, [divisionData])
+
+  const categories = categoriesList
+
+  const invalidateDivisions = () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.divisions.views() })
 
   const openCreateModal = () => setFormState({ open: true, mode: 'create' })
   const openEditModal = (division: DivisionView) =>
@@ -182,7 +158,7 @@ export function DivisionsSection() {
         toast.success('Division updated')
       }
 
-      await fetchDivisions(true)
+      await invalidateDivisions()
       setFormState({ open: false, mode: null })
     } catch (error) {
       console.error('Failed to submit division form', error)
@@ -200,7 +176,7 @@ export function DivisionsSection() {
       if (!success) throw new Error('Delete returned false')
       toast.success(`Deleted ${deleteState.division.name}`)
       setDeleteState({ open: false, deleting: false, division: undefined })
-      await fetchDivisions(true)
+      await invalidateDivisions()
     } catch (error) {
       console.error('Failed to delete division', error)
       toast.error('Could not delete division')
@@ -214,12 +190,14 @@ export function DivisionsSection() {
       const success = await window.api.divisions.reorder(ordered.map((item) => item.id))
       if (!success) {
         toast.error('Unable to reorder divisions')
+        setDivisions(divisionData)
       } else {
-        await fetchDivisions(true)
+        await invalidateDivisions()
       }
     } catch (error) {
       console.error('Failed to reorder divisions', error)
       toast.error('Unable to reorder divisions')
+      setDivisions(divisionData)
     }
   }
 
@@ -251,16 +229,18 @@ export function DivisionsSection() {
           window.api.divisions.updateCategoryLink(divisionId, categoryId, { order: index + 1 })
         )
       )
+      await invalidateDivisions()
     } catch (error) {
       console.error('Failed to reorder division categories', error)
       toast.error('Unable to reorder categories')
-      fetchDivisions(true)
+      invalidateDivisions()
     }
   }
 
-  const isEmpty = !loading && divisions.length === 0
-  const divisionCount = divisions.length
-  const divisionCountLabel = loading ? '—' : divisionCount.toLocaleString()
+  const refreshing = isFetching && !isLoading
+  const isEmpty = !isLoading && divisionData.length === 0
+  const divisionCount = divisionData.length
+  const divisionCountLabel = isLoading ? '—' : divisionCount.toLocaleString()
 
   const editModalDivision = useMemo(() => {
     if (!formState.open || formState.mode !== 'edit' || !formState.division) return undefined
@@ -280,7 +260,7 @@ export function DivisionsSection() {
         addLabel="Add Division"
         refreshing={refreshing}
       >
-        {loading ? (
+        {isLoading ? (
           <div className="flex flex-1 items-center justify-center ro-text-muted">
             Loading divisions...
           </div>

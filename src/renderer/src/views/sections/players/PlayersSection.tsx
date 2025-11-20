@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { FiEdit2, FiTrash2, FiEye } from 'react-icons/fi'
 import type { Player, PatchPlayer, NewPlayer } from '@core/players/players'
@@ -11,8 +11,11 @@ import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
 import { CrudTableActions } from '@renderer/components/crud/CrudTableActions'
 import { CrudTableColumn, renderCrudTableHeader } from '@renderer/components/crud/CrudTableHeader'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
-import type { Division } from '@core/tournaments/divisions'
 import { Pill } from '@renderer/components/ui/pill'
+import { usePlayersWithDivisionsQuery } from '@renderer/queries/players'
+import { useDivisionsListQuery } from '@renderer/queries/divisions'
+import { useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@renderer/queries/queryKeys'
 
 type PlayerRow = Player & {
   divisions: string[]
@@ -69,9 +72,7 @@ function buildPatch(values: PlayerFormValues, current: Player): PatchPlayer | nu
 }
 
 export function PlayersSection() {
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [players, setPlayers] = useState<PlayerRow[]>([])
+  const queryClient = useQueryClient()
   const [formState, setFormState] = useState<FormState>({ open: false, mode: null })
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [deleteState, setDeleteState] = useState<DeleteState>({
@@ -83,50 +84,23 @@ export function PlayersSection() {
     open: false,
     player: undefined
   })
-  const [divisionOptions, setDivisionOptions] = useState<Division[]>([])
 
-  const fetchPlayers = useCallback(async (silent = false) => {
-    if (silent) {
-      setRefreshing(true)
-    } else {
-      setLoading(true)
-    }
-    try {
-      const list = await window.api.players.listWithDivisions()
-      const normalized: PlayerRow[] = list.map(([player, divisions]) => ({
-        ...player,
-        divisions: divisions.map((division) => division.name),
-        divisionIds: divisions.map((division) => division.id)
-      }))
-      setPlayers(normalized)
-    } catch (error) {
-      console.error('Failed to load players', error)
-      toast.error('Failed to load players')
-    } finally {
-      if (silent) {
-        setRefreshing(false)
-      } else {
-        setLoading(false)
-      }
-    }
-  }, [])
+  const { data: playerTuples = [], isLoading, isFetching } = usePlayersWithDivisionsQuery()
+  const { data: divisionOptions = [] } = useDivisionsListQuery()
 
-  useEffect(() => {
-    fetchPlayers()
-  }, [fetchPlayers])
+  const players = useMemo<PlayerRow[]>(() => {
+    return playerTuples.map(([player, divisions]) => ({
+      ...player,
+      divisions: divisions.map((division) => division.name),
+      divisionIds: divisions.map((division) => division.id)
+    }))
+  }, [playerTuples])
 
-  useEffect(() => {
-    const loadDivisions = async () => {
-      try {
-        const list = await window.api.divisions.list()
-        setDivisionOptions(list)
-      } catch (error) {
-        console.error('Failed to load divisions', error)
-        toast.error('Failed to load divisions')
-      }
-    }
-    loadDivisions()
-  }, [])
+  const invalidatePlayers = useCallback(() => {
+    return queryClient.invalidateQueries({
+      queryKey: queryKeys.players.withDivisions()
+    })
+  }, [queryClient])
 
   const {
     results: filteredPlayers,
@@ -160,6 +134,7 @@ export function PlayersSection() {
     if (!formState.open) return
 
     setFormSubmitting(true)
+    let shouldRefresh = false
     try {
       if (formState.mode === 'create') {
         const payload: NewPlayer = {
@@ -178,6 +153,7 @@ export function PlayersSection() {
           )
         )
         toast.success('Player added')
+        shouldRefresh = true
       } else if (formState.mode === 'edit') {
         const player = formState.player
         if (!player) return
@@ -202,15 +178,23 @@ export function PlayersSection() {
           }
         }
 
-        await Promise.all([
-          ...toAdd.map((divisionId) => window.api.divisions.addPlayer(divisionId, player.id)),
-          ...toRemove.map((divisionId) => window.api.divisions.removePlayer(divisionId, player.id))
-        ])
+        if (toAdd.length || toRemove.length) {
+          await Promise.all([
+            ...toAdd.map((divisionId) => window.api.divisions.addPlayer(divisionId, player.id)),
+            ...toRemove.map((divisionId) =>
+              window.api.divisions.removePlayer(divisionId, player.id)
+            )
+          ])
+        }
 
         toast.success('Player updated')
+        shouldRefresh = true
       }
 
-      await fetchPlayers(true)
+      if (shouldRefresh) {
+        await invalidatePlayers()
+      }
+
       setFormState({ open: false, mode: null })
     } catch (error) {
       console.error('Failed to submit player form', error)
@@ -249,7 +233,7 @@ export function PlayersSection() {
 
       toast.success(`Deleted ${deleteState.player.displayName}`)
       setDeleteState({ open: false, player: undefined, deleting: false })
-      await fetchPlayers(true)
+      await invalidatePlayers()
     } catch (error) {
       console.error('Failed to delete player', error)
       toast.error('Could not delete player')
@@ -257,9 +241,10 @@ export function PlayersSection() {
     }
   }
 
-  const isEmpty = !loading && filteredPlayers.length === 0
+  const refreshing = isFetching && !isLoading
+  const isEmpty = !isLoading && filteredPlayers.length === 0
   const playerCount = players.length
-  const playerCountLabel = loading ? '—' : playerCount.toLocaleString()
+  const playerCountLabel = isLoading ? '—' : playerCount.toLocaleString()
 
   return (
     <>
@@ -274,7 +259,7 @@ export function PlayersSection() {
         addLabel="Add Player"
         refreshing={refreshing}
       >
-        {loading ? (
+        {isLoading ? (
           <div className="flex flex-1 items-center justify-center ro-text-muted">
             Loading players...
           </div>
