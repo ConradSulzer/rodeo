@@ -1,8 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { Player } from '@core/players/players'
-import type { Scoreable } from '@core/tournaments/scoreables'
-import type { ItemResult } from '@core/tournaments/results'
-import type { SerializableTournamentState } from '@core/tournaments/state'
+import { useMemo } from 'react'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 import {
   renderCrudTableHeader,
@@ -10,65 +6,14 @@ import {
 } from '@renderer/components/crud/CrudTableHeader'
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@renderer/components/ui/table'
 import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
-import { toast } from 'sonner'
-
-type ResultRow = {
-  playerId: string
-  name: string
-  scores: Record<string, ItemResult | undefined>
-}
+import { useResultsData } from '@renderer/hooks/useResultsData'
 
 type ScoreColumnKey = `score-${string}`
-type SortableRow = ResultRow & Partial<Record<ScoreColumnKey, number | undefined>>
+type SortableRow = ReturnType<typeof useResultsData>['rows'][number] &
+  Partial<Record<ScoreColumnKey, number | undefined>>
 
 export function ResultsSection() {
-  const [loading, setLoading] = useState(true)
-  const [scoreables, setScoreables] = useState<Scoreable[]>([])
-  const [rows, setRows] = useState<ResultRow[]>([])
-
-  const buildRows = useCallback((state: SerializableTournamentState, players: Player[]) => {
-    const playerMap = new Map(players.map((player) => [player.id, player.displayName]))
-    const next: ResultRow[] = state.results.map((entry) => {
-      const name = playerMap.get(entry.playerId) ?? 'Unknown Player'
-      const scores: Record<string, ItemResult | undefined> = {}
-      for (const item of entry.items) {
-        scores[item.scoreableId] = item.result
-      }
-      return {
-        playerId: entry.playerId,
-        name,
-        scores
-      }
-    })
-    setRows(next)
-  }, [])
-
-  const refreshData = useCallback(async () => {
-    try {
-      const [scoreableList, playerList, state] = await Promise.all([
-        window.api.scoreables.list(),
-        window.api.players.list(),
-        window.api.tournaments.getState()
-      ])
-      setScoreables(scoreableList.sort((a, b) => a.label.localeCompare(b.label)))
-      buildRows(state, playerList)
-    } catch (error) {
-      console.error('Failed to load results', error)
-      toast.error('Failed to load results')
-    } finally {
-      setLoading(false)
-    }
-  }, [buildRows])
-
-  useEffect(() => {
-    refreshData()
-    const unsubscribe = window.api.tournaments.subscribe((state) => {
-      window.api.players.list().then((players) => buildRows(state, players))
-    })
-    return () => {
-      unsubscribe()
-    }
-  }, [buildRows, refreshData])
+  const { scoreables, rows, isLoading } = useResultsData()
 
   const columns: ReadonlyArray<CrudTableColumn<SortableRow, ScoreColumnKey>> = [
     { key: 'name', label: 'Player', sortable: true },
@@ -110,7 +55,7 @@ export function ResultsSection() {
       searchValue={query}
       onSearchChange={setQuery}
     >
-      {loading ? (
+      {isLoading ? (
         <div className="flex flex-1 items-center justify-center ro-text-muted">
           Loading results...
         </div>
