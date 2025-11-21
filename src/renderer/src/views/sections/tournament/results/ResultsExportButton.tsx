@@ -1,46 +1,31 @@
 import { useState } from 'react'
-import Papa from 'papaparse'
 import { Button } from '@renderer/components/ui/button'
 import { Modal } from '@renderer/components/Modal'
 import { toast } from 'sonner'
-import type { Player } from '@core/players/players'
-import type { Scoreable } from '@core/tournaments/scoreables'
-import type { Division } from '@core/tournaments/divisions'
 import { buildCsvExportFilename } from '@core/utils/csv'
-import { useResultsData, type ResultRow } from '@renderer/hooks/useResultsData'
+import { useResultsData } from '@renderer/hooks/useResultsData'
 import { useDivisionsListQuery } from '@renderer/queries/divisions'
 import { usePlayersWithDivisionsQuery } from '@renderer/queries/players'
+import { buildResultsCsv } from '@renderer/utils/reports/resultsCsv'
 
 export function ResultsExportButton() {
   const [open, setOpen] = useState(false)
   const [includeUnscored, setIncludeUnscored] = useState(true)
   const [exporting, setExporting] = useState(false)
-  const { scoreables, rows, isLoading } = useResultsData()
-  const { data: playerTuples = [], isLoading: playersLoading } = usePlayersWithDivisionsQuery()
-  const { data: divisionList = [], isLoading: divisionsLoading } = useDivisionsListQuery()
-  const players = playerTuples.map(([player]) => player)
-  const divisionMembership = new Map(
-    playerTuples.map(([player, divisions]) => [
-      player.id,
-      divisions?.map((division) => division.id) ?? []
-    ])
-  )
+  const { scoreables, rows } = useResultsData()
+  const { data: divisionList = [] } = useDivisionsListQuery()
+  const { data: playerTuples = [] } = usePlayersWithDivisionsQuery()
 
   const handleExport = async () => {
-    if (isLoading || divisionsLoading || playersLoading) {
-      toast.error('Data still loading. Please try again.')
-      return
-    }
     setExporting(true)
     try {
       const metadata = await window.api.tournaments.getMetadata()
       const csv = buildResultsCsv({
         scoreables,
-        players,
+        playerTuples,
         rows,
         divisions: divisionList,
-        includeUnscored,
-        divisionMembership
+        includeUnscored
       })
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)
@@ -103,68 +88,4 @@ export function ResultsExportButton() {
       </Modal>
     </>
   )
-}
-
-function buildResultsCsv({
-  scoreables,
-  players,
-  rows,
-  divisions,
-  includeUnscored,
-  divisionMembership
-}: {
-  scoreables: Scoreable[]
-  players: Player[]
-  rows: ResultRow[]
-  divisions: Division[]
-  includeUnscored: boolean
-  divisionMembership: Map<string, string[]>
-}): string {
-  const divisionOrder = [...divisions].sort((a, b) => {
-    const orderA = a.order ?? Number.MAX_SAFE_INTEGER
-    const orderB = b.order ?? Number.MAX_SAFE_INTEGER
-    if (orderA !== orderB) return orderA - orderB
-    return a.name.localeCompare(b.name)
-  })
-
-  const combinedRows = [...rows]
-
-  if (includeUnscored) {
-    const scoredIds = new Set(rows.map((row) => row.player.id))
-    players.forEach((player) => {
-      if (scoredIds.has(player.id)) return
-      combinedRows.push({
-        player,
-        displayName: player.displayName,
-        email: player.email ?? '',
-        divisionIds: divisionMembership.get(player.id) ?? [],
-        scores: {}
-      })
-    })
-  }
-
-  const header = [
-    'Player Name',
-    'Email',
-    ...scoreables.map((scoreable) => scoreable.label),
-    ...divisionOrder.map((division) => division.name)
-  ]
-
-  const rowsData = combinedRows.map((row) => formatRowForCsv(row, scoreables, divisionOrder))
-
-  return Papa.unparse({ fields: header, data: rowsData })
-}
-
-function formatRowForCsv(row: ResultRow, scoreables: Scoreable[], divisions: Division[]): string[] {
-  const membershipSet = new Set(row.divisionIds)
-  return [
-    row.displayName,
-    row.email,
-    ...scoreables.map((scoreable) => {
-      const result = row.scores[scoreable.id]
-      const value = result?.value
-      return Number.isFinite(value ?? NaN) ? String(value) : ''
-    }),
-    ...divisions.map((division) => (membershipSet.has(division.id) ? 'TRUE' : 'FALSE'))
-  ]
 }
