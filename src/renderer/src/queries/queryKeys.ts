@@ -1,7 +1,8 @@
 export const queryKeys = {
   players: {
     all: () => ['players'] as const,
-    withDivisions: () => ['players', 'with-divisions'] as const
+    withDivisions: () => ['players', 'with-divisions'] as const,
+    list: () => ['players', 'list'] as const
   },
   scoreables: {
     all: () => ['scoreables'] as const,
@@ -18,5 +19,8 @@ export const queryKeys = {
     all: () => ['divisions'] as const,
     list: () => ['divisions', 'list'] as const,
     views: () => ['divisions', 'views'] as const
+  },
+  tournament: {
+    state: () => ['tournament', 'state'] as const
   }
 } as const

@@ -90,7 +90,9 @@ const api = {
       const handler = (_evt: IpcRendererEvent, payload: SerializableTournamentState) => {
         listener(payload)
       }
+
       ipcRenderer.on(TOURNAMENT_STATE_CHANNEL, handler)
+
       return () => {
         ipcRenderer.removeListener(TOURNAMENT_STATE_CHANNEL, handler)
       }
