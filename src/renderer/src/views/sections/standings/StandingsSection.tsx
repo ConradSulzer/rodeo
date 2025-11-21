@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { DivisionView, DivisionCategoryView } from '@core/tournaments/divisions'
+import type { DivisionCategoryView } from '@core/tournaments/divisions'
 import type { CategoryStanding } from '@core/tournaments/standings'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 import {
@@ -11,19 +11,7 @@ import {
   TableRow
 } from '@renderer/components/ui/table'
 import { cn } from '@renderer/lib/utils'
-import { useDivisionViewsQuery } from '@renderer/queries/divisions'
-import { usePlayersListQuery } from '@renderer/queries/players'
-import { useTournamentStateQuery } from '@renderer/queries/tournament'
-
-type PlayerLookup = Map<string, string>
-
-const sortDivisions = (views: DivisionView[]): DivisionView[] => {
-  return [...views].sort((a, b) => {
-    const orderDiff = (a.order ?? 0) - (b.order ?? 0)
-    if (orderDiff !== 0) return orderDiff
-    return a.name.localeCompare(b.name)
-  })
-}
+import { useStandingsData } from '@renderer/hooks/useStandingsData'
 
 const sortCategories = (categories: DivisionCategoryView[]): DivisionCategoryView[] => {
   return [...categories].sort((a, b) => {
@@ -34,17 +22,7 @@ const sortCategories = (categories: DivisionCategoryView[]): DivisionCategoryVie
 }
 
 export function StandingsSection() {
-  const { data: tournamentState, isLoading: stateLoading } = useTournamentStateQuery()
-  const { data: divisionData = [], isLoading: divisionsLoading } = useDivisionViewsQuery()
-  const { data: playerList = [], isLoading: playersLoading } = usePlayersListQuery()
-  const divisionViews = useMemo(() => sortDivisions(divisionData), [divisionData])
-  const standings = useMemo(() => tournamentState?.standings ?? [], [tournamentState])
-  const players = useMemo<PlayerLookup>(() => {
-    const lookup: PlayerLookup = new Map()
-    playerList.forEach((player) => lookup.set(player.id, player.displayName))
-    return lookup
-  }, [playerList])
-  const loading = stateLoading || divisionsLoading || playersLoading
+  const { divisionViews, standings, players, isLoading: loading } = useStandingsData()
   const [selectedDivisionId, setSelectedDivisionId] = useState<string | null>(null)
   const [categorySelections, setCategorySelections] = useState<Record<string, string>>({})
   const [query, setQuery] = useState('')
