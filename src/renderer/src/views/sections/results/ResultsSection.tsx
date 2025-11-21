@@ -13,17 +13,18 @@ type SortableRow = ReturnType<typeof useResultsData>['rows'][number] &
   Partial<Record<ScoreColumnKey, number | undefined>>
 
 export function ResultsSection() {
-  const { scoreables, rows, isLoading } = useResultsData()
+  const { scoreables, rows, isLoading, ...rest } = useResultsData()
+
+  console.log(rest)
 
   const columns: ReadonlyArray<CrudTableColumn<SortableRow, ScoreColumnKey>> = [
-    { key: 'name', label: 'Player', sortable: true },
+    { key: 'displayName', label: 'Player', sortable: true },
     ...scoreables.map((scoreable) => ({
       key: `score-${scoreable.id}` as ScoreColumnKey,
       label: scoreable.label,
       sortable: true
     }))
   ]
-
   const sortableRows: SortableRow[] = useMemo(() => {
     return rows.map((row) => {
       const flat: SortableRow = { ...row }
@@ -43,8 +44,8 @@ export function ResultsSection() {
     toggleSort
   } = useUniversalSearchSort<SortableRow>({
     items: sortableRows,
-    searchKeys: ['name'],
-    initialSort: { key: 'name', direction: 'asc' }
+    searchKeys: ['displayName'],
+    initialSort: { key: 'displayName', direction: 'asc' }
   })
 
   return (
@@ -74,11 +75,11 @@ export function ResultsSection() {
               </TableHeader>
               <TableBody>
                 {filtered.map((row) => (
-                  <TableRow key={row.playerId}>
+                  <TableRow key={row.player.id}>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="font-medium">{row.name}</span>
-                        <span className="text-xs ro-text-muted">{row.playerId}</span>
+                        <span className="font-medium">{row.displayName}</span>
+                        <span className="text-xs ro-text-muted">{row.player.id}</span>
                       </div>
                     </TableCell>
                     {scoreables.map((scoreable) => {

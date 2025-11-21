@@ -3,41 +3,35 @@ import Papa from 'papaparse'
 import { Button } from '@renderer/components/ui/button'
 import { Modal } from '@renderer/components/Modal'
 import { toast } from 'sonner'
-import type { SerializableTournamentState } from '@core/tournaments/state'
 import type { Player } from '@core/players/players'
 import type { Scoreable } from '@core/tournaments/scoreables'
 import type { Division } from '@core/tournaments/divisions'
 import { buildCsvExportFilename } from '@core/utils/csv'
+import { useResultsData, type ResultRow } from '@renderer/hooks/useResultsData'
+import { useDivisionsListQuery } from '@renderer/queries/divisions'
 
 export function ResultsExportButton() {
   const [open, setOpen] = useState(false)
   const [includeUnscored, setIncludeUnscored] = useState(true)
   const [exporting, setExporting] = useState(false)
+  const { scoreables, rows, players, isLoading } = useResultsData()
+  const { data: divisionList = [], isLoading: divisionsLoading } = useDivisionsListQuery()
 
   const handleExport = async () => {
+    if (isLoading || divisionsLoading) {
+      toast.error('Data still loading. Please try again.')
+      return
+    }
     setExporting(true)
     try {
-      const [scoreables, players, state, divisions, metadata] = await Promise.all([
-        window.api.scoreables.list(),
-        window.api.players.list(),
-        window.api.tournaments.getState(),
-        window.api.divisions.list(),
-        window.api.tournaments.getMetadata()
-      ])
-      const divisionMembership = new Map<string, Set<string>>()
-      await Promise.all(
-        players.map(async (player) => {
-          const list = await window.api.divisions.listForPlayer(player.id)
-          divisionMembership.set(player.id, new Set(list))
-        })
-      )
+      const metadata = await window.api.tournaments.getMetadata()
       const csv = buildResultsCsv({
         scoreables,
         players,
-        state,
-        divisions,
+        rows,
+        divisions: divisionList,
         includeUnscored,
-        divisionMembership
+        divisionMembership: new Map(rows.map((row) => [row.player.id, row.divisionIds]))
       })
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)
@@ -105,40 +99,27 @@ export function ResultsExportButton() {
 function buildResultsCsv({
   scoreables,
   players,
-  state,
+  rows,
   divisions,
   includeUnscored,
   divisionMembership
 }: {
   scoreables: Scoreable[]
   players: Player[]
-  state: SerializableTournamentState
+  rows: ResultRow[]
   divisions: Division[]
   includeUnscored: boolean
-  divisionMembership: Map<string, Set<string>>
+  divisionMembership: Map<string, string[]>
 }): string {
-  const scoreableOrder = [...scoreables].sort((a, b) => a.label.localeCompare(b.label))
+  const scoreableOrder = scoreables
   const playerMap = new Map(players.map((player) => [player.id, player]))
-  const resultMap = new Map(
-    state.results.map((entry) => [
-      entry.playerId,
-      entry.items.reduce<Record<string, number>>((acc, item) => {
-        acc[item.scoreableId] = item.result?.value ?? NaN
-        return acc
-      }, {})
-    ])
-  )
+  const rowMap = new Map(rows.map((row) => [row.player.id, row]))
 
-  const playersToExport = includeUnscored
-    ? players
-    : state.results
-        .map((entry) => playerMap.get(entry.playerId))
-        .filter((player): player is Player => Boolean(player))
-
-  const uniquePlayers = new Map<string, Player>()
-  playersToExport.forEach((player) => {
-    if (player) uniquePlayers.set(player.id, player)
-  })
+  const playerIds = new Set<string>()
+  if (includeUnscored) {
+    players.forEach((player) => playerIds.add(player.id))
+  }
+  rows.forEach((row) => playerIds.add(row.player.id))
 
   const divisionOrder = [...divisions].sort((a, b) => {
     const orderA = a.order ?? Number.MAX_SAFE_INTEGER
@@ -152,21 +133,27 @@ function buildResultsCsv({
     ...scoreableOrder.map((scoreable) => scoreable.label),
     ...divisionOrder.map((division) => division.name)
   ]
-  const rows = Array.from(uniquePlayers.values()).map((player) => {
-    const scores = resultMap.get(player.id) ?? {}
-    const memberships = divisionMembership.get(player.id) ?? new Set<string>()
+  const rowsData = Array.from(playerIds).map((playerId) => {
+    const player = playerMap.get(playerId)
+    const resultRow = rowMap.get(playerId)
+    const displayName = player?.displayName ?? resultRow?.displayName ?? 'Unknown Player'
+    const email = player?.email ?? resultRow?.email ?? ''
+    const scores = resultRow?.scores ?? {}
+    const membershipIds = divisionMembership.get(playerId) ?? resultRow?.divisionIds ?? []
+    const membershipSet = new Set(membershipIds)
     return [
-      player.displayName,
-      player.email ?? '',
+      displayName,
+      email,
       ...scoreableOrder.map((scoreable) => {
-        const value = scores[scoreable.id]
-        return Number.isFinite(value) ? String(value) : ''
+        const result = scores[scoreable.id]
+        const value = result?.value
+        return Number.isFinite(value ?? NaN) ? String(value) : ''
       }),
       ...divisionOrder.map((division) => {
-        return memberships.has(division.id) ? 'TRUE' : 'FALSE'
+        return membershipSet.has(division.id) ? 'TRUE' : 'FALSE'
       })
     ]
   })
 
-  return Papa.unparse({ fields: header, data: rows })
+  return Papa.unparse({ fields: header, data: rowsData })
 }
