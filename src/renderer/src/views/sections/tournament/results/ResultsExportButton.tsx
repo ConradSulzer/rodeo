@@ -9,16 +9,25 @@ import type { Division } from '@core/tournaments/divisions'
 import { buildCsvExportFilename } from '@core/utils/csv'
 import { useResultsData, type ResultRow } from '@renderer/hooks/useResultsData'
 import { useDivisionsListQuery } from '@renderer/queries/divisions'
+import { usePlayersWithDivisionsQuery } from '@renderer/queries/players'
 
 export function ResultsExportButton() {
   const [open, setOpen] = useState(false)
   const [includeUnscored, setIncludeUnscored] = useState(true)
   const [exporting, setExporting] = useState(false)
-  const { scoreables, rows, players, isLoading } = useResultsData()
+  const { scoreables, rows, isLoading } = useResultsData()
+  const { data: playerTuples = [], isLoading: playersLoading } = usePlayersWithDivisionsQuery()
   const { data: divisionList = [], isLoading: divisionsLoading } = useDivisionsListQuery()
+  const players = playerTuples.map(([player]) => player)
+  const divisionMembership = new Map(
+    playerTuples.map(([player, divisions]) => [
+      player.id,
+      divisions?.map((division) => division.id) ?? []
+    ])
+  )
 
   const handleExport = async () => {
-    if (isLoading || divisionsLoading) {
+    if (isLoading || divisionsLoading || playersLoading) {
       toast.error('Data still loading. Please try again.')
       return
     }
@@ -31,7 +40,7 @@ export function ResultsExportButton() {
         rows,
         divisions: divisionList,
         includeUnscored,
-        divisionMembership: new Map(rows.map((row) => [row.player.id, row.divisionIds]))
+        divisionMembership
       })
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)
@@ -111,49 +120,51 @@ function buildResultsCsv({
   includeUnscored: boolean
   divisionMembership: Map<string, string[]>
 }): string {
-  const scoreableOrder = scoreables
-  const playerMap = new Map(players.map((player) => [player.id, player]))
-  const rowMap = new Map(rows.map((row) => [row.player.id, row]))
-
-  const playerIds = new Set<string>()
-  if (includeUnscored) {
-    players.forEach((player) => playerIds.add(player.id))
-  }
-  rows.forEach((row) => playerIds.add(row.player.id))
-
   const divisionOrder = [...divisions].sort((a, b) => {
     const orderA = a.order ?? Number.MAX_SAFE_INTEGER
     const orderB = b.order ?? Number.MAX_SAFE_INTEGER
     if (orderA !== orderB) return orderA - orderB
     return a.name.localeCompare(b.name)
   })
+
+  const combinedRows = [...rows]
+
+  if (includeUnscored) {
+    const scoredIds = new Set(rows.map((row) => row.player.id))
+    players.forEach((player) => {
+      if (scoredIds.has(player.id)) return
+      combinedRows.push({
+        player,
+        displayName: player.displayName,
+        email: player.email ?? '',
+        divisionIds: divisionMembership.get(player.id) ?? [],
+        scores: {}
+      })
+    })
+  }
+
   const header = [
     'Player Name',
     'Email',
-    ...scoreableOrder.map((scoreable) => scoreable.label),
+    ...scoreables.map((scoreable) => scoreable.label),
     ...divisionOrder.map((division) => division.name)
   ]
-  const rowsData = Array.from(playerIds).map((playerId) => {
-    const player = playerMap.get(playerId)
-    const resultRow = rowMap.get(playerId)
-    const displayName = player?.displayName ?? resultRow?.displayName ?? 'Unknown Player'
-    const email = player?.email ?? resultRow?.email ?? ''
-    const scores = resultRow?.scores ?? {}
-    const membershipIds = divisionMembership.get(playerId) ?? resultRow?.divisionIds ?? []
-    const membershipSet = new Set(membershipIds)
-    return [
-      displayName,
-      email,
-      ...scoreableOrder.map((scoreable) => {
-        const result = scores[scoreable.id]
-        const value = result?.value
-        return Number.isFinite(value ?? NaN) ? String(value) : ''
-      }),
-      ...divisionOrder.map((division) => {
-        return membershipSet.has(division.id) ? 'TRUE' : 'FALSE'
-      })
-    ]
-  })
+
+  const rowsData = combinedRows.map((row) => formatRowForCsv(row, scoreables, divisionOrder))
 
   return Papa.unparse({ fields: header, data: rowsData })
+}
+
+function formatRowForCsv(row: ResultRow, scoreables: Scoreable[], divisions: Division[]): string[] {
+  const membershipSet = new Set(row.divisionIds)
+  return [
+    row.displayName,
+    row.email,
+    ...scoreables.map((scoreable) => {
+      const result = row.scores[scoreable.id]
+      const value = result?.value
+      return Number.isFinite(value ?? NaN) ? String(value) : ''
+    }),
+    ...divisions.map((division) => (membershipSet.has(division.id) ? 'TRUE' : 'FALSE'))
+  ]
 }

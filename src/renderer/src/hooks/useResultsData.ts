@@ -20,7 +20,6 @@ export type ResultRow = {
 export type ResultsData = {
   scoreables: ReturnType<typeof sortScoreables>
   rows: ResultRow[]
-  players: Player[]
   isLoading: boolean
 }
 
@@ -30,18 +29,16 @@ export function useResultsData(): ResultsData {
   const { data: tournamentState, isLoading: stateLoading } = useTournamentStateQuery()
 
   const scoreables = useMemo(() => sortScoreables(scoreableList), [scoreableList])
-  const { players, playerMap, divisionMembership } = useMemo(() => {
-    const players: Player[] = []
+  const { playerMap, divisionMembership } = useMemo(() => {
     const playerMap = new Map<string, Player>()
     const divisionMembership = new Map<string, string[]>()
 
     playerTuples.forEach(([player, divisions]) => {
-      players.push(player)
       playerMap.set(player.id, player)
       divisionMembership.set(player.id, divisions?.map((division) => division.id) ?? [])
     })
 
-    return { players, playerMap, divisionMembership }
+    return { playerMap, divisionMembership }
   }, [playerTuples])
 
   const rows = useMemo<ResultRow[]>(() => {
@@ -68,7 +65,6 @@ export function useResultsData(): ResultsData {
   return {
     scoreables,
     rows,
-    players,
     isLoading: scoreablesLoading || playersLoading || stateLoading
   }
 }
