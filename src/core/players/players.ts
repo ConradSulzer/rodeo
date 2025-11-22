@@ -20,8 +20,6 @@ export type NewPlayer = {
 } & PlayerContactFields
 
 export type PatchPlayer = Partial<NewPlayer>
-export type PlayerDivisionTuple = [Player, Division[]]
-
 export type PlayerAssignment = {
   player: Player
   divisions: Division[]
@@ -75,7 +73,7 @@ export function listAllPlayers(db: AppDatabase): Player[] {
   return db.select().from(pl).orderBy(asc(pl.displayName)).all()
 }
 
-export function listAllPlayersWithDivisions(db: AppDatabase): PlayerDivisionTuple[] {
+export function listAllPlayerAssignments(db: AppDatabase): PlayerAssignment[] {
   const players = listAllPlayers(db)
   if (!players.length) return []
 
@@ -97,17 +95,11 @@ export function listAllPlayersWithDivisions(db: AppDatabase): PlayerDivisionTupl
     }
   }
 
-  return players.map((player) => [player, divisionMap.get(player.id) ?? []])
-}
-
-export function listAllPlayerAssignments(db: AppDatabase): PlayerAssignment[] {
-  const tuples = listAllPlayersWithDivisions(db)
-  if (!tuples.length) return []
-
   const divisionViews = listDivisionViews(db)
   const divisionViewMap = new Map(divisionViews.map((view) => [view.id, view]))
 
-  return tuples.map(([player, divisions]) => {
+  return players.map((player) => {
+    const divisions = divisionMap.get(player.id) ?? []
     const scoreableMap = new Map<string, Scoreable>()
 
     for (const division of divisions) {
