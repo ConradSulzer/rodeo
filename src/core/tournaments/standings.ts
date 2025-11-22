@@ -66,7 +66,7 @@ function computeCategoryStanding(
 
     for (const scoreable of categoryView.scoreables) {
       const item = playerItems.get(scoreable.id)
-      if (!item) continue
+      if (!item || item.status !== 'value' || item.value === undefined) continue
       total += item.value
       itemCount += 1
       earliestTs = earliestTs === null ? item.createdAt : Math.min(earliestTs, item.createdAt)
@@ -78,11 +78,13 @@ function computeCategoryStanding(
     // TODO: make sure we always have a timestamp and never have to resort to this fallback.
     const tieBreakTs = (earliestTs ?? Number.POSITIVE_INFINITY) as Timestamp
 
+    const roundedTotal = Number.parseFloat(total.toFixed(3))
+
     const playerStanding: PlayerStanding = {
       playerId,
       itemCount,
-      total,
-      score: total,
+      total: roundedTotal,
+      score: roundedTotal,
       rank: 0,
       ts: tieBreakTs
     }

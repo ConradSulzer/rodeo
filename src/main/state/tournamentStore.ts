@@ -1,13 +1,15 @@
-import type { RodeoEvent } from '@core/events/events'
+import { appendEvent, getEvent, type RodeoEvent } from '@core/events/events'
 import { computeAllDivisionStandings } from '@core/tournaments/standings'
-import { buildResults, recordEvent, type Results } from '@core/tournaments/results'
+import { buildResults, type Results } from '@core/tournaments/results'
 import { listDivisionViews } from '@core/tournaments/divisions'
 import type { AppDatabase } from '@core/db/db'
 import type { SerializableTournamentState, SerializedResults } from '@core/tournaments/state'
 import type { DivisionStanding } from '@core/tournaments/standings'
+import { reduceEvent } from '@core/events/eventReducer'
+import type { ULID } from 'ulid'
 
 /**
- * A callback that runs with `state` when store `state` changes.
+ * A listener is a function that is called with `state` when store `state` changes.
  */
 type Listener = (serializedState: SerializableTournamentState) => void
 
@@ -16,24 +18,29 @@ type TournamentState = {
   standings: DivisionStanding[]
 }
 
-let state: TournamentState | null = null
+const createEmptyState = (): TournamentState => ({
+  results: new Map(),
+  standings: []
+})
+
+let state: TournamentState = createEmptyState()
 const listeners = new Set<Listener>()
 const EMPTY_STATE: SerializableTournamentState = {
   standings: [],
   results: []
 }
 
-export function getState(): TournamentState | null {
+export function getState(): TournamentState {
   return state
 }
 
 export function getSerializableState(): SerializableTournamentState {
-  if (!state) return EMPTY_STATE
   return serializeState(state)
 }
 
 export function hydrate(db: AppDatabase): SerializableTournamentState {
   const { results, errors } = buildResults(db)
+
   if (errors.length) {
     console.warn('Errors encountered while hydrating results', errors)
   }
@@ -47,13 +54,14 @@ export function hydrate(db: AppDatabase): SerializableTournamentState {
   }
 
   const serializable = serializeState(state)
+
   notify(serializable)
 
   return serializable
 }
 
 export function clear() {
-  state = null
+  state = createEmptyState()
   notify(EMPTY_STATE)
 }
 
@@ -69,20 +77,22 @@ export function subscribe(listener: Listener): () => void {
   }
 }
 
-export function applyEvent(db: AppDatabase, event: RodeoEvent): ReturnType<typeof recordEvent> {
-  if (!state) throw new Error('Tournament store is not hydrated')
+export function applyEvent(db: AppDatabase, event: RodeoEvent): ReturnType<typeof reduceEvent> {
+  appendEvent(db, event)
 
-  const errors = recordEvent(db, state.results, event)
+  const resolve = (id: ULID) => getEvent(db, id)
+  const errors = reduceEvent(state.results, event, resolve)
+
   if (errors.length) return errors
 
   refreshStandings(db)
+
   return errors
 }
 
 export function refreshStandings(db: AppDatabase) {
-  if (!state) return
-
   const divisionViews = listDivisionViews(db)
+
   const standings = computeAllDivisionStandings(state.results, divisionViews)
 
   state = {

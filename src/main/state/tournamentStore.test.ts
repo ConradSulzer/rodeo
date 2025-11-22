@@ -3,7 +3,9 @@ import type { AppDatabase } from '@core/db/db'
 import type { ItemResult, Results } from '@core/tournaments/results'
 import type { DivisionView } from '@core/tournaments/divisions'
 import type { DivisionStanding } from '@core/tournaments/standings'
-import type { ItemScored } from '@core/events/events'
+import type { ItemStateChanged } from '@core/events/events'
+import * as eventsModule from '@core/events/events'
+import * as reducerModule from '@core/events/eventReducer'
 import * as resultsModule from '@core/tournaments/results'
 import * as divisionsModule from '@core/tournaments/divisions'
 import * as standingsModule from '@core/tournaments/standings'
@@ -21,7 +23,7 @@ import {
 const db = {} as AppDatabase
 
 const sampleItem: ItemResult = {
-  name: 'Weight',
+  status: 'value',
   value: 10,
   srcEventId: 'event-1',
   createdAt: 1,
@@ -143,7 +145,7 @@ describe('hydrate', () => {
         }
       ]
     })
-    expect(getState()).not.toBeNull()
+    expect(getState().standings).toEqual(standings)
     expect(getSerializableState()).toEqual(snapshot)
     expect(listener).toHaveBeenCalledTimes(1)
     expect(listener).toHaveBeenLastCalledWith(snapshot)
@@ -168,7 +170,8 @@ describe('clear', () => {
 
     clear()
 
-    expect(getState()).toBeNull()
+    expect(Array.from(getState().results.entries())).toEqual([])
+    expect(getState().standings).toEqual([])
     expect(listener).toHaveBeenCalledTimes(1)
     expect(listener).toHaveBeenLastCalledWith({ standings: [], results: [] })
   })
@@ -233,13 +236,13 @@ describe('refreshStandings', () => {
 })
 
 describe('applyEvent', () => {
-  const baseEvent: ItemScored = {
-    type: 'ItemScored',
+  const baseEvent: ItemStateChanged = {
+    type: 'ItemStateChanged',
     id: 'event-1',
     ts: Date.now(),
     playerId: 'player-1',
     scoreableId: 'scoreable-1',
-    scoreableName: 'Weight',
+    state: 'value',
     value: 12
   }
 
@@ -266,13 +269,14 @@ describe('applyEvent', () => {
     const { results, listSpy, standingsSpy } = setup()
     listSpy.mockClear()
     standingsSpy.mockClear()
-    const recordSpy = vi.spyOn(resultsModule, 'recordEvent').mockReturnValue([])
+    const appendSpy = vi.spyOn(eventsModule, 'appendEvent').mockImplementation(() => {})
+    const reduceSpy = vi.spyOn(reducerModule, 'reduceEvent').mockReturnValue([])
 
     const errors = applyEvent(db, baseEvent)
 
-    expect(recordSpy).toHaveBeenCalledTimes(1)
-    const [passedDb, passedResults, passedEvent] = recordSpy.mock.calls[0]
-    expect(passedDb).toBe(db)
+    expect(appendSpy).toHaveBeenCalledWith(db, baseEvent)
+    expect(reduceSpy).toHaveBeenCalledTimes(1)
+    const [passedResults, passedEvent] = reduceSpy.mock.calls[0]
     expect(passedResults).toBe(results)
     expect(passedEvent).toBe(baseEvent)
     expect(listSpy).toHaveBeenCalledTimes(1)
@@ -281,16 +285,17 @@ describe('applyEvent', () => {
     expect(errors).toEqual([])
   })
 
-  it('returns errors from recordEvent and skips refresh', () => {
+  it('returns reducer errors and skips refresh', () => {
     const { listSpy, standingsSpy } = setup()
     listSpy.mockClear()
     standingsSpy.mockClear()
-    const expectedError: ReturnType<typeof resultsModule.recordEvent>[number] = {
+    const expectedError: ReturnType<typeof reducerModule.reduceEvent>[number] = {
       status: 'error',
       message: 'bad event',
       event: baseEvent
     }
-    vi.spyOn(resultsModule, 'recordEvent').mockReturnValue([expectedError])
+    vi.spyOn(eventsModule, 'appendEvent').mockImplementation(() => {})
+    vi.spyOn(reducerModule, 'reduceEvent').mockReturnValue([expectedError])
 
     const errors = applyEvent(db, baseEvent)
 

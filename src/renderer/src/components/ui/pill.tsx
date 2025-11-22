@@ -35,7 +35,7 @@ export const Pill = React.forwardRef<HTMLSpanElement, PillProps>(
     <span
       ref={ref}
       className={cn(
-        'inline-flex items-center gap-1 rounded-full font-mono uppercase tracking-[0.3em] transition-colors',
+        'inline-flex items-center justify-center gap-1 rounded-full font-mono uppercase tracking-widest transition-colors min-w-8',
         variantClasses[variant],
         bgClassName,
         textClassName,

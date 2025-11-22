@@ -38,12 +38,7 @@ function normalizeScoreablesCountName(scoreablesCountName?: string): string {
 export function createCategory(db: AppDatabase, data: NewCategory): string {
   const id = ulid()
   const t = now()
-  const {
-    rules,
-    showScoreablesCount = false,
-    scoreablesCountName,
-    ...rest
-  } = data
+  const { rules, showScoreablesCount = false, scoreablesCountName, ...rest } = data
   const normalizedRules = normalizeCategoryRules(rules)
   const normalizedCountName = normalizeScoreablesCountName(scoreablesCountName)
   db.insert(cat)

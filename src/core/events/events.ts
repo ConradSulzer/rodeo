@@ -8,46 +8,32 @@ import type { InferSelectModel } from 'drizzle-orm'
 
 export type EventId = ULID
 
-export type EventType = 'ItemScored' | 'ItemCorrected' | 'ItemVoided'
+export type ItemState = 'value' | 'empty'
+
+export type { ItemScoreEventInput, ScorecardVoidEventInput, ScoreEventInput } from './eventInputs'
 
 export interface BaseEvent {
   id: EventId
   ts: Timestamp
   playerId: ULID
-  scoreableId: ULID
-  scoreableName: string
   note?: string
 }
 
-export interface ItemScored extends BaseEvent {
-  type: 'ItemScored'
-  value: number
+export interface ItemStateChanged extends BaseEvent {
+  type: 'ItemStateChanged'
+  scoreableId: ULID
+  state: ItemState
+  value?: number
+  priorEventId?: EventId
 }
 
-export interface ItemCorrected extends BaseEvent {
-  type: 'ItemCorrected'
-  priorEventId: EventId
-  value: number
+export interface ScorecardVoided extends BaseEvent {
+  type: 'ScorecardVoided'
 }
 
-export interface ItemVoided extends BaseEvent {
-  type: 'ItemVoided'
-  priorEventId: EventId
-}
-
-export type RodeoEvent = ItemScored | ItemCorrected | ItemVoided
+export type RodeoEvent = ItemStateChanged | ScorecardVoided
 
 type EventRow = InferSelectModel<typeof ev>
-
-export type ScoreEventInput = {
-  playerId: string
-  scoreableId: string
-  scoreableName?: string
-  value?: number | null
-  priorEventId?: EventId
-  note?: string
-  void?: boolean
-}
 
 export function appendEvents(db: AppDatabase, events: RodeoEvent[]) {
   db.transaction((tx) => {
@@ -84,55 +70,60 @@ export function listEventsForPlayer(db: AppDatabase, playerId: string): RodeoEve
   return rows.map(decode)
 }
 
-const encode = (e: RodeoEvent) => ({
-  id: e.id,
-  type: e.type,
-  ts: e.ts,
-  playerId: e.playerId,
-  scoreableId: e.scoreableId,
-  scoreableName: e.scoreableName,
-  value: 'value' in e ? e.value : null,
-  priorEventId: 'priorEventId' in e ? e.priorEventId : null,
-  note: e.note ?? null
-})
+const encode = (e: RodeoEvent) => {
+  if (e.type === 'ItemStateChanged') {
+    return {
+      id: e.id,
+      type: e.type,
+      state: e.state,
+      ts: e.ts,
+      playerId: e.playerId,
+      scoreableId: e.scoreableId,
+      value: e.state === 'value' ? (e.value ?? null) : null,
+      priorEventId: e.priorEventId ?? null,
+      note: e.note ?? null
+    }
+  }
 
-const decode = (row: EventRow) => {
-  if (row.type === 'ItemScored') {
-    const event: ItemScored = {
-      type: 'ItemScored',
+  if (e.type === 'ScorecardVoided') {
+    return {
+      id: e.id,
+      type: e.type,
+      state: null,
+      ts: e.ts,
+      playerId: e.playerId,
+      scoreableId: null,
+      value: null,
+      priorEventId: null,
+      note: e.note ?? null
+    }
+  }
+
+  throw new Error(`Unsupported event type for encode: ${(e as { type: string }).type}`)
+}
+
+const decode = (row: EventRow): RodeoEvent => {
+  if (row.type === 'ItemStateChanged') {
+    const event: ItemStateChanged = {
+      type: 'ItemStateChanged',
       id: row.id,
       ts: row.ts,
       playerId: row.playerId,
-      scoreableId: row.scoreableId,
-      scoreableName: row.scoreableName,
-      value: row.value!,
+      scoreableId: row.scoreableId!,
+      state: row.state as ItemState,
+      value: row.value ?? undefined,
+      priorEventId: row.priorEventId ?? undefined,
       note: row.note ?? undefined
     }
     return event
   }
-  if (row.type === 'ItemCorrected') {
-    const event: ItemCorrected = {
-      type: 'ItemCorrected',
+
+  if (row.type === 'ScorecardVoided') {
+    const event: ScorecardVoided = {
+      type: 'ScorecardVoided',
       id: row.id,
       ts: row.ts,
       playerId: row.playerId,
-      scoreableId: row.scoreableId,
-      scoreableName: row.scoreableName,
-      priorEventId: row.priorEventId!,
-      value: row.value!,
-      note: row.note ?? undefined
-    }
-    return event
-  }
-  if (row.type === 'ItemVoided') {
-    const event: ItemVoided = {
-      type: 'ItemVoided',
-      id: row.id,
-      ts: row.ts,
-      playerId: row.playerId,
-      scoreableId: row.scoreableId,
-      scoreableName: row.scoreableName,
-      priorEventId: row.priorEventId!,
       note: row.note ?? undefined
     }
     return event
@@ -141,6 +132,6 @@ const decode = (row: EventRow) => {
   throw new Error(`Unknown event type in decode: ${row.type}`)
 }
 
-export function sortEventsByTime(events: RodeoEvent[]): RodeoEvent[] {
+export function sortEventsByTime<T extends { ts: Timestamp; id: EventId }>(events: T[]): T[] {
   return [...events].sort((a, b) => (a.ts === b.ts ? a.id.localeCompare(b.id) : a.ts - b.ts))
 }

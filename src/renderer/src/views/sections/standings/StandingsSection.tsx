@@ -1,8 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { toast } from 'sonner'
-import type { Player } from '@core/players/players'
-import type { DivisionView, DivisionCategoryView } from '@core/tournaments/divisions'
-import type { DivisionStanding, CategoryStanding } from '@core/tournaments/standings'
+import { useEffect, useMemo, useState } from 'react'
+import type { DivisionCategoryView } from '@core/tournaments/divisions'
+import type { CategoryStanding } from '@core/tournaments/standings'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 import {
   Table,
@@ -13,16 +11,7 @@ import {
   TableRow
 } from '@renderer/components/ui/table'
 import { cn } from '@renderer/lib/utils'
-
-type PlayerLookup = Map<string, Player>
-
-const sortDivisions = (views: DivisionView[]): DivisionView[] => {
-  return [...views].sort((a, b) => {
-    const orderDiff = (a.order ?? 0) - (b.order ?? 0)
-    if (orderDiff !== 0) return orderDiff
-    return a.name.localeCompare(b.name)
-  })
-}
+import { useStandingsData } from '@renderer/hooks/useStandingsData'
 
 const sortCategories = (categories: DivisionCategoryView[]): DivisionCategoryView[] => {
   return [...categories].sort((a, b) => {
@@ -33,117 +22,43 @@ const sortCategories = (categories: DivisionCategoryView[]): DivisionCategoryVie
 }
 
 export function StandingsSection() {
-  const [loading, setLoading] = useState(true)
-  const [divisionViews, setDivisionViews] = useState<DivisionView[]>([])
-  const [standings, setStandings] = useState<DivisionStanding[]>([])
-  const [players, setPlayers] = useState<PlayerLookup>(() => new Map())
+  const { divisionViews, standings, players, isLoading: loading } = useStandingsData()
   const [selectedDivisionId, setSelectedDivisionId] = useState<string | null>(null)
   const [categorySelections, setCategorySelections] = useState<Record<string, string>>({})
   const [query, setQuery] = useState('')
 
-  const loadData = useCallback(async () => {
-    setLoading(true)
-    try {
-      const [divisionList, playerList, state] = await Promise.all([
-        window.api.divisions.listViews(),
-        window.api.players.list(),
-        window.api.tournaments.getState()
-      ])
-      const sortedDivs = sortDivisions(divisionList)
-      setDivisionViews(sortedDivs)
-      const lookup: PlayerLookup = new Map()
-      playerList.forEach((player) => lookup.set(player.id, player))
-      setPlayers(lookup)
-      setStandings(state.standings)
-      setSelectedDivisionId((prev) => {
-        if (prev && sortedDivs.some((division) => division.id === prev)) {
-          return prev
-        }
-        return sortedDivs[0]?.id ?? null
-      })
-      setCategorySelections((prev) => {
-        const next = { ...prev }
-        let changed = false
-        const divisionMap = new Map(sortedDivs.map((division) => [division.id, division]))
-        for (const [divisionId, categoryId] of Object.entries(prev)) {
-          const division = divisionMap.get(divisionId)
-          if (!division) {
-            delete next[divisionId]
-            changed = true
-            continue
-          }
-          const hasCategory = division.categories.some(
-            (category) => category.category.id === categoryId
-          )
-          if (!hasCategory) {
-            delete next[divisionId]
-            changed = true
-          }
-        }
-        return changed ? next : prev
-      })
-    } catch (error) {
-      console.error('Failed to load standings', error)
-      toast.error('Failed to load standings')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
   useEffect(() => {
-    loadData()
-  }, [loadData])
-
-  const ensureMetadataForStandings = useCallback(
-    (nextStandings: DivisionStanding[]) => {
-      if (!divisionViews.length) return
-      const knownDivisionIds = new Set(divisionViews.map((division) => division.id))
-      const divisionMissing = nextStandings.some(
-        (standing) => !knownDivisionIds.has(standing.divisionId)
-      )
-      if (divisionMissing) {
-        loadData()
-        return
+    setSelectedDivisionId((prev) => {
+      if (prev && divisionViews.some((division) => division.id === prev)) {
+        return prev
       }
-      const knownCategoryIds = new Set(
-        divisionViews.flatMap((division) =>
-          division.categories.map((category) => category.category.id)
-        )
-      )
-      const missingCategory = nextStandings.some((standing) =>
-        standing.categories.some((category) => !knownCategoryIds.has(category.categoryId))
-      )
-      if (missingCategory) {
-        loadData()
-      }
-    },
-    [divisionViews, loadData]
-  )
-
-  useEffect(() => {
-    const unsubscribe = window.api.tournaments.subscribe((state) => {
-      setStandings(state.standings)
-      ensureMetadataForStandings(state.standings)
+      return divisionViews[0]?.id ?? null
     })
-    return () => {
-      unsubscribe()
-    }
-  }, [ensureMetadataForStandings])
+  }, [divisionViews])
 
   useEffect(() => {
-    if (!divisionViews.length) {
-      if (selectedDivisionId !== null) {
-        setSelectedDivisionId(null)
+    setCategorySelections((prev) => {
+      const next = { ...prev }
+      let changed = false
+      const divisionMap = new Map(divisionViews.map((division) => [division.id, division]))
+      for (const [divisionId, categoryId] of Object.entries(prev)) {
+        const division = divisionMap.get(divisionId)
+        if (!division) {
+          delete next[divisionId]
+          changed = true
+          continue
+        }
+        const hasCategory = division.categories.some(
+          (category) => category.category.id === categoryId
+        )
+        if (!hasCategory) {
+          delete next[divisionId]
+          changed = true
+        }
       }
-      return
-    }
-    if (
-      !selectedDivisionId ||
-      !divisionViews.some((division) => division.id === selectedDivisionId)
-    ) {
-      setSelectedDivisionId(divisionViews[0].id)
-    }
-  }, [divisionViews, selectedDivisionId])
+      return changed ? next : prev
+    })
+  }, [divisionViews])
 
   const handleSelectDivision = (divisionId: string) => {
     setSelectedDivisionId(divisionId)
@@ -193,8 +108,8 @@ export function StandingsSection() {
     const normalizedQuery = query.trim().toLowerCase()
     if (!normalizedQuery) return activeCategoryStanding.entries
     return activeCategoryStanding.entries.filter((entry) => {
-      const player = players.get(entry.playerId)
-      const nameMatches = player?.displayName?.toLowerCase().includes(normalizedQuery)
+      const playerName = players.get(entry.playerId)
+      const nameMatches = playerName?.toLowerCase().includes(normalizedQuery)
       const idMatches = entry.playerId.toLowerCase().includes(normalizedQuery)
       return Boolean(nameMatches || idMatches)
     })
@@ -241,22 +156,20 @@ export function StandingsSection() {
         </TableHeader>
         <TableBody>
           {filteredEntries.map((entry) => {
-            const player = players.get(entry.playerId)
+            const playerName = players.get(entry.playerId)
             return (
               <TableRow key={entry.playerId}>
                 <TableCell className="font-mono text-sm">{entry.rank}</TableCell>
                 <TableCell>
                   <div className="flex flex-col">
-                    <span className="font-semibold">{player?.displayName ?? 'Unknown Player'}</span>
+                    <span className="font-semibold">{playerName ?? 'Unknown Player'}</span>
                     <span className="text-xs ro-text-muted">{entry.playerId}</span>
                   </div>
                 </TableCell>
                 {showCountColumn ? (
                   <TableCell className="text-right font-mono text-sm">{entry.itemCount}</TableCell>
                 ) : null}
-                <TableCell className="text-right font-mono text-sm">
-                  {Number.isFinite(entry.total) ? entry.total : '—'}
-                </TableCell>
+                <TableCell className="text-right font-mono text-sm">{entry.total}</TableCell>
               </TableRow>
             )
           })}

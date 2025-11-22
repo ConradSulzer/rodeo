@@ -7,19 +7,22 @@
   --ro-bg-dim: var(--color-zinc-200);
   --ro-bg-muted: var(--color-zinc-100);
   --ro-bg-middle: var(--color-zinc-500);
-  --ro-bg-subtle: var(--color-zinc-100);
   --ro-bg-secondary: var(--color-zinc-400);
   --ro-hover-muted: var(--color-zinc-200);
+  --ro-bg-modal: var(--ro-bg-muted);
+  --ro-bg-input: var(--color-white);
+  --ro-bg-table-row-light: #f1f1f1;
+  --ro-bg-table-row-dark: #e5e5e5;
 
   /* === Text === */
   --ro-text-main: var(--color-zinc-800);
   --ro-text-dim: var(--color-zinc-500);
-  --ro-text-muted: var(--color-gray-400);
+  --ro-text-muted: #8a8a8a;
   --ro-text-light: var(--color-zinc-200);
   --ro-text-dark: var(--color-zinc-800);
 
   /* === Borders === */
-  --ro-border: var(--color-zinc-300);
+  --ro-border: var(--color-zinc-400);
   --ro-border-light: var(--color-zinc-200);
 
   /* === Semantic Tokens === */
@@ -54,9 +57,12 @@
   --ro-bg-dim: var(--color-zinc-800);
   --ro-bg-muted: var(--ro-zinc-750);
   --ro-bg-middle: var(--color-zinc-600);
-  --ro-bg-subtle: var(--color-zinc-700);
   --ro-bg-secondary: var(--color-zinc-700);
   --ro-hover-muted: var(--color-zinc-700);
+  --ro-bg-modal: var(--ro-bg-muted);
+  --ro-bg-input: var(--ro-bg-dim);
+  --ro-bg-table-row-light: #303034;
+  --ro-bg-table-row-dark: #2a2a2a;
 
   /* === Text === */
   --ro-text-main: var(--color-zinc-300);

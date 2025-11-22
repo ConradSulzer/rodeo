@@ -10,9 +10,11 @@ import { addScoreableToCategory, createCategory, updateCategory } from './catego
 import { createScoreable } from './scoreables'
 import { createPlayer } from '@core/players/players'
 import { computeDivisionStanding } from './standings'
-import { recordEvent, type Results } from './results'
-import type { ItemScored } from '@core/events/events'
-import { ulid } from 'ulid'
+import { appendEvent, getEvent, type ItemStateChanged } from '@core/events/events'
+import { reduceEvent } from '@core/events/eventReducer'
+import { type Results } from './results'
+import { ulid, type ULID } from 'ulid'
+import type { AppDatabase } from '@core/db/db'
 
 const basePlayer = (suffix: string) => ({
   firstName: `First${suffix}`,
@@ -22,6 +24,11 @@ const basePlayer = (suffix: string) => ({
 })
 
 describe('standings computation', () => {
+  const persistEvent = (db: AppDatabase, results: Results, event: ItemStateChanged) => {
+    appendEvent(db, event)
+    reduceEvent(results, event, (id: ULID) => getEvent(db, id))
+  }
+
   it('aggregates available items and keeps partial cards by default', () => {
     withInMemoryDb((db) => {
       const divisionId = createDivision(db, { name: 'Pro' })
@@ -48,19 +55,19 @@ describe('standings computation', () => {
         playerId: string,
         value: number,
         offset = 0
-      ): ItemScored => ({
-        type: 'ItemScored',
+      ): ItemStateChanged => ({
+        type: 'ItemStateChanged',
         id: ulid(),
         ts: baseTs + offset,
         playerId,
         scoreableId,
-        scoreableName: 'Score',
+        state: 'value',
         value
       })
 
-      recordEvent(db, results, makeEvent(weightId, playerFull, 10, 1))
-      recordEvent(db, results, makeEvent(lengthId, playerFull, 5, 2))
-      recordEvent(db, results, makeEvent(weightId, playerPartial, 12, 3))
+      persistEvent(db, results, makeEvent(weightId, playerFull, 10, 1))
+      persistEvent(db, results, makeEvent(lengthId, playerFull, 5, 2))
+      persistEvent(db, results, makeEvent(weightId, playerPartial, 12, 3))
 
       const divisionView = getDivisionView(db, divisionId)!
       const standing = computeDivisionStanding(results, divisionView)
@@ -109,20 +116,20 @@ describe('standings computation', () => {
         playerId: string,
         value: number,
         offset = 0
-      ): ItemScored => ({
-        type: 'ItemScored',
+      ): ItemStateChanged => ({
+        type: 'ItemStateChanged',
         id: ulid(),
         ts: baseTs + offset,
         playerId,
         scoreableId,
-        scoreableName: 'Score',
+        state: 'value',
         value
       })
 
-      recordEvent(db, results, makeEvent(scoreableA, playerA, 4, 1))
-      recordEvent(db, results, makeEvent(scoreableB, playerA, 4, 2))
-      recordEvent(db, results, makeEvent(scoreableA, playerB, 3, 1))
-      recordEvent(db, results, makeEvent(scoreableB, playerB, 3, 2))
+      persistEvent(db, results, makeEvent(scoreableA, playerA, 4, 1))
+      persistEvent(db, results, makeEvent(scoreableB, playerA, 4, 2))
+      persistEvent(db, results, makeEvent(scoreableA, playerB, 3, 1))
+      persistEvent(db, results, makeEvent(scoreableB, playerB, 3, 2))
 
       const divisionView = getDivisionView(db, divisionId)!
       const standing = computeDivisionStanding(results, divisionView)
@@ -163,23 +170,23 @@ describe('standings computation', () => {
         playerId: string,
         value: number,
         offset = 0
-      ): ItemScored => ({
-        type: 'ItemScored',
+      ): ItemStateChanged => ({
+        type: 'ItemStateChanged',
         id: ulid(),
         ts: baseTs + offset,
         playerId,
         scoreableId,
-        scoreableName: 'Score',
+        state: 'value',
         value
       })
 
       // Player with a full card has a lower raw total but more items
-      recordEvent(db, results, makeEvent(scoreableA, playerFull, 5, 1))
-      recordEvent(db, results, makeEvent(scoreableB, playerFull, 5, 2))
-      recordEvent(db, results, makeEvent(scoreableC, playerFull, 5, 3))
+      persistEvent(db, results, makeEvent(scoreableA, playerFull, 5, 1))
+      persistEvent(db, results, makeEvent(scoreableB, playerFull, 5, 2))
+      persistEvent(db, results, makeEvent(scoreableC, playerFull, 5, 3))
 
       // Partial player posts a higher raw total but fewer items
-      recordEvent(db, results, makeEvent(scoreableA, playerPartial, 20, 1))
+      persistEvent(db, results, makeEvent(scoreableA, playerPartial, 20, 1))
 
       const standing = computeDivisionStanding(results, getDivisionView(db, divisionId)!)
       const [categoryStanding] = standing.categories
@@ -225,22 +232,22 @@ describe('standings computation', () => {
         playerId: string,
         value: number,
         offset = 0
-      ): ItemScored => ({
-        type: 'ItemScored',
+      ): ItemStateChanged => ({
+        type: 'ItemStateChanged',
         id: ulid(),
         ts: baseTs + offset,
         playerId,
         scoreableId,
-        scoreableName: 'Score',
+        state: 'value',
         value
       })
 
-      recordEvent(db, results, makeEvent(scoreableA, playerComplete, 10, 1))
-      recordEvent(db, results, makeEvent(scoreableB, playerComplete, 8, 2))
-      recordEvent(db, results, makeEvent(scoreableC, playerComplete, 6, 3))
+      persistEvent(db, results, makeEvent(scoreableA, playerComplete, 10, 1))
+      persistEvent(db, results, makeEvent(scoreableB, playerComplete, 8, 2))
+      persistEvent(db, results, makeEvent(scoreableC, playerComplete, 6, 3))
 
-      recordEvent(db, results, makeEvent(scoreableA, playerMissing, 12, 1))
-      recordEvent(db, results, makeEvent(scoreableB, playerMissing, 9, 2))
+      persistEvent(db, results, makeEvent(scoreableA, playerMissing, 12, 1))
+      persistEvent(db, results, makeEvent(scoreableB, playerMissing, 9, 2))
 
       const standing = computeDivisionStanding(results, getDivisionView(db, divisionId)!)
       const [categoryStanding] = standing.categories
@@ -267,19 +274,19 @@ describe('standings computation', () => {
 
       const results: Results = new Map()
       const baseTs = Date.now()
-      const makeEvent = (playerId: string, value: number, tsOffset: number): ItemScored => ({
-        type: 'ItemScored',
+      const makeEvent = (playerId: string, value: number, tsOffset: number): ItemStateChanged => ({
+        type: 'ItemStateChanged',
         id: ulid(),
         ts: baseTs + tsOffset,
         playerId,
         scoreableId,
-        scoreableName: 'Fish',
+        state: 'value',
         value
       })
 
       // identical scores, earlier timestamp should win
-      recordEvent(db, results, makeEvent(playerEarly, 15, 1))
-      recordEvent(db, results, makeEvent(playerLate, 15, 10))
+      persistEvent(db, results, makeEvent(playerEarly, 15, 1))
+      persistEvent(db, results, makeEvent(playerLate, 15, 10))
 
       const standing = computeDivisionStanding(results, getDivisionView(db, divisionId)!)
       const [categoryStanding] = standing.categories

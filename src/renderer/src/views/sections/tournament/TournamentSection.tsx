@@ -5,6 +5,7 @@ import { Input } from '@renderer/components/ui/input'
 import { DateInput } from '@renderer/components/ui/date_input'
 import { Label } from '@renderer/components/ui/label'
 import { Field } from '@renderer/components/ui/field'
+import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 import { PlayerImportButton } from './player_import/PlayerImportButton'
 import { SettingsImportButton } from './settings/SettingsImportButton'
 import { SettingsExportButton } from './settings/SettingsExportButton'
@@ -89,14 +90,11 @@ export function TournamentSection() {
   }
 
   return (
-    <>
-      <section className="flex flex-1 flex-col gap-6">
-        <header>
-          <h2 className="font-mono text-[16px] font-semibold uppercase tracking-[2px]">
-            {form.name || 'Untitled Tournament'}
-          </h2>
-          <p className="mt-2 text-sm ro-text-dim">Configure core details for this tournament.</p>
-        </header>
+    <ManageSectionShell
+      title={form.name || 'Untitled Tournament'}
+      description="Configure core details for this tournament."
+    >
+      <div className="flex flex-col gap-6 pb-10 overflow-y-auto">
         <form
           onSubmit={handleSubmit}
           className="relative flex max-w-xl flex-col gap-5 rounded-md border ro-border-light ro-bg-dim p-6"
@@ -111,7 +109,7 @@ export function TournamentSection() {
                 placeholder="Untitled Tournament"
               />
             </Field>
-            <div className="flex justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <Field label={<Label htmlFor="tournament-date">Event Date</Label>}>
                 <DateInput
                   id="tournament-date"
@@ -120,7 +118,7 @@ export function TournamentSection() {
                   placeholder="Select date"
                 />
               </Field>
-              <div className="flex justify-end mt-7">
+              <div className="flex justify-end">
                 <Button type="submit" size="sm" variant="positive" disabled={!isDirty || saving}>
                   {saving ? 'Saving...' : 'Save Changes'}
                 </Button>
@@ -139,11 +137,11 @@ export function TournamentSection() {
             <h3 className="font-mono text-xs font-semibold uppercase tracking-[0.25em]">
               Player Import/Export
             </h3>
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm ro-text-dim">Import players from a CSV file.</p>
               <PlayerImportButton />
             </div>
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm ro-text-dim">Export players to a CSV file.</p>
               <Button variant="outline" size="sm" onClick={() => toast.info('Export coming soon')}>
                 Export Players
@@ -154,13 +152,13 @@ export function TournamentSection() {
             <h3 className="font-mono text-xs font-semibold uppercase tracking-[0.25em]">
               Template Settings
             </h3>
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm ro-text-dim">
                 Import scoreables, categories, and divisions from a template.
               </p>
               <SettingsImportButton />
             </div>
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm ro-text-dim">Export the current tournament structure.</p>
               <SettingsExportButton />
             </div>
@@ -169,13 +167,13 @@ export function TournamentSection() {
             <h3 className="font-mono text-xs font-semibold uppercase tracking-[0.25em]">
               Results Export
             </h3>
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm ro-text-dim">Download a CSV of player results.</p>
               <ResultsExportButton />
             </div>
           </div>
         </div>
-      </section>
-    </>
+      </div>
+    </ManageSectionShell>
   )
 }

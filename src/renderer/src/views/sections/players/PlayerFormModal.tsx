@@ -156,11 +156,7 @@ export function PlayerFormModal({
             placeholder="Name shown on leaderboards"
           />
         </Field>
-        <Field
-          label={<Label htmlFor="player-email">Email</Label>}
-          error={errors.email}
-          description="Used for notifications and contact purposes."
-        >
+        <Field label={<Label htmlFor="player-email">Email</Label>} error={errors.email}>
           <Input
             id="player-email"
             type="email"
@@ -182,7 +178,7 @@ export function PlayerFormModal({
             />
           </Field>
           <Field
-            label={<Label htmlFor="player-emergency">Emergency Contact</Label>}
+            label={<Label htmlFor="player-emergency">Emergency Contact Phone</Label>}
             description="Optional"
             error={errors.emergencyContact}
           >
@@ -195,9 +191,9 @@ export function PlayerFormModal({
           </Field>
         </div>
         <div className="flex flex-col gap-2">
-          <Label>Divisions</Label>
+          <Label className="border-b">Player Divisions</Label>
           {divisions.length ? (
-            <div className="grid gap-2 md:grid-cols-2">
+            <div className="grid gap-2 grid-cols-2 px-3">
               {divisions.map((division) => {
                 const checked = selectedDivisions.has(division.id)
                 return (

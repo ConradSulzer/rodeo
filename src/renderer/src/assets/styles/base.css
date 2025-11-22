@@ -103,11 +103,11 @@ html [data-rich-colors='true'][data-sonner-toast][data-type='info'] {
 }
 
 .ro-table-striped tbody tr:nth-child(odd) {
-  background-color: color-mix(in srgb, var(--ro-bg-middle) 15%, transparent);
+  background-color: var(--ro-bg-table-row-light);
 }
 
 .ro-table-striped tbody tr:nth-child(even) {
-  background-color: color-mix(in srgb, var(--ro-bg-dim) 100%, transparent);
+  background-color: var(--ro-bg-table-row-dark);
 }
 
 .ro-row-hover {

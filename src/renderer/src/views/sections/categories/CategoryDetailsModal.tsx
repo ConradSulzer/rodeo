@@ -27,11 +27,7 @@ export function CategoryDetailsModal({ open, category, onClose }: CategoryDetail
           </Field>
           <Field label={<Label>Direction</Label>}>
             <Input
-              value={
-                category.direction === 'asc'
-                  ? 'Ascending (lower is better)'
-                  : 'Descending (higher is better)'
-              }
+              value={category.direction === 'asc' ? 'Lower Is Better' : 'Higher Is Better'}
               readOnly
             />
           </Field>
@@ -71,7 +67,7 @@ export function CategoryDetailsModal({ open, category, onClose }: CategoryDetail
               ))}
             </div>
           ) : (
-            <p className="text-sm ro-text-muted">No specific rules provided.</p>
+            <p className="text-sm ro-text-muted">No special rules.</p>
           )}
         </div>
 

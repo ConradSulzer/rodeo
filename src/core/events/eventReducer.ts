@@ -1,5 +1,5 @@
-import { EventId, RodeoEvent, sortEventsByTime } from './events'
-import { getOrCreatePlayerItems, Results } from '../tournaments/results'
+import { EventId, ItemStateChanged, RodeoEvent, ScorecardVoided, sortEventsByTime } from './events'
+import { getOrCreatePlayerItems, ItemResult, Results } from '../tournaments/results'
 
 type EventError = {
   status: 'error'
@@ -9,113 +9,141 @@ type EventError = {
 
 type ResolveFn = (id: EventId) => RodeoEvent | undefined
 
-export function applyEvent(results: Results, e: RodeoEvent, resolve: ResolveFn): EventError[] {
+export function reduceEvent(results: Results, e: RodeoEvent, resolve: ResolveFn): EventError[] {
   const errors: EventError[] = []
 
-  const playerItems = getOrCreatePlayerItems(results, e.playerId)
-  const current = playerItems.get(e.scoreableId)
-
-  // Idempotence, ignore if this event is the current source
-  if (current?.srcEventId === e.id) return errors
-
-  // Make sure not to process stale or out of order events
-  if (current && e.ts < current.updatedAt) {
-    errors.push(createError(e, `Trying to apply event that is older than the current result.`))
+  // Void clears the player's scorecard
+  // TODO: Come back and think about this behavior some more, can either fix here or down stream handle empties
+  if (isVoidEvent(e)) {
+    results.set(e.playerId, new Map())
     return errors
   }
 
-  switch (e.type) {
-    case 'ItemScored': {
-      const existing = playerItems.get(e.scoreableId)
+  const newEvent: ItemStateChanged = e
+  const playerItems = getOrCreatePlayerItems(results, newEvent.playerId)
+  const current = playerItems.get(newEvent.scoreableId)
 
-      if (existing) {
-        errors.push(
-          createError(e, `${e.scoreableName} already exists; void or correct the current result.`)
-        )
-        break
-      }
+  // Ignore self-applied replay
+  if (current?.srcEventId === newEvent.id) return errors
 
-      playerItems.set(e.scoreableId, {
-        name: e.scoreableName,
-        value: e.value,
-        srcEventId: e.id,
-        createdAt: e.ts,
-        updatedAt: e.ts
-      })
-
-      break
-    }
-
-    case 'ItemCorrected': {
-      const prior = resolve(e.priorEventId)
-
-      if (!prior) {
-        errors.push(createError(e, 'No prior event exists to update.'))
-      } else if (prior.playerId !== e.playerId) {
-        errors.push(createError(e, "Player doesn't match the prior event's player."))
-      } else if (prior.scoreableId !== e.scoreableId) {
-        errors.push(createError(e, "Item doesn't match the prior event's item."))
-      } else if (!current) {
-        errors.push(
-          createError(e, `Player does not have an existing ${e.scoreableName} to correct.`)
-        )
-      } else if (current.srcEventId !== e.priorEventId) {
-        errors.push(createError(e, 'Prior event is not the currently effective source.'))
-      } else {
-        playerItems.set(e.scoreableId, {
-          ...current,
-          value: e.value,
-          srcEventId: e.id,
-          updatedAt: e.ts
-        })
-      }
-
-      break
-    }
-
-    case 'ItemVoided': {
-      const prior = resolve(e.priorEventId)
-
-      if (!prior) {
-        errors.push(createError(e, 'No prior event exists to void.'))
-      } else if (prior.playerId !== e.playerId) {
-        errors.push(createError(e, "Player doesn't match the prior event's player."))
-      } else if (prior.scoreableId !== e.scoreableId) {
-        errors.push(createError(e, "Item doesn't match the prior event's item."))
-      } else if (!current) {
-        errors.push(createError(e, `No current ${e.scoreableName} exists to void.`))
-        break
-      } else if (current.srcEventId !== e.priorEventId) {
-        errors.push(createError(e, 'Prior event is not the currently effective source.'))
-      } else {
-        playerItems.delete(e.scoreableId)
-      }
-      break
-    }
-
-    default:
-      assertNever(e)
+  // Reject stale events
+  if (current && newEvent.ts < current.updatedAt) {
+    errors.push(
+      createError(newEvent, 'Trying to apply event that is older than the current result.')
+    )
+    return errors
   }
 
+  // State-specific validation (only 'value' needs a numeric check)
+  if (
+    newEvent.state === 'value' &&
+    (typeof newEvent.value !== 'number' || Number.isNaN(newEvent.value))
+  ) {
+    errors.push(createError(newEvent, 'Value state requires a numeric value.'))
+    return errors
+  }
+
+  // Common prior/chain validation (covers both 'value' and 'empty')
+  const preErr = validatePriorChain(current, newEvent, resolve)
+  if (preErr) {
+    errors.push(preErr)
+    return errors
+  }
+
+  // Write the new item state
+  const createdAt = current ? current.createdAt : newEvent.ts
+  const base = {
+    srcEventId: newEvent.id,
+    createdAt,
+    updatedAt: newEvent.ts
+  }
+
+  const next =
+    newEvent.state === 'value'
+      ? ({ status: 'value', value: newEvent.value, ...base } as const)
+      : ({ status: 'empty', ...base } as const)
+
+  playerItems.set(newEvent.scoreableId, next)
   return errors
 }
 
-export function applyBatch(
+export function reduceBatch(
   results: Results,
   events: RodeoEvent[],
   resolve: ResolveFn
 ): { results: Results; errors: EventError[] } {
   const errors: EventError[] = []
   for (const e of sortEventsByTime(events)) {
-    errors.push(...applyEvent(results, e, resolve))
+    errors.push(...reduceEvent(results, e, resolve))
   }
   return { results, errors }
 }
 
-function assertNever(value: never): never {
-  throw new Error(`Unexpected event type: ${JSON.stringify(value)}`)
-}
-
 function createError(event: RodeoEvent, message: string): EventError {
   return { status: 'error', event, message }
+}
+
+function isItemEvent(event: RodeoEvent): event is ItemStateChanged {
+  return event.type === 'ItemStateChanged'
+}
+
+function isVoidEvent(event: RodeoEvent): event is ScorecardVoided {
+  return event.type == 'ScorecardVoided'
+}
+
+function validatePriorEvent(
+  newEvent: ItemStateChanged,
+  current: ItemResult | undefined,
+  resolve: ResolveFn
+): { prior?: RodeoEvent; error?: EventError } {
+  const id = newEvent.priorEventId
+
+  if (!id) return { error: createError(newEvent, 'No prior id supplied.') }
+
+  const prior = resolve(id)
+
+  if (!prior) return { error: createError(newEvent, 'No prior event exists to update.') }
+  if (!isItemEvent(prior))
+    return { error: createError(newEvent, 'Prior event is not an item event.') }
+
+  if (prior.playerId !== newEvent.playerId || prior.scoreableId !== newEvent.scoreableId) {
+    return { error: createError(newEvent, 'Prior event does not match player/item.') }
+  }
+
+  if (!current || current.srcEventId !== id) {
+    return { error: createError(newEvent, 'Prior event is not the currently effective source.') }
+  }
+
+  return { prior }
+}
+
+function requirePriorEventIfCurrentExists(
+  current: ItemResult | undefined,
+  newEvent: ItemStateChanged
+): EventError | undefined {
+  if (current && !newEvent.priorEventId) {
+    return createError(
+      newEvent,
+      `${newEvent.scoreableId} already exists; reference the current event to update.`
+    )
+  }
+  return undefined
+}
+
+function validatePriorChain(
+  current: ItemResult | undefined,
+  e: ItemStateChanged,
+  resolve: ResolveFn
+): EventError | null {
+  // If something already exists, require a priorEventId
+  const missingPrior = requirePriorEventIfCurrentExists(current, e)
+  if (missingPrior) return missingPrior
+
+  // If a priorEventId is present, validate it fully
+  if (e.priorEventId) {
+    const { error } = validatePriorEvent(e, current, resolve)
+    if (error) return error
+  }
+
+  return null
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi'
 import type { ScoreableFormData } from '@core/scoreables/scoreableFormSchema'
@@ -16,6 +16,9 @@ import { ScoreableDetailsModal } from './ScoreableDetailsModal'
 import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
 import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
 import { Pill } from '@renderer/components/ui/pill'
+import { useScoreableViewsQuery } from '@renderer/queries/scoreables'
+import { useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@renderer/queries/queryKeys'
 
 type FormState =
   | { open: false; mode: null; scoreable?: undefined }
@@ -40,12 +43,10 @@ const columns: ReadonlyArray<CrudTableColumn<ScoreableView, 'actions' | 'divisio
   { key: 'actions', label: 'Actions', sortable: false, align: 'right' }
 ]
 
-const SCOREABLE_FUZZY_FIELDS: Array<keyof ScoreableView & string> = ['label', 'unit', 'id']
+const SCOREABLE_FUZZY_FIELDS: Array<keyof ScoreableView & string> = ['label', 'id']
 
 export function ScoreablesSection() {
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [scoreables, setScoreables] = useState<ScoreableView[]>([])
+  const queryClient = useQueryClient()
   const [formState, setFormState] = useState<FormState>({ open: false, mode: null })
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [detailsState, setDetailsState] = useState<DetailsState>({ open: false })
@@ -54,30 +55,13 @@ export function ScoreablesSection() {
     deleting: false
   })
 
-  const fetchScoreables = useCallback(async (silent = false) => {
-    if (silent) {
-      setRefreshing(true)
-    } else {
-      setLoading(true)
-    }
-    try {
-      const views = await window.api.scoreables.listViews()
-      setScoreables(views)
-    } catch (error) {
-      console.error('Failed to load scoreables', error)
-      toast.error('Failed to load scoreables')
-    } finally {
-      if (silent) {
-        setRefreshing(false)
-      } else {
-        setLoading(false)
-      }
-    }
-  }, [])
+  const { data: scoreables = [], isLoading, isFetching } = useScoreableViewsQuery()
 
-  useEffect(() => {
-    fetchScoreables()
-  }, [fetchScoreables])
+  const invalidateScoreables = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.scoreables.views() }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.scoreables.list() })
+    ])
 
   const {
     results: filteredScoreables,
@@ -150,7 +134,7 @@ export function ScoreablesSection() {
         toast.success('Scoreable updated')
       }
 
-      await fetchScoreables(true)
+      await invalidateScoreables()
       setFormState({ open: false, mode: null })
     } catch (error) {
       console.error('Failed to submit scoreable form', error)
@@ -171,7 +155,7 @@ export function ScoreablesSection() {
       }
       toast.success(`Deleted ${deleteState.scoreable.label}`)
       setDeleteState({ open: false, scoreable: undefined, deleting: false })
-      await fetchScoreables(true)
+      await invalidateScoreables()
     } catch (error) {
       console.error('Failed to delete scoreable', error)
       toast.error('Could not delete scoreable')
@@ -179,12 +163,16 @@ export function ScoreablesSection() {
     }
   }
 
-  const isEmpty = !loading && scoreables.length === 0
+  const refreshing = isFetching && !isLoading
+  const isEmpty = !isLoading && scoreables.length === 0
+  const scoreableCount = scoreables.length
+  const scoreableCountLabel = isLoading ? '—' : scoreableCount.toLocaleString()
 
   return (
     <>
       <ManageSectionShell
         title="Scoreables"
+        titleAdornment={<Pill>{scoreableCountLabel}</Pill>}
         description="Manage scoreable metrics available for scoring."
         onAdd={openCreateModal}
         addLabel="Add Scoreable"
@@ -193,7 +181,7 @@ export function ScoreablesSection() {
         searchValue={query}
         onSearchChange={setQuery}
       >
-        {loading ? (
+        {isLoading ? (
           <div className="flex flex-1 items-center justify-center ro-text-muted">
             Loading scoreables...
           </div>

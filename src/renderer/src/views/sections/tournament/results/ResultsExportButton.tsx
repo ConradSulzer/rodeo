@@ -1,43 +1,31 @@
 import { useState } from 'react'
-import Papa from 'papaparse'
 import { Button } from '@renderer/components/ui/button'
 import { Modal } from '@renderer/components/Modal'
 import { toast } from 'sonner'
-import type { SerializableTournamentState } from '@core/tournaments/state'
-import type { Player } from '@core/players/players'
-import type { Scoreable } from '@core/tournaments/scoreables'
-import type { Division } from '@core/tournaments/divisions'
 import { buildCsvExportFilename } from '@core/utils/csv'
+import { useResultsData } from '@renderer/hooks/useResultsData'
+import { useDivisionsListQuery } from '@renderer/queries/divisions'
+import { usePlayersWithDivisionsQuery } from '@renderer/queries/players'
+import { buildResultsCsv } from '@renderer/utils/reports/resultsCsv'
 
 export function ResultsExportButton() {
   const [open, setOpen] = useState(false)
   const [includeUnscored, setIncludeUnscored] = useState(true)
   const [exporting, setExporting] = useState(false)
+  const { scoreables, rows } = useResultsData()
+  const { data: divisionList = [] } = useDivisionsListQuery()
+  const { data: playerTuples = [] } = usePlayersWithDivisionsQuery()
 
   const handleExport = async () => {
     setExporting(true)
     try {
-      const [scoreables, players, state, divisions, metadata] = await Promise.all([
-        window.api.scoreables.list(),
-        window.api.players.list(),
-        window.api.tournaments.getState(),
-        window.api.divisions.list(),
-        window.api.tournaments.getMetadata()
-      ])
-      const divisionMembership = new Map<string, Set<string>>()
-      await Promise.all(
-        players.map(async (player) => {
-          const list = await window.api.divisions.listForPlayer(player.id)
-          divisionMembership.set(player.id, new Set(list))
-        })
-      )
+      const metadata = await window.api.tournaments.getMetadata()
       const csv = buildResultsCsv({
         scoreables,
-        players,
-        state,
-        divisions,
-        includeUnscored,
-        divisionMembership
+        playerTuples,
+        rows,
+        divisions: divisionList,
+        includeUnscored
       })
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)
@@ -100,73 +88,4 @@ export function ResultsExportButton() {
       </Modal>
     </>
   )
-}
-
-function buildResultsCsv({
-  scoreables,
-  players,
-  state,
-  divisions,
-  includeUnscored,
-  divisionMembership
-}: {
-  scoreables: Scoreable[]
-  players: Player[]
-  state: SerializableTournamentState
-  divisions: Division[]
-  includeUnscored: boolean
-  divisionMembership: Map<string, Set<string>>
-}): string {
-  const scoreableOrder = [...scoreables].sort((a, b) => a.label.localeCompare(b.label))
-  const playerMap = new Map(players.map((player) => [player.id, player]))
-  const resultMap = new Map(
-    state.results.map((entry) => [
-      entry.playerId,
-      entry.items.reduce<Record<string, number>>((acc, item) => {
-        acc[item.scoreableId] = item.result?.value ?? NaN
-        return acc
-      }, {})
-    ])
-  )
-
-  const playersToExport = includeUnscored
-    ? players
-    : state.results
-        .map((entry) => playerMap.get(entry.playerId))
-        .filter((player): player is Player => Boolean(player))
-
-  const uniquePlayers = new Map<string, Player>()
-  playersToExport.forEach((player) => {
-    if (player) uniquePlayers.set(player.id, player)
-  })
-
-  const divisionOrder = [...divisions].sort((a, b) => {
-    const orderA = a.order ?? Number.MAX_SAFE_INTEGER
-    const orderB = b.order ?? Number.MAX_SAFE_INTEGER
-    if (orderA !== orderB) return orderA - orderB
-    return a.name.localeCompare(b.name)
-  })
-  const header = [
-    'Player Name',
-    'Email',
-    ...scoreableOrder.map((scoreable) => scoreable.label),
-    ...divisionOrder.map((division) => division.name)
-  ]
-  const rows = Array.from(uniquePlayers.values()).map((player) => {
-    const scores = resultMap.get(player.id) ?? {}
-    const memberships = divisionMembership.get(player.id) ?? new Set<string>()
-    return [
-      player.displayName,
-      player.email ?? '',
-      ...scoreableOrder.map((scoreable) => {
-        const value = scores[scoreable.id]
-        return Number.isFinite(value) ? String(value) : ''
-      }),
-      ...divisionOrder.map((division) => {
-        return memberships.has(division.id) ? 'TRUE' : 'FALSE'
-      })
-    ]
-  })
-
-  return Papa.unparse({ fields: header, data: rows })
 }

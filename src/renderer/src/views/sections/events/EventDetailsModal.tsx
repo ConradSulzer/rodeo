@@ -13,12 +13,21 @@ export function EventDetailsModal({ event, onClose }: EventDetailsModalProps) {
   const rows: Array<[string, string]> = [
     ['Event ID', event.id],
     ['Timestamp', new Date(event.ts).toLocaleString()],
-    ['Type', event.type.replace('Item', '')],
+    ['Type', event.type],
     ['Player Name', event.playerName],
     ['Player ID', event.playerId],
-    ['Scoreable Name', event.scoreableName],
-    ['Scoreable ID', event.scoreableId],
-    ['Value', event.value !== undefined ? String(event.value) : '—'],
+    ['Scoreable', event.scoreableLabel ?? '—'],
+    ['Scoreable ID', event.scoreableId ?? '—'],
+    [
+      'Value',
+      event.type === 'ScorecardVoided'
+        ? '—'
+        : event.state === 'empty'
+          ? 'Empty'
+          : event.value !== undefined
+            ? String(event.value)
+            : '—'
+    ],
     ['Prior Event', event.priorEventId ?? '—'],
     ['Note', event.note ?? '—']
   ]
