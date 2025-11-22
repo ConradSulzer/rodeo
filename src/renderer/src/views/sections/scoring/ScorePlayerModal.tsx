@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import type { Player } from '@core/players/players'
 import type { Scoreable } from '@core/tournaments/scoreables'
@@ -42,6 +42,7 @@ export function ScorePlayerModal({
   const [voiding, setVoiding] = useState(false)
 
   const hasRequirements = scoreables.length > 0
+  const canVoidScorecard = !!(onVoidScorecard && existingResults && existingResults.size > 0)
 
   useEffect(() => {
     if (!open) return
@@ -100,6 +101,8 @@ export function ScorePlayerModal({
 
     if (!player || !hasRequirements) return
 
+    setSubmissionErrors([])
+
     const submissions: ItemScoreEventInput[] = []
 
     for (const scoreable of scoreables) {
@@ -117,10 +120,12 @@ export function ScorePlayerModal({
       }
 
       if (isEmpty) {
-        submissions.push({
-          ...base,
-          state: 'empty'
-        })
+        if (existing?.status !== 'empty') {
+          submissions.push({
+            ...base,
+            state: 'empty'
+          })
+        }
         continue
       }
 
@@ -138,7 +143,13 @@ export function ScorePlayerModal({
       return
     }
 
-    setSubmissionErrors([])
+    const allEmpty = scoreables.every((scoreable) => empties.has(scoreable.id))
+    if (allEmpty) {
+      setSubmissionErrors([
+        'Scorecards cannot be completely empty. Please enter at least one score or void the scorecard.'
+      ])
+      return
+    }
 
     try {
       const result = await onSubmit(submissions)
@@ -153,7 +164,7 @@ export function ScorePlayerModal({
     }
   }
 
-  const content = useMemo(() => {
+  const renderContent = () => {
     if (!scoreables.length) {
       return (
         <div className="rounded-md border border-dashed ro-border p-4 text-sm ro-text-muted">
@@ -202,10 +213,10 @@ export function ScorePlayerModal({
         })}
       </div>
     )
-  }, [existingResults, scoreables, values, empties])
+  }
 
   const handleVoidScorecard = async () => {
-    if (!onVoidScorecard || !player) return
+    if (!onVoidScorecard || !player || !existingResults || !existingResults.size) return
     const confirmed = window.confirm(
       `Void all scores for ${player.displayName}? This cannot be undone.`
     )
@@ -240,9 +251,13 @@ export function ScorePlayerModal({
             </ul>
           </div>
         ) : null}
-        {content}
-        <div className="flex items-center justify-between gap-3 mt-12">
-          {onVoidScorecard ? (
+        {renderContent()}
+        <div
+          className={`flex items-center gap-3 mt-12 ${
+            canVoidScorecard ? 'justify-between' : 'justify-end'
+          }`}
+        >
+          {canVoidScorecard ? (
             <Button
               type="button"
               variant="destructive"
