@@ -15,7 +15,6 @@ const api = {
     create: (data: NewPlayer) => ipcRenderer.invoke('players:create', data),
     update: (id: string, data: PatchPlayer) => ipcRenderer.invoke('players:update', id, data),
     delete: (id: string) => ipcRenderer.invoke('players:delete', id),
-    get: (id: string) => ipcRenderer.invoke('players:get', id),
     list: () => ipcRenderer.invoke('players:list'),
     listAssignments: () => ipcRenderer.invoke('players:listAssignments')
   },
@@ -38,11 +37,7 @@ const api = {
     addScoreable: (categoryId: string, scoreableId: string) =>
       ipcRenderer.invoke('categories:addScoreable', categoryId, scoreableId),
     removeScoreable: (categoryId: string, scoreableId: string) =>
-      ipcRenderer.invoke('categories:removeScoreable', categoryId, scoreableId),
-    listScoreableIds: (categoryId: string) =>
-      ipcRenderer.invoke('categories:listScoreableIds', categoryId),
-    listForScoreable: (scoreableId: string) =>
-      ipcRenderer.invoke('categories:listForScoreable', scoreableId)
+      ipcRenderer.invoke('categories:removeScoreable', categoryId, scoreableId)
   },
   divisions: {
     create: (data: NewDivision) => ipcRenderer.invoke('divisions:create', data),

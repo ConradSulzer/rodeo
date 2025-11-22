@@ -4,9 +4,7 @@ import {
   deleteCategory,
   getCategory,
   listAllCategories,
-  listCategoryIdsForScoreable,
   listCategoryViews,
-  listScoreableIdsForCategory,
   removeScoreableFromCategory,
   updateCategory,
   type NewCategory,
@@ -59,14 +57,4 @@ ipcMain.handle('categories:addScoreable', (_evt, categoryId: string, scoreableId
 ipcMain.handle('categories:removeScoreable', (_evt, categoryId: string, scoreableId: string) => {
   const db = getTournamentDb()
   return withStandingsRefresh(db, () => removeScoreableFromCategory(db, categoryId, scoreableId))
-})
-
-ipcMain.handle('categories:listScoreableIds', (_evt, categoryId: string) => {
-  const db = getTournamentDb()
-  return listScoreableIdsForCategory(db, categoryId)
-})
-
-ipcMain.handle('categories:listForScoreable', (_evt, scoreableId: string) => {
-  const db = getTournamentDb()
-  return listCategoryIdsForScoreable(db, scoreableId)
 })

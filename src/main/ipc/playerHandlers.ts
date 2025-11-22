@@ -1,7 +1,6 @@
 import {
   createPlayer,
   deletePlayer,
-  getPlayer,
   listAllPlayerAssignments,
   listAllPlayers,
   updatePlayer,
@@ -27,12 +26,6 @@ ipcMain.handle('players:delete', (_evt, id: string) => {
   const db = getTournamentDb()
 
   return deletePlayer(db, id)
-})
-
-ipcMain.handle('players:get', (_evt, id: string) => {
-  const db = getTournamentDb()
-
-  return getPlayer(db, id)
 })
 
 ipcMain.handle('players:list', () => {

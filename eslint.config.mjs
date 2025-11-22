@@ -29,5 +29,11 @@ export default defineConfig(
       '@typescript-eslint/explicit-function-return-type': 'off'
     }
   },
+  {
+    files: ['**/*.d.ts'],
+    rules: {
+      'no-unused-vars': 'off'
+    }
+  },
   eslintConfigPrettier
 )
