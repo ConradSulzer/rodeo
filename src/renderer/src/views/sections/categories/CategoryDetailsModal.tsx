@@ -19,7 +19,7 @@ export function CategoryDetailsModal({ open, category, onClose }: CategoryDetail
   const hasRules = category.rules.length > 0
 
   return (
-    <Modal open={open} onClose={onClose} title="Category Details" contentClassName="max-w-[600px]">
+    <Modal open={open} onClose={onClose} title="Category Details">
       <div className="flex flex-col gap-5">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Field label={<Label>Name</Label>}>

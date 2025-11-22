@@ -52,7 +52,9 @@ export function CategoryFormModal({
 
   useEffect(() => {
     if (!open) return
+
     setErrors({})
+
     if (category) {
       setValues({
         name: category.name,
@@ -75,14 +77,19 @@ export function CategoryFormModal({
     if (submitting) return
 
     const nextErrors: { name?: string; scoreablesCountName?: string } = {}
+
     const trimmedName = values.name.trim()
+
     if (!trimmedName) {
       nextErrors.name = 'Name is required'
     }
+
     const trimmedCountName = values.scoreablesCountName.trim()
+
     if (values.showScoreablesCount && !trimmedCountName) {
       nextErrors.scoreablesCountName = 'Column name is required'
     }
+
     if (Object.keys(nextErrors).length) {
       setErrors(nextErrors)
       return
@@ -92,7 +99,7 @@ export function CategoryFormModal({
       ...values,
       name: trimmedName,
       rules: values.rules.filter((rule) => rule.trim().length),
-      scoreablesCountName: trimmedCountName
+      scoreablesCountName: values.showScoreablesCount ? trimmedCountName : ''
     })
   }
 
@@ -109,7 +116,7 @@ export function CategoryFormModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={title} contentClassName="max-w-[600px]">
+    <Modal open={open} onClose={onClose} title={title}>
       <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
         <div className="flex gap-5">
           <Field

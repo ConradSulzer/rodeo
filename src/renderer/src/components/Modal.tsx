@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '../lib/utils'
+import { twMerge } from 'tailwind-merge'
 
 type ModalProps = {
   open: boolean
@@ -57,9 +58,11 @@ export function Modal({
       onMouseDown={onClose}
     >
       <div
-        className={cn(
-          'flex w-full flex-col overflow-hidden rounded-md border ro-border ro-bg-modal shadow-[0_24px_60px_rgba(0,0,0,0.35)]',
-          contentClassName
+        className={twMerge(
+          cn(
+            'flex w-[600px] flex-col overflow-hidden rounded-md border ro-border ro-bg-modal shadow-[0_24px_60px_rgba(0,0,0,0.35)]',
+            contentClassName
+          )
         )}
         onMouseDown={(event) => event.stopPropagation()}
       >
@@ -68,7 +71,7 @@ export function Modal({
             <h2 className="text-lg font-semibold uppercase tracking-[0.25em]">{title}</h2>
           </header>
         ) : null}
-        <div className={cn('flex-1 overflow-y-auto px-6 py-5', bodyClassName)}>{children}</div>
+        <div className={twMerge('flex-1 overflow-y-auto px-6 py-5', bodyClassName)}>{children}</div>
       </div>
     </div>,
     ensureModalRoot()

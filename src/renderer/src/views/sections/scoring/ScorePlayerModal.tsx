@@ -9,7 +9,6 @@ import { Field } from '@renderer/components/ui/field'
 import { Label } from '@renderer/components/ui/label'
 import { Input } from '@renderer/components/ui/input'
 import { Button } from '@renderer/components/ui/button'
-import { Pill } from '@renderer/components/ui/pill'
 
 export type SubmissionResult = {
   success: boolean
@@ -226,10 +225,8 @@ export function ScorePlayerModal({
     <Modal open={open} onClose={onClose} contentClassName="max-w-150">
       <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
         {player ? (
-          <div className="flex flex-col w-full justify-start gap-3 text-sm ro-text-muted">
-            <Pill size="md" className="w-fit">
-              {player.displayName}
-            </Pill>
+          <div className="flex flex-col w-full justify-start gap-1 text-sm ro-text-muted">
+            <p className="text-3xl ro-text-main">{player.displayName}</p>
             <span>{player.email}</span>
           </div>
         ) : null}

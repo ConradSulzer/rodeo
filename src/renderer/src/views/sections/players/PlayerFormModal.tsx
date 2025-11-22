@@ -117,7 +117,7 @@ export function PlayerFormModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={title} contentClassName="max-w-[600px]">
+    <Modal open={open} onClose={onClose} title={title}>
       <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Field
@@ -191,9 +191,9 @@ export function PlayerFormModal({
           </Field>
         </div>
         <div className="flex flex-col gap-2">
-          <Label>Divisions</Label>
+          <Label className="border-b">Player Divisions</Label>
           {divisions.length ? (
-            <div className="grid gap-2 md:grid-cols-2">
+            <div className="grid gap-2 grid-cols-2 px-3">
               {divisions.map((division) => {
                 const checked = selectedDivisions.has(division.id)
                 return (
