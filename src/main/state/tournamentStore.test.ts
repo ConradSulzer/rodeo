@@ -30,7 +30,7 @@ const sampleItem: ItemResult = {
   updatedAt: 1
 }
 
-const sampleResults = (): Results => new Map([['player-1', new Map([['scoreable-1', sampleItem]])]])
+const sampleResults = (): Results => new Map([['player-1', new Map([['metric-1', sampleItem]])]])
 
 const sampleDivisionViews = (): DivisionView[] => [
   {
@@ -138,7 +138,7 @@ describe('hydrate', () => {
           playerId: 'player-1',
           items: [
             {
-              scoreableId: 'scoreable-1',
+              metricId: 'metric-1',
               result: sampleItem
             }
           ]
@@ -241,7 +241,7 @@ describe('applyEvent', () => {
     id: 'event-1',
     ts: Date.now(),
     playerId: 'player-1',
-    scoreableId: 'scoreable-1',
+    metricId: 'metric-1',
     state: 'value',
     value: 12
   }

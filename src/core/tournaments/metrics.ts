@@ -1,26 +1,26 @@
 import { ulid } from 'ulid'
 import type { AppDatabase } from '@core/db/db'
 import {
-  categoryScoreable as categoryScoreableTable,
+  categoryMetric as categoryMetricTable,
   division as divisionTable,
   divisionCategory as divisionCategoryTable,
-  scoreable as sc
+  metric as sc
 } from '@core/db/schema'
 import { asc, eq } from 'drizzle-orm'
 
-export type Scoreable = typeof sc.$inferSelect
-export type NewScoreable = {
+export type Metric = typeof sc.$inferSelect
+export type NewMetric = {
   label: string
   unit: string
 }
-export type PatchScoreable = Partial<NewScoreable>
-export type ScoreableView = Scoreable & {
+export type PatchMetric = Partial<NewMetric>
+export type MetricView = Metric & {
   divisions: string[]
 }
 
 const now = () => Date.now()
 
-export function createScoreable(db: AppDatabase, data: NewScoreable): string {
+export function createMetric(db: AppDatabase, data: NewMetric): string {
   const id = ulid()
   const t = now()
 
@@ -36,7 +36,7 @@ export function createScoreable(db: AppDatabase, data: NewScoreable): string {
   return id
 }
 
-export function updateScoreable(db: AppDatabase, id: string, patch: PatchScoreable) {
+export function updateMetric(db: AppDatabase, id: string, patch: PatchMetric) {
   if (!Object.keys(patch).length) return false
 
   const result = db
@@ -52,34 +52,34 @@ export function updateScoreable(db: AppDatabase, id: string, patch: PatchScoreab
   return result.changes > 0
 }
 
-export function deleteScoreable(db: AppDatabase, id: string) {
+export function deleteMetric(db: AppDatabase, id: string) {
   const result = db.delete(sc).where(eq(sc.id, id)).run()
 
   return result.changes > 0
 }
 
-export function getScoreable(db: AppDatabase, id: string): Scoreable | undefined {
+export function getMetric(db: AppDatabase, id: string): Metric | undefined {
   return db.select().from(sc).where(eq(sc.id, id)).get()
 }
 
-export function listAllScoreables(db: AppDatabase): Scoreable[] {
+export function listAllMetrics(db: AppDatabase): Metric[] {
   return db.select().from(sc).orderBy(asc(sc.label)).all()
 }
 
-export function listScoreableViews(db: AppDatabase): ScoreableView[] {
-  const scoreables = listAllScoreables(db)
-  if (!scoreables.length) return []
+export function listMetricViews(db: AppDatabase): MetricView[] {
+  const metrics = listAllMetrics(db)
+  if (!metrics.length) return []
 
   const results = db
     .select({
-      scoreableId: sc.id,
+      metricId: sc.id,
       divisionName: divisionTable.name
     })
     .from(sc)
-    .leftJoin(categoryScoreableTable, eq(categoryScoreableTable.scoreableId, sc.id))
+    .leftJoin(categoryMetricTable, eq(categoryMetricTable.metricId, sc.id))
     .leftJoin(
       divisionCategoryTable,
-      eq(divisionCategoryTable.categoryId, categoryScoreableTable.categoryId)
+      eq(divisionCategoryTable.categoryId, categoryMetricTable.categoryId)
     )
     .leftJoin(divisionTable, eq(divisionTable.id, divisionCategoryTable.divisionId))
     .orderBy(asc(sc.label), asc(divisionTable.name))
@@ -88,17 +88,17 @@ export function listScoreableViews(db: AppDatabase): ScoreableView[] {
   const divisionMap = new Map<string, Set<string>>()
 
   for (const row of results) {
-    if (!row.scoreableId || !row.divisionName) continue
-    const set = divisionMap.get(row.scoreableId)
+    if (!row.metricId || !row.divisionName) continue
+    const set = divisionMap.get(row.metricId)
     if (set) {
       set.add(row.divisionName)
     } else {
-      divisionMap.set(row.scoreableId, new Set([row.divisionName]))
+      divisionMap.set(row.metricId, new Set([row.divisionName]))
     }
   }
 
-  return scoreables.map((scoreable) => ({
-    ...scoreable,
-    divisions: Array.from(divisionMap.get(scoreable.id) ?? []).sort((a, b) => a.localeCompare(b))
+  return metrics.map((metric) => ({
+    ...metric,
+    divisions: Array.from(divisionMap.get(metric.id) ?? []).sort((a, b) => a.localeCompare(b))
   }))
 }

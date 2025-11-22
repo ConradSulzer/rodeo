@@ -4,10 +4,10 @@ export const queryKeys = {
     assignments: () => ['players', 'assignments'] as const,
     list: () => ['players', 'list'] as const
   },
-  scoreables: {
-    all: () => ['scoreables'] as const,
-    list: () => ['scoreables', 'list'] as const,
-    views: () => ['scoreables', 'views'] as const
+  metrics: {
+    all: () => ['metrics'] as const,
+    list: () => ['metrics', 'list'] as const,
+    views: () => ['metrics', 'views'] as const
   },
   categories: {
     all: () => ['categories'] as const,

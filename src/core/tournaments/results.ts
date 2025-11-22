@@ -20,8 +20,8 @@ export function cloneResults(results: Results): Results {
   const clone: Results = new Map()
   for (const [playerId, items] of results) {
     const itemClone = new Map<ULID, ItemResult>()
-    for (const [scoreableId, result] of items) {
-      itemClone.set(scoreableId, { ...result })
+    for (const [metricId, result] of items) {
+      itemClone.set(metricId, { ...result })
     }
     clone.set(playerId, itemClone)
   }

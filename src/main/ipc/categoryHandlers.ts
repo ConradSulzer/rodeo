@@ -1,11 +1,11 @@
 import {
-  addScoreableToCategory,
+  addMetricToCategory,
   createCategory,
   deleteCategory,
   getCategory,
   listAllCategories,
   listCategoryViews,
-  removeScoreableFromCategory,
+  removeMetricFromCategory,
   updateCategory,
   type NewCategory,
   type PatchCategory
@@ -49,12 +49,12 @@ ipcMain.handle('categories:listRules', () => {
   return listStandingRules()
 })
 
-ipcMain.handle('categories:addScoreable', (_evt, categoryId: string, scoreableId: string) => {
+ipcMain.handle('categories:addMetric', (_evt, categoryId: string, metricId: string) => {
   const db = getTournamentDb()
-  return withStandingsRefresh(db, () => addScoreableToCategory(db, categoryId, scoreableId))
+  return withStandingsRefresh(db, () => addMetricToCategory(db, categoryId, metricId))
 })
 
-ipcMain.handle('categories:removeScoreable', (_evt, categoryId: string, scoreableId: string) => {
+ipcMain.handle('categories:removeMetric', (_evt, categoryId: string, metricId: string) => {
   const db = getTournamentDb()
-  return withStandingsRefresh(db, () => removeScoreableFromCategory(db, categoryId, scoreableId))
+  return withStandingsRefresh(db, () => removeMetricFromCategory(db, categoryId, metricId))
 })

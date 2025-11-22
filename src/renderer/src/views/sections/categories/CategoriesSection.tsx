@@ -16,7 +16,7 @@ import { CategoryFormModal, type CategoryFormValues } from './CategoryFormModal'
 import { CategoryDetailsModal } from './CategoryDetailsModal'
 import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
 import { useCategoryViewsQuery, useStandingRulesQuery } from '@renderer/queries/categories'
-import { useScoreablesListQuery } from '@renderer/queries/scoreables'
+import { useMetricsListQuery } from '@renderer/queries/metrics'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@renderer/queries/queryKeys'
 
@@ -38,7 +38,7 @@ type DeleteState = {
 
 const columns: ReadonlyArray<CrudTableColumn<CategoryView, 'actions'>> = [
   { key: 'name', label: 'Category', sortable: true },
-  { key: 'scoreables', label: 'Scoreables', sortable: false },
+  { key: 'metrics', label: 'Metrics', sortable: false },
   { key: 'actions', label: 'Actions', sortable: false, align: 'right' }
 ]
 
@@ -51,7 +51,7 @@ export function CategoriesSection() {
   const [detailsState, setDetailsState] = useState<DetailsState>({ open: false })
   const [deleteState, setDeleteState] = useState<DeleteState>({ open: false, deleting: false })
   const { data: categories = [], isLoading, isFetching } = useCategoryViewsQuery()
-  const { data: scoreables = [] } = useScoreablesListQuery()
+  const { data: metrics = [] } = useMetricsListQuery()
   const { data: standingRules = [] } = useStandingRulesQuery()
 
   const invalidateCategories = () =>
@@ -94,20 +94,20 @@ export function CategoriesSection() {
     if (!formState.open) return
     setFormSubmitting(true)
     try {
-      const trimmedCountName = values.scoreablesCountName.trim()
+      const trimmedCountName = values.metricsCountName.trim()
       if (formState.mode === 'create') {
         const payload: NewCategory = {
           name: values.name,
           direction: values.direction,
           rules: values.rules,
-          showScoreablesCount: values.showScoreablesCount,
-          scoreablesCountName: values.showScoreablesCount ? trimmedCountName : ''
+          showMetricsCount: values.showMetricsCount,
+          metricsCountName: values.showMetricsCount ? trimmedCountName : ''
         }
         const categoryId: string = await window.api.categories.create(payload)
-        if (values.scoreableIds.length) {
+        if (values.metricIds.length) {
           await Promise.all(
-            values.scoreableIds.map((scoreableId) =>
-              window.api.categories.addScoreable(categoryId, scoreableId)
+            values.metricIds.map((metricId) =>
+              window.api.categories.addMetric(categoryId, metricId)
             )
           )
         }
@@ -120,15 +120,15 @@ export function CategoriesSection() {
         if (!areStringArraysEqual(values.rules, category.rules)) {
           patch.rules = values.rules
         }
-        if (values.showScoreablesCount !== Boolean(category.showScoreablesCount)) {
-          patch.showScoreablesCount = values.showScoreablesCount
-          if (!values.showScoreablesCount) {
-            patch.scoreablesCountName = ''
+        if (values.showMetricsCount !== Boolean(category.showMetricsCount)) {
+          patch.showMetricsCount = values.showMetricsCount
+          if (!values.showMetricsCount) {
+            patch.metricsCountName = ''
           }
         }
-        const previousCountName = category.scoreablesCountName ?? ''
-        if (values.showScoreablesCount && trimmedCountName !== previousCountName) {
-          patch.scoreablesCountName = trimmedCountName
+        const previousCountName = category.metricsCountName ?? ''
+        if (values.showMetricsCount && trimmedCountName !== previousCountName) {
+          patch.metricsCountName = trimmedCountName
         }
 
         let changed = false
@@ -139,16 +139,16 @@ export function CategoriesSection() {
           changed = true
         }
 
-        const prevIds = new Set(category.scoreables.map((scoreable) => scoreable.id))
-        const nextIds = new Set(values.scoreableIds)
+        const prevIds = new Set(category.metrics.map((metric) => metric.id))
+        const nextIds = new Set(values.metricIds)
 
         const toAdd = [...nextIds].filter((id) => !prevIds.has(id))
         const toRemove = [...prevIds].filter((id) => !nextIds.has(id))
 
         if (toAdd.length || toRemove.length) {
           await Promise.all([
-            ...toAdd.map((id) => window.api.categories.addScoreable(category.id, id)),
-            ...toRemove.map((id) => window.api.categories.removeScoreable(category.id, id))
+            ...toAdd.map((id) => window.api.categories.addMetric(category.id, id)),
+            ...toRemove.map((id) => window.api.categories.removeMetric(category.id, id))
           ])
           changed = true
         }
@@ -199,7 +199,7 @@ export function CategoriesSection() {
     if (!formState.open || formState.mode !== 'edit' || !formState.category) return undefined
     return {
       ...formState.category,
-      scoreableIds: formState.category.scoreables.map((scoreable) => scoreable.id)
+      metricIds: formState.category.metrics.map((metric) => metric.id)
     }
   }, [formState])
 
@@ -208,7 +208,7 @@ export function CategoriesSection() {
       <ManageSectionShell
         title="Categories"
         titleAdornment={<Pill>{categoryCountLabel}</Pill>}
-        description="Group scoreables into logical buckets for scoring."
+        description="Group metrics into logical buckets for scoring."
         onAdd={openCreateModal}
         addLabel="Add Category"
         refreshing={refreshing}
@@ -252,16 +252,16 @@ export function CategoriesSection() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {category.scoreables.length ? (
+                        {category.metrics.length ? (
                           <div className="flex flex-wrap gap-2">
-                            {category.scoreables.map((scoreable) => (
-                              <Pill key={scoreable.id} size="sm">
-                                {scoreable.label}
+                            {category.metrics.map((metric) => (
+                              <Pill key={metric.id} size="sm">
+                                {metric.label}
                               </Pill>
                             ))}
                           </div>
                         ) : (
-                          <span className="text-sm ro-text-muted">No scoreables</span>
+                          <span className="text-sm ro-text-muted">No metrics</span>
                         )}
                       </TableCell>
                       <TableCell align="right">
@@ -299,7 +299,7 @@ export function CategoriesSection() {
         open={formState.open}
         mode={formState.open ? (formState.mode ?? 'create') : 'create'}
         category={editModalCategory}
-        scoreables={scoreables}
+        metrics={metrics}
         standingRules={standingRules}
         submitting={formSubmitting}
         onSubmit={handleFormSubmit}
@@ -323,7 +323,7 @@ export function CategoriesSection() {
           deleteState.category ? (
             <p>
               This will permanently remove <strong>{deleteState.category.name}</strong> and unlink
-              it from all divisions and scoreables. This action cannot be undone.
+              it from all divisions and metrics. This action cannot be undone.
             </p>
           ) : (
             'Are you sure you want to delete this category?'

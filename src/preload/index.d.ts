@@ -10,7 +10,7 @@ import {
   NewDivision,
   PatchDivision
 } from '@core/tournaments/divisions'
-import { NewScoreable, PatchScoreable, Scoreable } from '@core/tournaments/scoreables'
+import { NewMetric, PatchMetric, Metric } from '@core/tournaments/metrics'
 import type { SerializableTournamentState } from '@core/tournaments/state'
 import type { RodeoEvent, ScoreEventInput } from '@core/events/events'
 
@@ -22,14 +22,14 @@ interface PlayerAPI {
   listAssignments(): Promise<PlayerAssignment[]>
 }
 
-interface ScoreableAPI {
-  create(data: NewScoreable): Promise<string>
-  update(id: string, data: PatchScoreable): Promise<boolean>
+interface MetricAPI {
+  create(data: NewMetric): Promise<string>
+  update(id: string, data: PatchMetric): Promise<boolean>
   delete(id: string): Promise<boolean>
-  get(id: string): Promise<Scoreable>
-  list(): Promise<Scoreable[]>
+  get(id: string): Promise<Metric>
+  list(): Promise<Metric[]>
   listViews(): Promise<
-    (Scoreable & {
+    (Metric & {
       divisions: string[]
     })[]
   >
@@ -43,12 +43,12 @@ interface CategoryAPI {
   list(): Promise<Category[]>
   listViews(): Promise<
     (Category & {
-      scoreables: Scoreable[]
+      metrics: Metric[]
     })[]
   >
   listRules(): Promise<StandingRuleSummary[]>
-  addScoreable(categoryId: string, scoreableId: string): Promise<boolean>
-  removeScoreable(categoryId: string, scoreableId: string): Promise<boolean>
+  addMetric(categoryId: string, metricId: string): Promise<boolean>
+  removeMetric(categoryId: string, metricId: string): Promise<boolean>
 }
 
 interface DivisionAPI {
@@ -117,7 +117,7 @@ declare global {
     electron: ElectronAPI
     api: {
       players: PlayerAPI
-      scoreables: ScoreableAPI
+      metrics: MetricAPI
       categories: CategoryAPI
       divisions: DivisionAPI
       events: EventsAPI

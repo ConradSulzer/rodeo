@@ -19,8 +19,8 @@ import {
   updateDivisionCategoryLink,
   type NewDivision
 } from './divisions'
-import { addScoreableToCategory, createCategory, type NewCategory } from './categories'
-import { createScoreable, type NewScoreable } from './scoreables'
+import { addMetricToCategory, createCategory, type NewCategory } from './categories'
+import { createMetric, type NewMetric } from './metrics'
 import { createPlayer } from '@core/players/players'
 
 const baseDivision: NewDivision = {
@@ -32,7 +32,7 @@ const baseCategory: NewCategory = {
   direction: 'asc'
 }
 
-const baseScoreable: NewScoreable = {
+const baseMetric: NewMetric = {
   label: 'Weight',
   unit: 'lbs'
 }
@@ -184,15 +184,15 @@ describe('divisions data access', () => {
     })
   })
 
-  it('builds division view with categories and scoreables', () => {
+  it('builds division view with categories and metrics', () => {
     withInMemoryDb((db) => {
       const divisionId = createDivision(db, baseDivision)
       const categoryId = createCategory(db, baseCategory)
-      const scoreableId = createScoreable(db, baseScoreable)
+      const metricId = createMetric(db, baseMetric)
       const playerA = createPlayer(db, basePlayer('A'))
       const playerB = createPlayer(db, basePlayer('B'))
 
-      addScoreableToCategory(db, categoryId, scoreableId)
+      addMetricToCategory(db, categoryId, metricId)
       addCategoryToDivision(db, divisionId, categoryId, 4, 5)
       addPlayerToDivision(db, divisionId, playerA)
       addPlayerToDivision(db, divisionId, playerB)
@@ -206,15 +206,15 @@ describe('divisions data access', () => {
       expect(categoryView.depth).toBe(4)
       expect(categoryView.order).toBe(5)
       expect(categoryView.category.id).toBe(categoryId)
-      expect(categoryView.scoreables).toHaveLength(1)
-      expect(categoryView.scoreables[0]).toMatchObject({
-        id: scoreableId,
-        label: baseScoreable.label
+      expect(categoryView.metrics).toHaveLength(1)
+      expect(categoryView.metrics[0]).toMatchObject({
+        id: metricId,
+        label: baseMetric.label
       })
 
       const all = listDivisionViews(db)
       expect(all).toHaveLength(1)
-      expect(all[0].categories[0].scoreables[0].unit).toBe(baseScoreable.unit)
+      expect(all[0].categories[0].metrics[0].unit).toBe(baseMetric.unit)
       expect(new Set(all[0].eligiblePlayerIds)).toEqual(new Set([playerA, playerB]))
     })
   })

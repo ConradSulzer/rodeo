@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { StandingRuleContext } from './standingRules'
 import { moreItemsTrumpFewerApply } from './standingRules/moreItemsTrumpFewer'
-import { requireAllScoreablesApply } from './standingRules/requireAllScoreables'
+import { requireAllMetricsApply } from './standingRules/requireAllMetrics'
 import type { PlayerStanding } from './standings'
 import type { DivisionCategoryView } from './divisions'
 import type { Timestamp } from '@core/types/Shared'
-import type { Scoreable } from './scoreables'
+import type { Metric } from './metrics'
 
 const baseStanding = (overrides: Partial<PlayerStanding> = {}): PlayerStanding => ({
   playerId: '01TESTPLAYER',
@@ -17,13 +17,10 @@ const baseStanding = (overrides: Partial<PlayerStanding> = {}): PlayerStanding =
   ...overrides
 })
 
-const baseCategoryContext = (
-  direction: 'asc' | 'desc',
-  scoreableCount = 0
-): StandingRuleContext => {
-  const scoreables: Scoreable[] = Array.from({ length: scoreableCount }, (_, idx) => ({
-    id: `scoreable-${idx}`,
-    label: `Scoreable ${idx}`,
+const baseCategoryContext = (direction: 'asc' | 'desc', metricCount = 0): StandingRuleContext => {
+  const metrics: Metric[] = Array.from({ length: metricCount }, (_, idx) => ({
+    id: `metric-${idx}`,
+    label: `Metric ${idx}`,
     unit: 'unit',
     order: idx,
     createdAt: 0,
@@ -38,12 +35,12 @@ const baseCategoryContext = (
       rules: [],
       createdAt: 0,
       updatedAt: 0,
-      showScoreablesCount: false,
-      scoreablesCountName: ''
+      showMetricsCount: false,
+      metricsCountName: ''
     },
     depth: 1,
     order: 0,
-    scoreables
+    metrics
   }
 
   return { categoryView }
@@ -70,31 +67,31 @@ describe('standing rules', () => {
     })
   })
 
-  describe('requireAllScoreablesApply', () => {
-    it('returns null when standing is missing scoreables', () => {
+  describe('requireAllMetricsApply', () => {
+    it('returns null when standing is missing metrics', () => {
       const standing = baseStanding({ itemCount: 2 })
       const context = baseCategoryContext('desc', 3)
 
-      const result = requireAllScoreablesApply(standing, context)
+      const result = requireAllMetricsApply(standing, context)
 
       expect(result).toBeNull()
     })
 
-    it('returns the standing when all scoreables are present', () => {
+    it('returns the standing when all metrics are present', () => {
       const standing = baseStanding({ itemCount: 3 })
       const context = baseCategoryContext('desc', 3)
 
-      const result = requireAllScoreablesApply(standing, context)
+      const result = requireAllMetricsApply(standing, context)
 
       expect(result).toEqual(standing)
     })
 
-    // TODO: This should not be possible. Make sure this is not possible. It would invalidate the results if we had scoreables in a category that weren't supposed to be there.
+    // TODO: This should not be possible. Make sure this is not possible. It would invalidate the results if we had metrics in a category that weren't supposed to be there.
     it('returns null when there are more items than required', () => {
       const standing = baseStanding({ itemCount: 4 })
       const context = baseCategoryContext('asc', 3)
 
-      const result = requireAllScoreablesApply(standing, context)
+      const result = requireAllMetricsApply(standing, context)
 
       expect(result).toBeNull()
     })

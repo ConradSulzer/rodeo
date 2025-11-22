@@ -3,7 +3,7 @@ import { division as dv, player as pl, playerDivision as pd } from '@core/db/sch
 import { listDivisionViews, type Division } from '@core/tournaments/divisions'
 import { eq, asc } from 'drizzle-orm'
 import { ulid } from 'ulid'
-import type { Scoreable } from '@core/tournaments/scoreables'
+import type { Metric } from '@core/tournaments/metrics'
 
 export type Player = typeof pl.$inferSelect
 
@@ -24,8 +24,8 @@ export type PlayerAssignment = {
   player: Player
   divisions: Division[]
   divisionIds: string[]
-  scoreables: Scoreable[]
-  scoreableIds: string[]
+  metrics: Metric[]
+  metricIds: string[]
 }
 
 export type PlayerId = string
@@ -100,30 +100,28 @@ export function listAllPlayerAssignments(db: AppDatabase): PlayerAssignment[] {
 
   return players.map((player) => {
     const divisions = divisionMap.get(player.id) ?? []
-    const scoreableMap = new Map<string, Scoreable>()
+    const metricMap = new Map<string, Metric>()
 
     for (const division of divisions) {
       const view = divisionViewMap.get(division.id)
       if (!view) continue
       for (const categoryView of view.categories) {
-        for (const scoreable of categoryView.scoreables) {
-          if (!scoreableMap.has(scoreable.id)) {
-            scoreableMap.set(scoreable.id, scoreable)
+        for (const metric of categoryView.metrics) {
+          if (!metricMap.has(metric.id)) {
+            metricMap.set(metric.id, metric)
           }
         }
       }
     }
 
-    const scoreables = Array.from(scoreableMap.values()).sort((a, b) =>
-      a.label.localeCompare(b.label)
-    )
+    const metrics = Array.from(metricMap.values()).sort((a, b) => a.label.localeCompare(b.label))
 
     return {
       player,
       divisions,
       divisionIds: divisions.map((division) => division.id),
-      scoreables,
-      scoreableIds: scoreables.map((scoreable) => scoreable.id)
+      metrics,
+      metricIds: metrics.map((metric) => metric.id)
     }
   })
 }

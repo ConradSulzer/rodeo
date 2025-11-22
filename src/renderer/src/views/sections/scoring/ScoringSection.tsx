@@ -3,7 +3,7 @@ import { toast } from 'sonner'
 import { FiCheck } from 'react-icons/fi'
 import type { Player } from '@core/players/players'
 import type { Division } from '@core/tournaments/divisions'
-import type { Scoreable } from '@core/tournaments/scoreables'
+import type { Metric } from '@core/tournaments/metrics'
 import type { SerializableTournamentState } from '@core/tournaments/state'
 import type { ItemResult } from '@core/tournaments/results'
 import type { ItemScoreEventInput } from '@core/events/events'
@@ -21,7 +21,7 @@ import { cn } from '@renderer/lib/utils'
 
 type PlayerRow = Player & {
   divisions: Division[]
-  scoreables: Scoreable[]
+  metrics: Metric[]
 }
 
 type PlayerResultsMap = Map<string, Map<string, ItemResult>>
@@ -31,7 +31,7 @@ type ScoreModalState =
   | {
       open: true
       player: PlayerRow
-      scoreables: Scoreable[]
+      metrics: Metric[]
       existingResults?: Map<string, ItemResult>
     }
 
@@ -53,10 +53,10 @@ export function ScoringSection() {
   const fetchPlayers = useCallback(async () => {
     const assignments = await window.api.players.listAssignments()
     setPlayers(
-      assignments.map(({ player, divisions, scoreables }) => ({
+      assignments.map(({ player, divisions, metrics }) => ({
         ...player,
         divisions,
-        scoreables
+        metrics
       }))
     )
   }, [])
@@ -98,12 +98,12 @@ export function ScoringSection() {
     initialSort: { key: 'displayName', direction: 'asc' }
   })
 
-  const handleOpenModal = (player: PlayerRow, scoreables: Scoreable[]) => {
-    if (!scoreables.length) return
+  const handleOpenModal = (player: PlayerRow, metrics: Metric[]) => {
+    if (!metrics.length) return
     setModalState({
       open: true,
       player,
-      scoreables,
+      metrics,
       existingResults: results.get(player.id)
     })
   }
@@ -173,12 +173,12 @@ export function ScoringSection() {
   }
 
   const isPlayerScored = useCallback(
-    (playerId: string, scoreables: Scoreable[]) => {
-      if (!scoreables.length) return false
+    (playerId: string, metrics: Metric[]) => {
+      if (!metrics.length) return false
       const playerResults = results.get(playerId)
       if (!playerResults) return false
-      for (const scoreable of scoreables) {
-        if (!playerResults.has(scoreable.id)) {
+      for (const metric of metrics) {
+        if (!playerResults.has(metric.id)) {
           return false
         }
       }
@@ -230,9 +230,9 @@ export function ScoringSection() {
                 </TableHeader>
                 <TableBody>
                   {filteredPlayers.map((player) => {
-                    const scoreables = player.scoreables
-                    const hasRequirements = scoreables.length > 0
-                    const scored = isPlayerScored(player.id, scoreables)
+                    const metrics = player.metrics
+                    const hasRequirements = metrics.length > 0
+                    const scored = isPlayerScored(player.id, metrics)
                     return (
                       <TableRow key={player.id} className="ro-row-hover">
                         <TableCell>
@@ -252,7 +252,7 @@ export function ScoringSection() {
                               scored ? 'ro-bg-success ro-text-success-dark border-transparent' : ''
                             )}
                             disabled={!hasRequirements}
-                            onClick={() => handleOpenModal(player, scoreables)}
+                            onClick={() => handleOpenModal(player, metrics)}
                           >
                             {scored ? (
                               <span className="flex items-center gap-2">
@@ -277,7 +277,7 @@ export function ScoringSection() {
       <ScorePlayerModal
         open={modalState.open}
         player={modalState.open ? modalState.player : undefined}
-        scoreables={modalState.open ? modalState.scoreables : []}
+        metrics={modalState.open ? modalState.metrics : []}
         existingResults={modalState.open ? modalState.existingResults : undefined}
         submitting={modalSubmitting}
         onSubmit={handleSaveScores}
@@ -291,10 +291,7 @@ export function ScoringSection() {
 function buildResultsMap(state: SerializableTournamentState): PlayerResultsMap {
   const map: PlayerResultsMap = new Map()
   for (const entry of state.results) {
-    map.set(
-      entry.playerId,
-      new Map(entry.items.map(({ scoreableId, result }) => [scoreableId, result]))
-    )
+    map.set(entry.playerId, new Map(entry.items.map(({ metricId, result }) => [metricId, result])))
   }
   return map
 }

@@ -115,9 +115,9 @@ export function StandingsSection() {
     })
   }, [activeCategoryStanding, players, query])
 
-  const showCountColumn = Boolean(activeCategoryView?.category.showScoreablesCount)
+  const showCountColumn = Boolean(activeCategoryView?.category.showMetricsCount)
   const countColumnLabel =
-    activeCategoryView?.category.scoreablesCountName?.trim() || 'Entries Submitted'
+    activeCategoryView?.category.metricsCountName?.trim() || 'Entries Submitted'
 
   const renderTable = () => {
     if (!activeCategoryView) {

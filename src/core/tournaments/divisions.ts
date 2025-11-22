@@ -6,12 +6,8 @@ import {
   playerDivision as pd
 } from '@core/db/schema'
 import { and, asc, eq } from 'drizzle-orm'
-import {
-  getCategory,
-  listScoreableIdsForCategory,
-  type Category
-} from '@core/tournaments/categories'
-import { getScoreable, type Scoreable } from '@core/tournaments/scoreables'
+import { getCategory, listMetricIdsForCategory, type Category } from '@core/tournaments/categories'
+import { getMetric, type Metric } from '@core/tournaments/metrics'
 
 export type Division = typeof dv.$inferSelect
 export type NewDivision = Omit<Division, 'id' | 'createdAt' | 'updatedAt' | 'order'> & {
@@ -196,7 +192,7 @@ export type DivisionCategoryView = {
   category: Category
   depth: number
   order: number
-  scoreables: Scoreable[]
+  metrics: Metric[]
 }
 
 export type DivisionView = Division & {
@@ -234,15 +230,15 @@ function buildDivisionCategories(db: AppDatabase, divisionId: string): DivisionC
       const category = getCategory(db, link.categoryId)
       if (!category) return null
 
-      const scoreables = listScoreableIdsForCategory(db, link.categoryId)
-        .map((scoreableId) => getScoreable(db, scoreableId))
-        .filter((scoreable): scoreable is Scoreable => Boolean(scoreable))
+      const metrics = listMetricIdsForCategory(db, link.categoryId)
+        .map((metricId) => getMetric(db, metricId))
+        .filter((metric): metric is Metric => Boolean(metric))
 
       return {
         category,
         depth: link.depth,
         order: link.order,
-        scoreables
+        metrics
       }
     })
     .filter((entry): entry is DivisionCategoryView => entry !== null)

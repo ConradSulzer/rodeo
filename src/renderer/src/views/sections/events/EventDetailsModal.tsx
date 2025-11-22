@@ -16,8 +16,8 @@ export function EventDetailsModal({ event, onClose }: EventDetailsModalProps) {
     ['Type', event.type],
     ['Player Name', event.playerName],
     ['Player ID', event.playerId],
-    ['Scoreable', event.scoreableLabel ?? '—'],
-    ['Scoreable ID', event.scoreableId ?? '—'],
+    ['Metric', event.metricLabel ?? '—'],
+    ['Metric ID', event.metricId ?? '—'],
     [
       'Value',
       event.type === 'ScorecardVoided'

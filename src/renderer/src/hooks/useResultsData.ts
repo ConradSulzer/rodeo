@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 import type { Player } from '@core/players/players'
 import type { ItemResult } from '@core/tournaments/results'
-import type { Scoreable } from '@core/tournaments/scoreables'
-import { useScoreableCatalog } from '@renderer/queries/scoreables'
+import type { Metric } from '@core/tournaments/metrics'
+import { useMetricCatalog } from '@renderer/queries/metrics'
 import { usePlayerAssignmentsQuery } from '@renderer/queries/players'
 import { useTournamentStateQuery } from '@renderer/queries/tournament'
 
@@ -15,13 +15,13 @@ export type ResultRow = {
 }
 
 export type ResultsData = {
-  scoreables: Scoreable[]
+  metrics: Metric[]
   rows: ResultRow[]
   isLoading: boolean
 }
 
 export function useResultsData(): ResultsData {
-  const { list: scoreables, isLoading: scoreablesLoading } = useScoreableCatalog()
+  const { list: metrics, isLoading: metricsLoading } = useMetricCatalog()
   const { data: playerAssignments = [], isLoading: playersLoading } = usePlayerAssignmentsQuery()
   const { data: tournamentState, isLoading: stateLoading } = useTournamentStateQuery()
 
@@ -45,7 +45,7 @@ export function useResultsData(): ResultsData {
         if (!player) return null
         const scores: Record<string, ItemResult | undefined> = {}
         entry.items.forEach((item) => {
-          scores[item.scoreableId] = item.result
+          scores[item.metricId] = item.result
         })
         return {
           player,
@@ -59,8 +59,8 @@ export function useResultsData(): ResultsData {
   }, [divisionMembership, playerMap, tournamentState])
 
   return {
-    scoreables,
+    metrics,
     rows,
-    isLoading: scoreablesLoading || playersLoading || stateLoading
+    isLoading: metricsLoading || playersLoading || stateLoading
   }
 }

@@ -13,28 +13,28 @@ type SortableRow = ReturnType<typeof useResultsData>['rows'][number] &
   Partial<Record<ScoreColumnKey, number | undefined>>
 
 export function ResultsSection() {
-  const { scoreables, rows, isLoading, ...rest } = useResultsData()
+  const { metrics, rows, isLoading, ...rest } = useResultsData()
 
   console.log(rest)
 
   const columns: ReadonlyArray<CrudTableColumn<SortableRow, ScoreColumnKey>> = [
     { key: 'displayName', label: 'Player', sortable: true },
-    ...scoreables.map((scoreable) => ({
-      key: `score-${scoreable.id}` as ScoreColumnKey,
-      label: scoreable.label,
+    ...metrics.map((metric) => ({
+      key: `score-${metric.id}` as ScoreColumnKey,
+      label: metric.label,
       sortable: true
     }))
   ]
   const sortableRows: SortableRow[] = useMemo(() => {
     return rows.map((row) => {
       const flat: SortableRow = { ...row }
-      for (const scoreable of scoreables) {
-        const result = row.scores[scoreable.id]
-        flat[`score-${scoreable.id}`] = result?.value
+      for (const metric of metrics) {
+        const result = row.scores[metric.id]
+        flat[`score-${metric.id}`] = result?.value
       }
       return flat
     })
-  }, [rows, scoreables])
+  }, [rows, metrics])
 
   const {
     results: filtered,
@@ -82,10 +82,10 @@ export function ResultsSection() {
                         <span className="text-xs ro-text-muted">{row.player.id}</span>
                       </div>
                     </TableCell>
-                    {scoreables.map((scoreable) => {
-                      const result = row.scores[scoreable.id]
+                    {metrics.map((metric) => {
+                      const result = row.scores[metric.id]
                       return (
-                        <TableCell key={scoreable.id}>
+                        <TableCell key={metric.id}>
                           {result ? (
                             result.status === 'empty' ? (
                               <span className="text-xs font-semibold uppercase tracking-[0.2em] ro-text-muted">

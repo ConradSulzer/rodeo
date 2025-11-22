@@ -1,17 +1,17 @@
 import type { Division } from '@core/tournaments/divisions'
 import type { PlayerAssignment } from '@core/players/players'
-import type { Scoreable } from '@core/tournaments/scoreables'
+import type { Metric } from '@core/tournaments/metrics'
 import type { ResultRow } from '@renderer/hooks/useResultsData'
 import Papa from 'papaparse'
 
 export function buildResultsCsv({
-  scoreables,
+  metrics,
   playerAssignments,
   rows,
   divisions,
   includeUnscored
 }: {
-  scoreables: Scoreable[]
+  metrics: Metric[]
   playerAssignments: PlayerAssignment[]
   rows: ResultRow[]
   divisions: Division[]
@@ -43,22 +43,22 @@ export function buildResultsCsv({
   const header = [
     'Player Name',
     'Email',
-    ...scoreables.map((scoreable) => scoreable.label),
+    ...metrics.map((metric) => metric.label),
     ...divisionOrder.map((division) => division.name)
   ]
 
-  const rowsData = combinedRows.map((row) => formatRowForCsv(row, scoreables, divisionOrder))
+  const rowsData = combinedRows.map((row) => formatRowForCsv(row, metrics, divisionOrder))
 
   return Papa.unparse({ fields: header, data: rowsData })
 }
 
-function formatRowForCsv(row: ResultRow, scoreables: Scoreable[], divisions: Division[]): string[] {
+function formatRowForCsv(row: ResultRow, metrics: Metric[], divisions: Division[]): string[] {
   const membershipSet = new Set(row.divisionIds)
   return [
     row.displayName,
     row.email,
-    ...scoreables.map((scoreable) => {
-      const result = row.scores[scoreable.id]
+    ...metrics.map((metric) => {
+      const result = row.scores[metric.id]
       const value = result?.value
       return Number.isFinite(value ?? NaN) ? String(value) : ''
     }),

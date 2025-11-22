@@ -12,7 +12,7 @@ export function ResultsExportButton() {
   const [open, setOpen] = useState(false)
   const [includeUnscored, setIncludeUnscored] = useState(true)
   const [exporting, setExporting] = useState(false)
-  const { scoreables, rows } = useResultsData()
+  const { metrics, rows } = useResultsData()
   const { list: divisionList = [] } = useDivisionCatalog()
   const { data: playerAssignments = [] } = usePlayerAssignmentsQuery()
 
@@ -21,7 +21,7 @@ export function ResultsExportButton() {
     try {
       const metadata = await window.api.tournaments.getMetadata()
       const csv = buildResultsCsv({
-        scoreables,
+        metrics,
         playerAssignments,
         rows,
         divisions: divisionList,
@@ -61,7 +61,7 @@ export function ResultsExportButton() {
             Include players without scores
           </label>
           <p className="text-xs ro-text-muted">
-            CSV columns: player name, email, one column per scoreable, and one column per division.
+            CSV columns: player name, email, one column per metric, and one column per division.
             Score columns show recorded values; division columns show TRUE/FALSE for membership.
           </p>
           <div className="flex justify-end gap-3">

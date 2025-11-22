@@ -15,7 +15,7 @@ type NavItem = {
 const MANAGE_ITEMS: NavItem[] = [
   { label: 'Tournament', path: 'tournament' },
   { label: 'Players', path: 'players' },
-  { label: 'Scoreables', path: 'scoreables' },
+  { label: 'Metrics', path: 'metrics' },
   { label: 'Categories', path: 'categories' },
   { label: 'Divisions', path: 'divisions' }
 ]

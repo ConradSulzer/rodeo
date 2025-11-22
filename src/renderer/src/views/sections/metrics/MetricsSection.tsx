@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi'
-import type { ScoreableFormData } from '@core/scoreables/scoreableFormSchema'
-import type { NewScoreable, PatchScoreable, ScoreableView } from '@core/tournaments/scoreables'
+import type { MetricFormData } from '@core/metrics/metricFormSchema'
+import type { NewMetric, PatchMetric, MetricView } from '@core/tournaments/metrics'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 import { CrudTableActions } from '@renderer/components/crud/CrudTableActions'
 import {
@@ -11,41 +11,41 @@ import {
 } from '@renderer/components/crud/CrudTableHeader'
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@renderer/components/ui/table'
 import { Button } from '@renderer/components/ui/button'
-import { ScoreableFormModal } from './ScoreableFormModal'
-import { ScoreableDetailsModal } from './ScoreableDetailsModal'
+import { MetricFormModal } from './MetricFormModal'
+import { MetricDetailsModal } from './MetricDetailsModal'
 import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
 import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
 import { Pill } from '@renderer/components/ui/pill'
-import { useScoreableViewsQuery } from '@renderer/queries/scoreables'
+import { useMetricViewsQuery } from '@renderer/queries/metrics'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@renderer/queries/queryKeys'
 
 type FormState =
-  | { open: false; mode: null; scoreable?: undefined }
-  | { open: true; mode: 'create'; scoreable?: undefined }
-  | { open: true; mode: 'edit'; scoreable: ScoreableView }
+  | { open: false; mode: null; metric?: undefined }
+  | { open: true; mode: 'create'; metric?: undefined }
+  | { open: true; mode: 'edit'; metric: MetricView }
 
 type DetailsState = {
   open: boolean
-  scoreable?: ScoreableView
+  metric?: MetricView
 }
 
 type DeleteState = {
   open: boolean
-  scoreable?: ScoreableView
+  metric?: MetricView
   deleting: boolean
 }
 
-const columns: ReadonlyArray<CrudTableColumn<ScoreableView, 'actions' | 'divisions'>> = [
-  { key: 'label', label: 'Scoreable', sortable: true },
+const columns: ReadonlyArray<CrudTableColumn<MetricView, 'actions' | 'divisions'>> = [
+  { key: 'label', label: 'Metric', sortable: true },
   { key: 'unit', label: 'Unit', sortable: true },
   { key: 'divisions', label: 'Divisions', sortable: false },
   { key: 'actions', label: 'Actions', sortable: false, align: 'right' }
 ]
 
-const SCOREABLE_FUZZY_FIELDS: Array<keyof ScoreableView & string> = ['label', 'id']
+const METRIC_FUZZY_FIELDS: Array<keyof MetricView & string> = ['label', 'id']
 
-export function ScoreablesSection() {
+export function MetricsSection() {
   const queryClient = useQueryClient()
   const [formState, setFormState] = useState<FormState>({ open: false, mode: null })
   const [formSubmitting, setFormSubmitting] = useState(false)
@@ -55,23 +55,23 @@ export function ScoreablesSection() {
     deleting: false
   })
 
-  const { data: scoreables = [], isLoading, isFetching } = useScoreableViewsQuery()
+  const { data: metrics = [], isLoading, isFetching } = useMetricViewsQuery()
 
-  const invalidateScoreables = () =>
+  const invalidateMetrics = () =>
     Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.scoreables.views() }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.scoreables.list() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.metrics.views() }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.metrics.list() })
     ])
 
   const {
-    results: filteredScoreables,
+    results: filteredMetrics,
     query,
     setQuery,
     sort,
     toggleSort
-  } = useUniversalSearchSort<ScoreableView>({
-    items: scoreables,
-    searchKeys: SCOREABLE_FUZZY_FIELDS,
+  } = useUniversalSearchSort<MetricView>({
+    items: metrics,
+    searchKeys: METRIC_FUZZY_FIELDS,
     initialSort: { key: 'label', direction: 'asc' }
   })
 
@@ -79,8 +79,8 @@ export function ScoreablesSection() {
     setFormState({ open: true, mode: 'create' })
   }
 
-  const openEditModal = (scoreable: ScoreableView) => {
-    setFormState({ open: true, mode: 'edit', scoreable })
+  const openEditModal = (metric: MetricView) => {
+    setFormState({ open: true, mode: 'edit', metric })
   }
 
   const closeFormModal = () => {
@@ -88,38 +88,38 @@ export function ScoreablesSection() {
     setFormState({ open: false, mode: null })
   }
 
-  const openDetails = (scoreable: ScoreableView) => {
-    setDetailsState({ open: true, scoreable })
+  const openDetails = (metric: MetricView) => {
+    setDetailsState({ open: true, metric })
   }
 
   const closeDetails = () => setDetailsState({ open: false })
 
-  const requestDelete = (scoreable: ScoreableView) => {
-    setDeleteState({ open: true, scoreable, deleting: false })
+  const requestDelete = (metric: MetricView) => {
+    setDeleteState({ open: true, metric, deleting: false })
   }
 
   const cancelDelete = () => {
     if (deleteState.deleting) return
-    setDeleteState({ open: false, scoreable: undefined, deleting: false })
+    setDeleteState({ open: false, metric: undefined, deleting: false })
   }
 
-  const handleFormSubmit = async (values: ScoreableFormData) => {
+  const handleFormSubmit = async (values: MetricFormData) => {
     if (!formState.open) return
 
     setFormSubmitting(true)
     try {
       if (formState.mode === 'create') {
-        const payload: NewScoreable = {
+        const payload: NewMetric = {
           label: values.label,
           unit: values.unit
         }
-        await window.api.scoreables.create(payload)
-        toast.success('Scoreable added')
-      } else if (formState.mode === 'edit' && formState.scoreable) {
-        const scoreable = formState.scoreable
-        const patch: PatchScoreable = {}
-        if (values.label !== scoreable.label) patch.label = values.label
-        if (values.unit !== scoreable.unit) patch.unit = values.unit
+        await window.api.metrics.create(payload)
+        toast.success('Metric added')
+      } else if (formState.mode === 'edit' && formState.metric) {
+        const metric = formState.metric
+        const patch: PatchMetric = {}
+        if (values.label !== metric.label) patch.label = values.label
+        if (values.unit !== metric.unit) patch.unit = values.unit
 
         if (!Object.keys(patch).length) {
           toast.info('No changes to save')
@@ -127,69 +127,69 @@ export function ScoreablesSection() {
           return
         }
 
-        const success = await window.api.scoreables.update(scoreable.id, patch)
+        const success = await window.api.metrics.update(metric.id, patch)
         if (!success) {
           throw new Error('Update returned false')
         }
-        toast.success('Scoreable updated')
+        toast.success('Metric updated')
       }
 
-      await invalidateScoreables()
+      await invalidateMetrics()
       setFormState({ open: false, mode: null })
     } catch (error) {
-      console.error('Failed to submit scoreable form', error)
-      toast.error('Unable to save scoreable')
+      console.error('Failed to submit metric form', error)
+      toast.error('Unable to save metric')
     } finally {
       setFormSubmitting(false)
     }
   }
 
   const confirmDelete = async () => {
-    if (!deleteState.open || !deleteState.scoreable) return
+    if (!deleteState.open || !deleteState.metric) return
     setDeleteState((prev) => ({ ...prev, deleting: true }))
 
     try {
-      const success = await window.api.scoreables.delete(deleteState.scoreable.id)
+      const success = await window.api.metrics.delete(deleteState.metric.id)
       if (!success) {
         throw new Error('Delete returned false')
       }
-      toast.success(`Deleted ${deleteState.scoreable.label}`)
-      setDeleteState({ open: false, scoreable: undefined, deleting: false })
-      await invalidateScoreables()
+      toast.success(`Deleted ${deleteState.metric.label}`)
+      setDeleteState({ open: false, metric: undefined, deleting: false })
+      await invalidateMetrics()
     } catch (error) {
-      console.error('Failed to delete scoreable', error)
-      toast.error('Could not delete scoreable')
+      console.error('Failed to delete metric', error)
+      toast.error('Could not delete metric')
       setDeleteState((prev) => ({ ...prev, deleting: false }))
     }
   }
 
   const refreshing = isFetching && !isLoading
-  const isEmpty = !isLoading && scoreables.length === 0
-  const scoreableCount = scoreables.length
-  const scoreableCountLabel = isLoading ? '—' : scoreableCount.toLocaleString()
+  const isEmpty = !isLoading && metrics.length === 0
+  const metricCount = metrics.length
+  const metricCountLabel = isLoading ? '—' : metricCount.toLocaleString()
 
   return (
     <>
       <ManageSectionShell
-        title="Scoreables"
-        titleAdornment={<Pill>{scoreableCountLabel}</Pill>}
-        description="Manage scoreable metrics available for scoring."
+        title="Metrics"
+        titleAdornment={<Pill>{metricCountLabel}</Pill>}
+        description="The measurable entries players will submit."
         onAdd={openCreateModal}
-        addLabel="Add Scoreable"
+        addLabel="Add Metric"
         refreshing={refreshing}
-        searchPlaceholder="Search scoreables"
+        searchPlaceholder="Search metrics"
         searchValue={query}
         onSearchChange={setQuery}
       >
         {isLoading ? (
           <div className="flex flex-1 items-center justify-center ro-text-muted">
-            Loading scoreables...
+            Loading metrics...
           </div>
         ) : isEmpty ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center ro-text-muted">
-            <p className="text-sm">No scoreables yet. Start by adding one.</p>
+            <p className="text-sm">No metrics yet. Start by adding one.</p>
             <Button type="button" variant="outline" size="sm" onClick={openCreateModal}>
-              Add your first scoreable
+              Add your first metric
             </Button>
           </div>
         ) : (
@@ -198,7 +198,7 @@ export function ScoreablesSection() {
               <Table containerClassName="h-full">
                 <TableHeader>
                   <TableRow>
-                    {renderCrudTableHeader<ScoreableView, 'actions' | 'divisions'>({
+                    {renderCrudTableHeader<MetricView, 'actions' | 'divisions'>({
                       columns,
                       sort,
                       toggleSort
@@ -206,14 +206,14 @@ export function ScoreablesSection() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredScoreables.map((scoreable) => (
-                    <TableRow key={scoreable.id}>
-                      <TableCell>{scoreable.label}</TableCell>
-                      <TableCell>{scoreable.unit}</TableCell>
+                  {filteredMetrics.map((metric) => (
+                    <TableRow key={metric.id}>
+                      <TableCell>{metric.label}</TableCell>
+                      <TableCell>{metric.unit}</TableCell>
                       <TableCell>
-                        {scoreable.divisions.length ? (
+                        {metric.divisions.length ? (
                           <div className="flex flex-wrap gap-2">
-                            {scoreable.divisions.map((division) => (
+                            {metric.divisions.map((division) => (
                               <Pill key={division} size="sm">
                                 {division}
                               </Pill>
@@ -227,19 +227,19 @@ export function ScoreablesSection() {
                         <CrudTableActions
                           actions={[
                             {
-                              label: `View ${scoreable.label}`,
+                              label: `View ${metric.label}`,
                               icon: <FiEye />,
-                              onClick: () => openDetails(scoreable)
+                              onClick: () => openDetails(metric)
                             },
                             {
-                              label: `Edit ${scoreable.label}`,
+                              label: `Edit ${metric.label}`,
                               icon: <FiEdit2 />,
-                              onClick: () => openEditModal(scoreable)
+                              onClick: () => openEditModal(metric)
                             },
                             {
-                              label: `Delete ${scoreable.label}`,
+                              label: `Delete ${metric.label}`,
                               icon: <FiTrash2 />,
-                              onClick: () => requestDelete(scoreable),
+                              onClick: () => requestDelete(metric),
                               tone: 'danger'
                             }
                           ]}
@@ -254,36 +254,36 @@ export function ScoreablesSection() {
         )}
       </ManageSectionShell>
 
-      <ScoreableFormModal
+      <MetricFormModal
         open={formState.open}
         mode={formState.open ? formState.mode : 'create'}
-        scoreable={formState.open && formState.mode === 'edit' ? formState.scoreable : undefined}
+        metric={formState.open && formState.mode === 'edit' ? formState.metric : undefined}
         submitting={formSubmitting}
         onSubmit={handleFormSubmit}
         onClose={closeFormModal}
       />
 
-      <ScoreableDetailsModal
+      <MetricDetailsModal
         open={detailsState.open}
-        scoreable={detailsState.scoreable}
+        metric={detailsState.metric}
         onClose={closeDetails}
       />
 
       <ConfirmDialog
         open={deleteState.open}
-        title="Delete Scoreable"
+        title="Delete Metric"
         confirming={deleteState.deleting}
-        confirmLabel="Delete Scoreable"
+        confirmLabel="Delete Metric"
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
         description={
-          deleteState.scoreable ? (
+          deleteState.metric ? (
             <p>
-              This will permanently remove <strong>{deleteState.scoreable.label}</strong> from the
+              This will permanently remove <strong>{deleteState.metric.label}</strong> from the
               tournament. This action cannot be undone.
             </p>
           ) : (
-            'Are you sure you want to delete this scoreable?'
+            'Are you sure you want to delete this metric?'
           )
         }
       />

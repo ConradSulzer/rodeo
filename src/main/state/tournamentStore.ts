@@ -116,8 +116,8 @@ function serializeResults(results: Results): SerializedResults {
   for (const [playerId, items] of results) {
     serialized.push({
       playerId,
-      items: Array.from(items.entries()).map(([scoreableId, result]) => ({
-        scoreableId,
+      items: Array.from(items.entries()).map(([metricId, result]) => ({
+        metricId,
         result
       }))
     })

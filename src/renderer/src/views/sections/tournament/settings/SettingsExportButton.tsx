@@ -4,7 +4,7 @@ import { buildTournamentTemplate } from '@core/templates/tournamentSettingsTempl
 import type {
   TemplateCategoryRow,
   TemplateDivisionRow,
-  TemplateScoreableRow
+  TemplateMetricRow
 } from '@core/templates/tournamentSettingsTemplate'
 import { toast } from 'sonner'
 import { buildCsvExportFilename } from '@core/utils/csv'
@@ -17,8 +17,8 @@ export function SettingsExportButton() {
   const handleExport = async () => {
     setExporting(true)
     try {
-      const [scoreables, categories, divisions, metadata] = await Promise.all([
-        window.api.scoreables.list(),
+      const [metrics, categories, divisions, metadata] = await Promise.all([
+        window.api.metrics.list(),
         window.api.categories.listViews(),
         window.api.divisions.list(),
         window.api.tournaments.getMetadata()
@@ -26,9 +26,9 @@ export function SettingsExportButton() {
 
       const categoryMap = new Map(categories.map((category) => [category.id, category]))
 
-      const scoreableRows: TemplateScoreableRow[] = scoreables.map((scoreable) => ({
-        name: sanitizeName(scoreable.label),
-        unit: scoreable.unit,
+      const metricRows: TemplateMetricRow[] = metrics.map((metric) => ({
+        name: sanitizeName(metric.label),
+        unit: metric.unit,
         description: ''
       }))
 
@@ -36,7 +36,7 @@ export function SettingsExportButton() {
         name: sanitizeName(category.name),
         direction: category.direction === 'asc' ? 'asc' : 'desc',
         description: '',
-        scoreables: category.scoreables.map((scoreable) => sanitizeName(scoreable.label))
+        metrics: category.metrics.map((metric) => sanitizeName(metric.label))
       }))
 
       const divisionRows: TemplateDivisionRow[] = []
@@ -58,7 +58,7 @@ export function SettingsExportButton() {
       }
 
       const csv = buildTournamentTemplate({
-        scoreables: scoreableRows,
+        metrics: metricRows,
         categories: categoryRows,
         divisions: divisionRows
       })

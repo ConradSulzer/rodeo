@@ -64,8 +64,8 @@ function computeCategoryStanding(
     let itemCount = 0
     let earliestTs: number | null = null
 
-    for (const scoreable of categoryView.scoreables) {
-      const item = playerItems.get(scoreable.id)
+    for (const metric of categoryView.metrics) {
+      const item = playerItems.get(metric.id)
       if (!item || item.status !== 'value' || item.value === undefined) continue
       total += item.value
       itemCount += 1

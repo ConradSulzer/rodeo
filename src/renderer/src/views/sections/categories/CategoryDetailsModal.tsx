@@ -15,7 +15,7 @@ type CategoryDetailsModalProps = {
 export function CategoryDetailsModal({ open, category, onClose }: CategoryDetailsModalProps) {
   if (!open || !category) return null
 
-  const hasScoreables = category.scoreables.length > 0
+  const hasMetrics = category.metrics.length > 0
   const hasRules = category.rules.length > 0
 
   return (
@@ -31,28 +31,28 @@ export function CategoryDetailsModal({ open, category, onClose }: CategoryDetail
               readOnly
             />
           </Field>
-          <Field label={<Label>Scoreable Count Display</Label>}>
-            <Input value={category.showScoreablesCount ? 'Shown' : 'Hidden'} readOnly />
+          <Field label={<Label>Metric Count Display</Label>}>
+            <Input value={category.showMetricsCount ? 'Shown' : 'Hidden'} readOnly />
           </Field>
-          {category.showScoreablesCount ? (
+          {category.showMetricsCount ? (
             <Field label={<Label>Count Column Name</Label>}>
-              <Input value={category.scoreablesCountName || ''} readOnly />
+              <Input value={category.metricsCountName || ''} readOnly />
             </Field>
           ) : null}
         </div>
 
         <div className="flex flex-col gap-2">
-          <Label>Scoreables</Label>
-          {hasScoreables ? (
+          <Label>Metrics</Label>
+          {hasMetrics ? (
             <div className="flex flex-wrap gap-2">
-              {category.scoreables.map((scoreable) => (
-                <Pill key={scoreable.id} size="md">
-                  {scoreable.label}
+              {category.metrics.map((metric) => (
+                <Pill key={metric.id} size="md">
+                  {metric.label}
                 </Pill>
               ))}
             </div>
           ) : (
-            <p className="text-sm ro-text-muted">No scoreables assigned.</p>
+            <p className="text-sm ro-text-muted">No metrics assigned.</p>
           )}
         </div>
 
