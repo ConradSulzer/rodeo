@@ -117,7 +117,7 @@ export function PlayerFormModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={title}>
+    <Modal open={open} onClose={onClose} title={title} contentClassName="max-w-[600px]">
       <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Field
@@ -156,11 +156,7 @@ export function PlayerFormModal({
             placeholder="Name shown on leaderboards"
           />
         </Field>
-        <Field
-          label={<Label htmlFor="player-email">Email</Label>}
-          error={errors.email}
-          description="Used for notifications and contact purposes."
-        >
+        <Field label={<Label htmlFor="player-email">Email</Label>} error={errors.email}>
           <Input
             id="player-email"
             type="email"
@@ -182,7 +178,7 @@ export function PlayerFormModal({
             />
           </Field>
           <Field
-            label={<Label htmlFor="player-emergency">Emergency Contact</Label>}
+            label={<Label htmlFor="player-emergency">Emergency Contact Phone</Label>}
             description="Optional"
             error={errors.emergencyContact}
           >

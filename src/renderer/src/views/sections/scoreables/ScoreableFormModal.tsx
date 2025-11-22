@@ -78,7 +78,7 @@ export function ScoreableFormModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={title}>
+    <Modal open={open} onClose={onClose} title={title} contentClassName="max-w-[600px]">
       <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
         <Field label={<Label htmlFor="scoreable-label">Label</Label>} error={errors.label}>
           <Input

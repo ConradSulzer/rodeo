@@ -64,7 +64,7 @@ export function Modal({
         onMouseDown={(event) => event.stopPropagation()}
       >
         {title ? (
-          <header className="border-b ro-dim-border px-6 py-4">
+          <header className="border-b ro-border px-6 py-4">
             <h2 className="text-lg font-semibold uppercase tracking-[0.25em]">{title}</h2>
           </header>
         ) : null}

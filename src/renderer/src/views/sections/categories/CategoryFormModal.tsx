@@ -109,66 +109,42 @@ export function CategoryFormModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={title}>
+    <Modal open={open} onClose={onClose} title={title} contentClassName="max-w-[600px]">
       <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
-        <Field label={<Label htmlFor="category-name">Name</Label>} error={errors?.name}>
-          <Input
-            id="category-name"
-            value={values.name}
-            onChange={(event) => setValues((prev) => ({ ...prev, name: event.target.value }))}
-            autoFocus
-          />
-        </Field>
-        <Field label={<Label htmlFor="category-direction">Scoring Direction</Label>}>
-          <select
-            id="category-direction"
-            className="rounded-md border ro-border ro-bg-dim px-3 py-2 text-sm ro-text-main"
-            value={values.direction}
-            onChange={(event) =>
-              setValues((prev) => ({ ...prev, direction: event.target.value as 'asc' | 'desc' }))
-            }
+        <div className="flex gap-5">
+          <Field
+            className="flex-1"
+            label={<Label htmlFor="category-name">Name</Label>}
+            error={errors?.name}
           >
-            <option value="asc">Lower is better</option>
-            <option value="desc">Higher is better</option>
-          </select>
-        </Field>
-        <div className="flex flex-col gap-2">
-          <Label>Optional Rules</Label>
-          {standingRules.length ? (
-            <div className="flex flex-col gap-3">
-              {standingRules.map((rule) => (
-                <label key={rule.name} className="flex items-start gap-3 text-sm">
-                  <input
-                    type="checkbox"
-                    className="mt-1 h-4 w-4"
-                    checked={values.rules.includes(rule.name)}
-                    onChange={() =>
-                      setValues((prev) => {
-                        const set = new Set(prev.rules)
-                        if (set.has(rule.name)) {
-                          set.delete(rule.name)
-                        } else {
-                          set.add(rule.name)
-                        }
-                        return { ...prev, rules: Array.from(set) }
-                      })
-                    }
-                  />
-                  <span>
-                    <span className="font-medium">{rule.label}</span>
-                    <span className="mt-1 block text-xs ro-text-muted">{rule.description}</span>
-                  </span>
-                </label>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs ro-text-muted">No standing rules available.</p>
-          )}
+            <Input
+              id="category-name"
+              value={values.name}
+              onChange={(event) => setValues((prev) => ({ ...prev, name: event.target.value }))}
+              autoFocus
+            />
+          </Field>
+          <Field
+            className="flex-1"
+            label={<Label htmlFor="category-direction">Scoring Direction</Label>}
+          >
+            <select
+              id="category-direction"
+              className="rounded-md border ro-border ro-bg-dim px-3 py-2 text-sm ro-text-main"
+              value={values.direction}
+              onChange={(event) =>
+                setValues((prev) => ({ ...prev, direction: event.target.value as 'asc' | 'desc' }))
+              }
+            >
+              <option value="asc">Lower is better</option>
+              <option value="desc">Higher is better</option>
+            </select>
+          </Field>
         </div>
         <div className="flex flex-col gap-2">
-          <Label>Scoreables</Label>
+          <Label className="border-b">Pick Scoreables To Include</Label>
           {scoreables.length ? (
-            <div className="grid gap-2 md:grid-cols-2">
+            <div className="grid gap-2 md:grid-cols-2 px-3">
               {scoreables.map((scoreable) => (
                 <label key={scoreable.id} className="flex items-center gap-2 text-sm">
                   <input
@@ -185,27 +161,59 @@ export function CategoryFormModal({
             <p className="text-xs ro-text-muted">No scoreables available.</p>
           )}
         </div>
-        <div className="flex flex-col gap-3 rounded-md border border-dashed border-muted-foreground/30 px-3 py-3">
-          <label className="flex items-center gap-3 text-sm font-medium ro-text-main">
-            <input
-              type="checkbox"
-              className="h-4 w-4"
-              checked={values.showScoreablesCount}
-              onChange={(event) =>
-                setValues((prev) => ({
-                  ...prev,
-                  showScoreablesCount: event.target.checked
-                }))
-              }
-            />
-            Display scoreable count column
-          </label>
-          <p className="text-xs ro-text-muted">
-            Adds a standings column showing how many scoreables each angler submitted for this
-            category.
-          </p>
-          {values.showScoreablesCount ? (
+        <div className="flex flex-col gap-2">
+          <Label className="border-b">Optional Rules</Label>
+          <div className="flex flex-col gap-3 px-3">
+            {standingRules.map((rule) => (
+              <label key={rule.name} className="flex items-start gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4"
+                  checked={values.rules.includes(rule.name)}
+                  onChange={() =>
+                    setValues((prev) => {
+                      const set = new Set(prev.rules)
+                      if (set.has(rule.name)) {
+                        set.delete(rule.name)
+                      } else {
+                        set.add(rule.name)
+                      }
+                      return { ...prev, rules: Array.from(set) }
+                    })
+                  }
+                />
+                <span>
+                  <span className="font-medium">{rule.label}</span>
+                  <span className="mt-1 block text-xs ro-text-muted">{rule.description}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <Label className="border-b">Optional Display Settings</Label>
+          <div className="px-3 flex flex-col gap-1">
+            <label className="flex items-center gap-3 text-sm font-medium ro-text-main">
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                checked={values.showScoreablesCount}
+                onChange={(event) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    showScoreablesCount: event.target.checked
+                  }))
+                }
+              />
+              Display Scoreable Count Column
+            </label>
+            <p className="text-xs ro-text-muted">
+              Adds a column in standings to show how many scoreables a player obtained from this
+              category.
+            </p>
             <Field
+              className="mt-3"
               label={<Label htmlFor="category-scoreables-count-name">Count Column Name</Label>}
               error={errors?.scoreablesCountName}
             >
@@ -221,7 +229,7 @@ export function CategoryFormModal({
                 }
               />
             </Field>
-          ) : null}
+          </div>
         </div>
         <div className="mt-2 flex justify-end gap-3">
           <Button
