@@ -1,13 +1,10 @@
 import { useMemo } from 'react'
 import type { Player } from '@core/players/players'
 import type { ItemResult } from '@core/tournaments/results'
-import { useScoreablesListQuery } from '@renderer/queries/scoreables'
-import { usePlayersWithDivisionsQuery } from '@renderer/queries/players'
+import type { Scoreable } from '@core/tournaments/scoreables'
+import { useScoreableCatalog } from '@renderer/queries/scoreables'
+import { usePlayerAssignmentsQuery } from '@renderer/queries/players'
 import { useTournamentStateQuery } from '@renderer/queries/tournament'
-
-const sortScoreables = (list: ReturnType<typeof useScoreablesListQuery>['data']) => {
-  return [...(list ?? [])].sort((a, b) => a.label.localeCompare(b.label))
-}
 
 export type ResultRow = {
   player: Player
@@ -18,28 +15,27 @@ export type ResultRow = {
 }
 
 export type ResultsData = {
-  scoreables: ReturnType<typeof sortScoreables>
+  scoreables: Scoreable[]
   rows: ResultRow[]
   isLoading: boolean
 }
 
 export function useResultsData(): ResultsData {
-  const { data: scoreableList, isLoading: scoreablesLoading } = useScoreablesListQuery()
-  const { data: playerTuples = [], isLoading: playersLoading } = usePlayersWithDivisionsQuery()
+  const { list: scoreables, isLoading: scoreablesLoading } = useScoreableCatalog()
+  const { data: playerAssignments = [], isLoading: playersLoading } = usePlayerAssignmentsQuery()
   const { data: tournamentState, isLoading: stateLoading } = useTournamentStateQuery()
 
-  const scoreables = useMemo(() => sortScoreables(scoreableList), [scoreableList])
   const { playerMap, divisionMembership } = useMemo(() => {
     const playerMap = new Map<string, Player>()
     const divisionMembership = new Map<string, string[]>()
 
-    playerTuples.forEach(([player, divisions]) => {
+    playerAssignments.forEach(({ player, divisionIds }) => {
       playerMap.set(player.id, player)
-      divisionMembership.set(player.id, divisions?.map((division) => division.id) ?? [])
+      divisionMembership.set(player.id, divisionIds ?? [])
     })
 
     return { playerMap, divisionMembership }
-  }, [playerTuples])
+  }, [playerAssignments])
 
   const rows = useMemo<ResultRow[]>(() => {
     if (!tournamentState) return []

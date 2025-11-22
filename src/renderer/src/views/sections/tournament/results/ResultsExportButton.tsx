@@ -4,8 +4,8 @@ import { Modal } from '@renderer/components/Modal'
 import { toast } from 'sonner'
 import { buildCsvExportFilename } from '@core/utils/csv'
 import { useResultsData } from '@renderer/hooks/useResultsData'
-import { useDivisionsListQuery } from '@renderer/queries/divisions'
-import { usePlayersWithDivisionsQuery } from '@renderer/queries/players'
+import { useDivisionCatalog } from '@renderer/queries/divisions'
+import { usePlayerAssignmentsQuery } from '@renderer/queries/players'
 import { buildResultsCsv } from '@renderer/utils/reports/resultsCsv'
 
 export function ResultsExportButton() {
@@ -13,8 +13,8 @@ export function ResultsExportButton() {
   const [includeUnscored, setIncludeUnscored] = useState(true)
   const [exporting, setExporting] = useState(false)
   const { scoreables, rows } = useResultsData()
-  const { data: divisionList = [] } = useDivisionsListQuery()
-  const { data: playerTuples = [] } = usePlayersWithDivisionsQuery()
+  const { list: divisionList = [] } = useDivisionCatalog()
+  const { data: playerAssignments = [] } = usePlayerAssignmentsQuery()
 
   const handleExport = async () => {
     setExporting(true)
@@ -22,7 +22,7 @@ export function ResultsExportButton() {
       const metadata = await window.api.tournaments.getMetadata()
       const csv = buildResultsCsv({
         scoreables,
-        playerTuples,
+        playerAssignments,
         rows,
         divisions: divisionList,
         includeUnscored

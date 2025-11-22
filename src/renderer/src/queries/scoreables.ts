@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { Scoreable, ScoreableView } from '@core/tournaments/scoreables'
 import { queryKeys } from './queryKeys'
@@ -22,4 +23,20 @@ export function useScoreablesListQuery() {
     queryKey: queryKeys.scoreables.list(),
     queryFn: fetchScoreables
   })
+}
+
+export function useScoreableCatalog() {
+  const { data: scoreables = [], ...rest } = useScoreablesListQuery()
+
+  const { list, map } = useMemo(() => {
+    const sorted = [...scoreables].sort((a, b) => a.label.localeCompare(b.label))
+    const lookup = new Map(sorted.map((scoreable) => [scoreable.id, scoreable]))
+    return { list: sorted, map: lookup }
+  }, [scoreables])
+
+  return {
+    list,
+    map,
+    ...rest
+  }
 }

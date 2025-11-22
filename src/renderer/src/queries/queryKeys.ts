@@ -1,7 +1,7 @@
 export const queryKeys = {
   players: {
     all: () => ['players'] as const,
-    withDivisions: () => ['players', 'with-divisions'] as const,
+    assignments: () => ['players', 'assignments'] as const,
     list: () => ['players', 'list'] as const
   },
   scoreables: {

@@ -1,8 +1,9 @@
 import type { AppDatabase } from '@core/db/db'
 import { division as dv, player as pl, playerDivision as pd } from '@core/db/schema'
-import type { Division } from '@core/tournaments/divisions'
+import { listDivisionViews, type Division } from '@core/tournaments/divisions'
 import { eq, asc } from 'drizzle-orm'
 import { ulid } from 'ulid'
+import type { Scoreable } from '@core/tournaments/scoreables'
 
 export type Player = typeof pl.$inferSelect
 
@@ -20,6 +21,14 @@ export type NewPlayer = {
 
 export type PatchPlayer = Partial<NewPlayer>
 export type PlayerDivisionTuple = [Player, Division[]]
+
+export type PlayerAssignment = {
+  player: Player
+  divisions: Division[]
+  divisionIds: string[]
+  scoreables: Scoreable[]
+  scoreableIds: string[]
+}
 
 export type PlayerId = string
 
@@ -89,4 +98,40 @@ export function listAllPlayersWithDivisions(db: AppDatabase): PlayerDivisionTupl
   }
 
   return players.map((player) => [player, divisionMap.get(player.id) ?? []])
+}
+
+export function listAllPlayerAssignments(db: AppDatabase): PlayerAssignment[] {
+  const tuples = listAllPlayersWithDivisions(db)
+  if (!tuples.length) return []
+
+  const divisionViews = listDivisionViews(db)
+  const divisionViewMap = new Map(divisionViews.map((view) => [view.id, view]))
+
+  return tuples.map(([player, divisions]) => {
+    const scoreableMap = new Map<string, Scoreable>()
+
+    for (const division of divisions) {
+      const view = divisionViewMap.get(division.id)
+      if (!view) continue
+      for (const categoryView of view.categories) {
+        for (const scoreable of categoryView.scoreables) {
+          if (!scoreableMap.has(scoreable.id)) {
+            scoreableMap.set(scoreable.id, scoreable)
+          }
+        }
+      }
+    }
+
+    const scoreables = Array.from(scoreableMap.values()).sort((a, b) =>
+      a.label.localeCompare(b.label)
+    )
+
+    return {
+      player,
+      divisions,
+      divisionIds: divisions.map((division) => division.id),
+      scoreables,
+      scoreableIds: scoreables.map((scoreable) => scoreable.id)
+    }
+  })
 }

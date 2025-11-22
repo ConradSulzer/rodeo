@@ -12,7 +12,7 @@ import { CrudTableActions } from '@renderer/components/crud/CrudTableActions'
 import { CrudTableColumn, renderCrudTableHeader } from '@renderer/components/crud/CrudTableHeader'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 import { Pill } from '@renderer/components/ui/pill'
-import { usePlayersWithDivisionsQuery } from '@renderer/queries/players'
+import { usePlayerAssignmentsQuery } from '@renderer/queries/players'
 import { useDivisionsListQuery } from '@renderer/queries/divisions'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@renderer/queries/queryKeys'
@@ -85,20 +85,20 @@ export function PlayersSection() {
     player: undefined
   })
 
-  const { data: playerTuples = [], isLoading, isFetching } = usePlayersWithDivisionsQuery()
+  const { data: playerAssignments = [], isLoading, isFetching } = usePlayerAssignmentsQuery()
   const { data: divisionOptions = [] } = useDivisionsListQuery()
 
   const players = useMemo<PlayerRow[]>(() => {
-    return playerTuples.map(([player, divisions]) => ({
+    return playerAssignments.map(({ player, divisions, divisionIds }) => ({
       ...player,
       divisions: divisions.map((division) => division.name),
-      divisionIds: divisions.map((division) => division.id)
+      divisionIds
     }))
-  }, [playerTuples])
+  }, [playerAssignments])
 
   const invalidatePlayers = useCallback(() => {
     return queryClient.invalidateQueries({
-      queryKey: queryKeys.players.withDivisions()
+      queryKey: queryKeys.players.assignments()
     })
   }, [queryClient])
 

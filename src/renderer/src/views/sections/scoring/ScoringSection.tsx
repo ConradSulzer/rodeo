@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { FiCheck } from 'react-icons/fi'
 import type { Player } from '@core/players/players'
-import type { Division, DivisionView } from '@core/tournaments/divisions'
+import type { Division } from '@core/tournaments/divisions'
 import type { Scoreable } from '@core/tournaments/scoreables'
 import type { SerializableTournamentState } from '@core/tournaments/state'
 import type { ItemResult } from '@core/tournaments/results'
@@ -21,6 +21,7 @@ import { cn } from '@renderer/lib/utils'
 
 type PlayerRow = Player & {
   divisions: Division[]
+  scoreables: Scoreable[]
 }
 
 type PlayerResultsMap = Map<string, Map<string, ItemResult>>
@@ -45,19 +46,19 @@ const PLAYER_FUZZY_FIELDS: Array<keyof PlayerRow & string> = ['displayName', 'em
 export function ScoringSection() {
   const [loading, setLoading] = useState(true)
   const [players, setPlayers] = useState<PlayerRow[]>([])
-  const [divisionViews, setDivisionViews] = useState<DivisionView[]>([])
   const [results, setResults] = useState<PlayerResultsMap>(new Map())
   const [modalState, setModalState] = useState<ScoreModalState>({ open: false })
   const [modalSubmitting, setModalSubmitting] = useState(false)
 
   const fetchPlayers = useCallback(async () => {
-    const tuples = await window.api.players.listWithDivisions()
-    setPlayers(tuples.map(([player, divisions]) => ({ ...player, divisions })))
-  }, [])
-
-  const fetchDivisionViews = useCallback(async () => {
-    const views = await window.api.divisions.listViews()
-    setDivisionViews(views)
+    const assignments = await window.api.players.listAssignments()
+    setPlayers(
+      assignments.map(({ player, divisions, scoreables }) => ({
+        ...player,
+        divisions,
+        scoreables
+      }))
+    )
   }, [])
 
   const fetchResults = useCallback(async () => {
@@ -69,7 +70,7 @@ export function ScoringSection() {
     let mounted = true
     const load = async () => {
       try {
-        await Promise.all([fetchPlayers(), fetchDivisionViews(), fetchResults()])
+        await Promise.all([fetchPlayers(), fetchResults()])
       } catch (error) {
         console.error('Failed to load scoring data', error)
         toast.error('Failed to load scoring data')
@@ -83,11 +84,7 @@ export function ScoringSection() {
     return () => {
       mounted = false
     }
-  }, [fetchPlayers, fetchDivisionViews, fetchResults])
-
-  const divisionMap = useMemo(() => {
-    return new Map(divisionViews.map((view) => [view.id, view]))
-  }, [divisionViews])
+  }, [fetchPlayers, fetchResults])
 
   const {
     results: filteredPlayers,
@@ -100,28 +97,6 @@ export function ScoringSection() {
     searchKeys: PLAYER_FUZZY_FIELDS,
     initialSort: { key: 'displayName', direction: 'asc' }
   })
-
-  const buildScoreables = useCallback(
-    (player: PlayerRow): Scoreable[] => {
-      const scoreableMap = new Map<string, Scoreable>()
-
-      for (const division of player.divisions) {
-        const view = divisionMap.get(division.id)
-        if (!view) continue
-
-        for (const categoryView of view.categories) {
-          for (const scoreable of categoryView.scoreables) {
-            if (!scoreableMap.has(scoreable.id)) {
-              scoreableMap.set(scoreable.id, scoreable)
-            }
-          }
-        }
-      }
-
-      return Array.from(scoreableMap.values()).sort((a, b) => a.label.localeCompare(b.label))
-    },
-    [divisionMap]
-  )
 
   const handleOpenModal = (player: PlayerRow, scoreables: Scoreable[]) => {
     if (!scoreables.length) return
@@ -255,7 +230,7 @@ export function ScoringSection() {
                 </TableHeader>
                 <TableBody>
                   {filteredPlayers.map((player) => {
-                    const scoreables = buildScoreables(player)
+                    const scoreables = player.scoreables
                     const hasRequirements = scoreables.length > 0
                     const scored = isPlayerScored(player.id, scoreables)
                     return (

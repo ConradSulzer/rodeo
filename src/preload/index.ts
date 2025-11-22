@@ -17,7 +17,7 @@ const api = {
     delete: (id: string) => ipcRenderer.invoke('players:delete', id),
     get: (id: string) => ipcRenderer.invoke('players:get', id),
     list: () => ipcRenderer.invoke('players:list'),
-    listWithDivisions: () => ipcRenderer.invoke('players:listWithDivisions')
+    listAssignments: () => ipcRenderer.invoke('players:listAssignments')
   },
   scoreables: {
     create: (data: NewScoreable) => ipcRenderer.invoke('scoreables:create', data),
