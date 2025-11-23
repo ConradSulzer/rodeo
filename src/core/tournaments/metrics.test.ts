@@ -4,7 +4,6 @@ import {
   createMetric,
   deleteMetric,
   getMetric,
-  listAllMetrics,
   listMetrics,
   updateMetric,
   type NewMetric
@@ -74,7 +73,7 @@ describe('metrics data access', () => {
       createMetric(db, { label: 'Accuracy', unit: '%' })
       createMetric(db, { label: 'Strength', unit: 'kg' })
 
-      const metrics = listAllMetrics(db)
+      const metrics = listMetrics(db)
       expect(metrics.map((s) => s.label)).toEqual(['Accuracy', 'Speed', 'Strength'])
     })
   })

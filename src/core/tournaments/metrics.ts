@@ -63,10 +63,6 @@ export function getMetric(db: AppDatabase, id: string): MetricRecord | undefined
   return db.select().from(sc).where(eq(sc.id, id)).get()
 }
 
-export function listAllMetrics(db: AppDatabase): MetricRecord[] {
-  return db.select().from(sc).orderBy(asc(sc.label)).all()
-}
-
 export function listMetrics(db: AppDatabase): Metric[] {
   const metricsWithRelations = db
     .query.metric.findMany({
@@ -90,7 +86,7 @@ export function listMetrics(db: AppDatabase): Metric[] {
 }
 
 export function listMetricViews(db: AppDatabase): MetricView[] {
-  const metrics = listAllMetrics(db)
+  const metrics = listMetrics(db)
   if (!metrics.length) return []
 
   const results = db

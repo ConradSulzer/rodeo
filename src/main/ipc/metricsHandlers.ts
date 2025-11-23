@@ -2,7 +2,6 @@ import {
   createMetric,
   deleteMetric,
   getMetric,
-  listAllMetrics,
   listMetricViews,
   listMetrics,
   NewMetric,
@@ -37,13 +36,6 @@ ipcMain.handle('metrics:get', (_evt, id: string) => {
 })
 
 ipcMain.handle('metrics:list', () => {
-  const db = getTournamentDb()
-  const metrics = listAllMetrics(db)
-
-  return metrics
-})
-
-ipcMain.handle('metrics:listWithCategories', () => {
   const db = getTournamentDb()
   return listMetrics(db)
 })

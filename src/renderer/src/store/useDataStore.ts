@@ -48,7 +48,7 @@ export const useDataStore = create<DataStoreState>((set, get) => ({
   },
   async fetchMetrics() {
     try {
-      const metrics = await window.api.metrics.listWithCategories()
+      const metrics = await window.api.metrics.list()
       set({ metrics })
     } catch {
       set({ error: 'Failed to load metrics' })
