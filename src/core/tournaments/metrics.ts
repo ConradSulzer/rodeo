@@ -6,9 +6,10 @@ import {
   divisionCategory as divisionCategoryTable,
   metric as sc
 } from '@core/db/schema'
-import { asc, eq } from 'drizzle-orm'
+import { asc, eq, sql } from 'drizzle-orm'
 
 export type MetricRecord = typeof sc.$inferSelect
+export type Metric = MetricRecord & { categories: string[] }
 export type NewMetric = {
   label: string
   unit: string
@@ -64,6 +65,41 @@ export function getMetric(db: AppDatabase, id: string): MetricRecord | undefined
 
 export function listAllMetrics(db: AppDatabase): MetricRecord[] {
   return db.select().from(sc).orderBy(asc(sc.label)).all()
+}
+
+// TODO: This should become the list function since we always want to use the richer data
+export function listMetricsWithCategories(db: AppDatabase): Metric[] {
+  const rows = db
+    .select({
+      id: sc.id,
+      label: sc.label,
+      unit: sc.unit,
+      createdAt: sc.createdAt,
+      updatedAt: sc.updatedAt,
+      categories:
+        sql`COALESCE(json_group_array(DISTINCT ${categoryMetricTable.categoryId}), '[]')`.as(
+          'categories'
+        )
+    })
+    .from(sc)
+    .leftJoin(categoryMetricTable, eq(categoryMetricTable.metricId, sc.id))
+    .groupBy(sc.id)
+    .orderBy(sql`${sc.label} COLLATE NOCASE`)
+    .all()
+
+  return rows.map((row) => {
+    const categories = (JSON.parse(row.categories as string) as string[]).sort((a, b) =>
+      a.localeCompare(b)
+    )
+    return {
+      id: row.id,
+      label: row.label,
+      unit: row.unit,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      categories
+    }
+  })
 }
 
 export function listMetricViews(db: AppDatabase): MetricView[] {

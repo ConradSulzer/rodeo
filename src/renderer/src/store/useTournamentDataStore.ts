@@ -1,37 +1,32 @@
 import { create } from 'zustand'
 import type { Player, PlayerAssignment } from '@core/players/players'
 import type { DivisionView } from '@core/tournaments/divisions'
-import type { MetricRecord, MetricView } from '@core/tournaments/metrics'
+import type { Metric } from '@core/tournaments/metrics'
 import type { SerializableTournamentState } from '@core/tournaments/state'
 
 export type PlayerDirectory = Map<string, Player>
-export type MetricsDirectory = Map<string, MetricRecord>
 
-type TournamentDataState = {
+type DataStoreState = {
   playerAssignments: PlayerAssignment[]
   divisionViews: DivisionView[]
-  metricViews: MetricView[]
+  metrics: Metric[]
   tournamentState?: SerializableTournamentState
   playerDirectory: PlayerDirectory
-  metricsDirectory: MetricsDirectory
-  metricList: MetricRecord[]
   loading: boolean
   error?: string
   fetchPlayerAssignments: () => Promise<void>
   fetchDivisionViews: () => Promise<void>
-  fetchMetricViews: () => Promise<void>
+  fetchMetrics: () => Promise<void>
   fetchTournamentState: () => Promise<void>
   refreshAll: () => Promise<void>
 }
 
-export const useTournamentDataStore = create<TournamentDataState>((set, get) => ({
+export const useDataStore = create<DataStoreState>((set, get) => ({
   playerAssignments: [],
   divisionViews: [],
-  metricViews: [],
+  metrics: [],
   tournamentState: undefined,
   playerDirectory: new Map(),
-  metricsDirectory: new Map(),
-  metricList: [],
   loading: false,
   error: undefined,
   async fetchPlayerAssignments() {
@@ -51,13 +46,10 @@ export const useTournamentDataStore = create<TournamentDataState>((set, get) => 
       set({ error: 'Failed to load divisions' })
     }
   },
-  async fetchMetricViews() {
+  async fetchMetrics() {
     try {
-      const views = await window.api.metrics.listViews()
-      const metrics = await window.api.metrics.list()
-      const sorted = [...metrics].sort((a, b) => a.label.localeCompare(b.label))
-      const directory = new Map(sorted.map((metric) => [metric.id, metric]))
-      set({ metricViews: views, metricList: sorted, metricsDirectory: directory })
+      const metrics = await window.api.metrics.listWithCategories()
+      set({ metrics })
     } catch {
       set({ error: 'Failed to load metrics' })
     }
@@ -76,7 +68,7 @@ export const useTournamentDataStore = create<TournamentDataState>((set, get) => 
       await Promise.all([
         get().fetchPlayerAssignments(),
         get().fetchDivisionViews(),
-        get().fetchMetricViews(),
+        get().fetchMetrics(),
         get().fetchTournamentState()
       ])
     } finally {

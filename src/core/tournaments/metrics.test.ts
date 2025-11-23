@@ -5,9 +5,11 @@ import {
   deleteMetric,
   getMetric,
   listAllMetrics,
+  listMetricsWithCategories,
   updateMetric,
   type NewMetric
 } from './metrics'
+import { addMetricToCategory, createCategory } from './categories'
 
 const baseMetric: NewMetric = {
   label: 'Time',
@@ -74,6 +76,18 @@ describe('metrics data access', () => {
 
       const metrics = listAllMetrics(db)
       expect(metrics.map((s) => s.label)).toEqual(['Accuracy', 'Speed', 'Strength'])
+    })
+  })
+
+  it('returns metrics with categories', () => {
+    withInMemoryDb((db) => {
+      const metricId = createMetric(db, baseMetric)
+      const categoryId = createCategory(db, { name: 'Cat', direction: 'desc' })
+      addMetricToCategory(db, categoryId, metricId)
+
+      const metrics = listMetricsWithCategories(db)
+      expect(metrics).toHaveLength(1)
+      expect(metrics[0].categories).toEqual([categoryId])
     })
   })
 })

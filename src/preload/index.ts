@@ -24,6 +24,7 @@ const api = {
     delete: (id: string) => ipcRenderer.invoke('metrics:delete', id),
     get: (id: string) => ipcRenderer.invoke('metrics:get', id),
     list: () => ipcRenderer.invoke('metrics:list'),
+    listWithCategories: () => ipcRenderer.invoke('metrics:listWithCategories'),
     listViews: () => ipcRenderer.invoke('metrics:listViews')
   },
   categories: {

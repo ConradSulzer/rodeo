@@ -28,6 +28,7 @@ interface MetricAPI {
   delete(id: string): Promise<boolean>
   get(id: string): Promise<MetricRecord>
   list(): Promise<MetricRecord[]>
+  listWithCategories(): Promise<Metric[]>
   listViews(): Promise<
     (MetricRecord & {
       divisions: string[]
