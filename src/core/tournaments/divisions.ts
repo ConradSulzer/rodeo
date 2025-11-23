@@ -17,6 +17,18 @@ export type PatchDivision = Partial<NewDivision>
 export type DivisionCategoryLink = typeof dvCategory.$inferSelect
 export type DivisionCategoryPatch = Partial<Pick<DivisionCategoryLink, 'depth' | 'order'>>
 
+export type DivisionCategory = {
+  category: CategoryRecord
+  depth: number
+  order: number
+  metrics: MetricRecord[]
+}
+
+export type Division = DivisionRecord & {
+  categories: DivisionCategory[]
+  eligiblePlayerIds: string[]
+}
+
 const now = () => Date.now()
 
 const normalizeOrder = (value: number | undefined) => {
@@ -74,13 +86,9 @@ export function getDivision(db: AppDatabase, id: string): DivisionRecord | undef
   return db.select().from(dv).where(eq(dv.id, id)).get()
 }
 
-export function listAllDivisions(db: AppDatabase): DivisionRecord[] {
-  return db.select().from(dv).orderBy(asc(dv.order), asc(dv.name)).all()
-}
-
 export function listDivisions(db: AppDatabase): Division[] {
-  const divisionsWithRelations = db
-    .query.division.findMany({
+  const divisionsWithRelations = db.query.division
+    .findMany({
       orderBy: (divisions, { asc }) => [asc(divisions.order), asc(divisions.name)],
       with: {
         divisionCategories: {
@@ -121,13 +129,11 @@ export function listDivisions(db: AppDatabase): Division[] {
           metrics
         }
       })
-      .filter((entry): entry is DivisionCategoryView => entry !== null)
+      .filter((entry): entry is DivisionCategory => entry !== null)
       .sort((a, b) => {
         const orderA = a.order ?? 0
         const orderB = b.order ?? 0
-        return orderA === orderB
-          ? a.category.id.localeCompare(b.category.id)
-          : orderA - orderB
+        return orderA === orderB ? a.category.id.localeCompare(b.category.id) : orderA - orderB
       })
 
     const eligiblePlayerIds = playerDivisions
@@ -253,28 +259,6 @@ export function listDivisionsForCategory(
     .all()
 }
 
-export type DivisionCategoryView = {
-  category: CategoryRecord
-  depth: number
-  order: number
-  metrics: MetricRecord[]
-}
-
-export type Division = DivisionRecord & {
-  categories: DivisionCategoryView[]
-  eligiblePlayerIds: string[]
-}
-
-export type DivisionView = Division
-
-export function getDivisionView(db: AppDatabase, divisionId: string): DivisionView | undefined {
-  return listDivisions(db).find((division) => division.id === divisionId)
-}
-
-export function listDivisionViews(db: AppDatabase): DivisionView[] {
-  return listDivisions(db)
-}
-
 export function addPlayerToDivision(
   db: AppDatabase,
   divisionId: string,
@@ -319,7 +303,7 @@ export function listDivisionIdsForPlayer(db: AppDatabase, playerId: string): str
 }
 
 export function moveDivision(db: AppDatabase, id: string, direction: 'up' | 'down') {
-  const divisions = listAllDivisions(db)
+  const divisions = listDivisions(db)
   const index = divisions.findIndex((division) => division.id === id)
   if (index === -1) return false
 
@@ -347,7 +331,7 @@ export function moveDivision(db: AppDatabase, id: string, direction: 'up' | 'dow
 
 export function reorderDivisions(db: AppDatabase, orderedIds: string[]) {
   if (!orderedIds.length) return false
-  const existingIds = new Set(listAllDivisions(db).map((division) => division.id))
+  const existingIds = new Set(listDivisions(db).map((division) => division.id))
   const filtered = orderedIds.filter((id) => existingIds.has(id))
   if (!filtered.length) return false
 

@@ -7,7 +7,6 @@ import {
   DivisionCategoryLink,
   DivisionCategoryPatch,
   DivisionRecord,
-  DivisionView,
   NewDivision,
   PatchDivision
 } from '@core/tournaments/divisions'
@@ -46,8 +45,8 @@ interface DivisionAPI {
   create(data: NewDivision): Promise<string>
   update(id: string, data: PatchDivision): Promise<boolean>
   delete(id: string): Promise<boolean>
-  get(id: string): Promise<DivisionRecord>
-  list(): Promise<DivisionRecord[]>
+  get(id: string): Promise<Division>
+  list(): Promise<Division[]>
   addCategory(
     divisionId: string,
     categoryId: string,
@@ -62,8 +61,6 @@ interface DivisionAPI {
     patch: DivisionCategoryPatch
   ): Promise<boolean>
   listForCategory(categoryId: string): Promise<DivisionCategoryLink[]>
-  getView(id: string): Promise<DivisionView | undefined>
-  listViews(): Promise<DivisionView[]>
   addPlayer(divisionId: string, playerId: string): Promise<boolean>
   removePlayer(divisionId: string, playerId: string): Promise<boolean>
   listPlayers(divisionId: string): Promise<string[]>

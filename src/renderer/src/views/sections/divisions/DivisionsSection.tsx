@@ -1,12 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi'
-import type {
-  DivisionCategoryView,
-  DivisionView,
-  NewDivision,
-  PatchDivision
-} from '@core/tournaments/divisions'
+import type { DivisionCategory, Division, NewDivision, PatchDivision } from '@core/tournaments/divisions'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 import {
   type CrudTableColumn,
@@ -29,31 +24,31 @@ import { queryKeys } from '@renderer/queries/queryKeys'
 type FormState =
   | { open: false; mode: null; division?: undefined }
   | { open: true; mode: 'create'; division?: undefined }
-  | { open: true; mode: 'edit'; division: DivisionView }
+  | { open: true; mode: 'edit'; division: Division }
 
 type DetailsState = {
   open: boolean
-  division?: DivisionView
+  division?: Division
 }
 
 type DeleteState = {
   open: boolean
-  division?: DivisionView
+  division?: Division
   deleting: boolean
 }
 
-const columns: ReadonlyArray<CrudTableColumn<DivisionView, 'actions' | 'categories'>> = [
+const columns: ReadonlyArray<CrudTableColumn<Division, 'actions' | 'categories'>> = [
   { key: 'order', label: '#', sortable: false },
   { key: 'name', label: 'Division', sortable: false },
   { key: 'categories', label: 'Categories', sortable: false },
   { key: 'actions', label: 'Actions', sortable: false, align: 'right' }
 ]
 
-const sortPlaceholder = { key: 'order' as keyof DivisionView & string, direction: 'asc' as const }
+const sortPlaceholder = { key: 'order' as keyof Division & string, direction: 'asc' as const }
 
 export function DivisionsSection() {
   const queryClient = useQueryClient()
-  const [divisions, setDivisions] = useState<DivisionView[]>([])
+  const [divisions, setDivisions] = useState<Division[]>([])
 
   const [formState, setFormState] = useState<FormState>({ open: false, mode: null })
   const [formSubmitting, setFormSubmitting] = useState(false)
@@ -71,7 +66,7 @@ export function DivisionsSection() {
     queryClient.invalidateQueries({ queryKey: queryKeys.divisions.views() })
 
   const openCreateModal = () => setFormState({ open: true, mode: 'create' })
-  const openEditModal = (division: DivisionView) =>
+  const openEditModal = (division: Division) =>
     setFormState({ open: true, mode: 'edit', division })
 
   const closeFormModal = () => {
@@ -79,10 +74,10 @@ export function DivisionsSection() {
     setFormState({ open: false, mode: null })
   }
 
-  const openDetails = (division: DivisionView) => setDetailsState({ open: true, division })
+  const openDetails = (division: Division) => setDetailsState({ open: true, division })
   const closeDetails = () => setDetailsState({ open: false })
 
-  const requestDelete = (division: DivisionView) =>
+  const requestDelete = (division: Division) =>
     setDeleteState({ open: true, deleting: false, division })
   const cancelDelete = () => {
     if (deleteState.deleting) return
@@ -182,7 +177,7 @@ export function DivisionsSection() {
     }
   }
 
-  const handleReorder = async (ordered: DivisionView[]) => {
+  const handleReorder = async (ordered: Division[]) => {
     setDivisions(ordered)
     try {
       const success = await window.api.divisions.reorder(ordered.map((item) => item.id))
@@ -204,7 +199,7 @@ export function DivisionsSection() {
       prev.map((division) => {
         if (division.id !== divisionId) return division
         const dictionary = new Map(division.categories.map((entry) => [entry.category.id, entry]))
-        const reordered: DivisionCategoryView[] = orderedCategoryIds
+        const reordered: DivisionCategory[] = orderedCategoryIds
           .map((categoryId, index) => {
             const entry = dictionary.get(categoryId)
             if (!entry) return null
@@ -213,7 +208,7 @@ export function DivisionsSection() {
               order: index + 1
             }
           })
-          .filter((entry): entry is DivisionCategoryView => entry !== null)
+          .filter((entry): entry is DivisionCategory => entry !== null)
         return {
           ...division,
           categories: reordered.length ? reordered : division.categories
@@ -275,7 +270,7 @@ export function DivisionsSection() {
               <Table containerClassName="h-full">
                 <TableHeader>
                   <TableRow>
-                    {renderCrudTableHeader<DivisionView, 'actions' | 'categories'>({
+                    {renderCrudTableHeader<Division, 'actions' | 'categories'>({
                       columns,
                       sort: sortPlaceholder,
                       toggleSort: () => {}

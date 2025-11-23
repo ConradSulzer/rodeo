@@ -1,20 +1,16 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import type { Division, DivisionRecord } from '@core/tournaments/divisions'
+import type { Division } from '@core/tournaments/divisions'
 import { queryKeys } from './queryKeys'
 
-const fetchDivisionViews = async (): Promise<Division[]> => {
-  return window.api.divisions.listViews()
-}
-
-const fetchDivisions = async (): Promise<DivisionRecord[]> => {
+const fetchDivisions = async (): Promise<Division[]> => {
   return window.api.divisions.list()
 }
 
 export function useDivisionViewsQuery() {
   return useQuery({
     queryKey: queryKeys.divisions.views(),
-    queryFn: fetchDivisionViews
+    queryFn: fetchDivisions
   })
 }
 

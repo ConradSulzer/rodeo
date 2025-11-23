@@ -3,7 +3,7 @@ import type { StandingRuleContext } from './standingRules'
 import { moreItemsTrumpFewerApply } from './standingRules/moreItemsTrumpFewer'
 import { requireAllMetricsApply } from './standingRules/requireAllMetrics'
 import type { PlayerStanding } from './standings'
-import type { DivisionCategoryView } from './divisions'
+import type { DivisionCategory } from './divisions'
 import type { Timestamp } from '@core/types/Shared'
 import type { MetricRecord } from './metrics'
 
@@ -27,7 +27,7 @@ const baseCategoryContext = (direction: 'asc' | 'desc', metricCount = 0): Standi
     updatedAt: 0
   }))
 
-  const categoryView: DivisionCategoryView = {
+  const categoryView: DivisionCategory = {
     category: {
       id: '01CATEGORY',
       name: 'Test Category',

@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { withInMemoryDb } from '@core/db/db'
-import {
-  createDivision,
-  addCategoryToDivision,
-  getDivisionView,
-  addPlayerToDivision
-} from './divisions'
+import { createDivision, addCategoryToDivision, addPlayerToDivision, listDivisions } from './divisions'
 import { addMetricToCategory, createCategory, updateCategory } from './categories'
 import { createMetric } from './metrics'
 import { createPlayer } from '@core/players/players'
@@ -69,7 +64,7 @@ describe('standings computation', () => {
       persistEvent(db, results, makeEvent(lengthId, playerFull, 5, 2))
       persistEvent(db, results, makeEvent(weightId, playerPartial, 12, 3))
 
-      const divisionView = getDivisionView(db, divisionId)!
+      const divisionView = listDivisions(db).find((division) => division.id === divisionId)!
       const standing = computeDivisionStanding(results, divisionView)
       const [categoryStanding] = standing.categories
 
@@ -131,7 +126,7 @@ describe('standings computation', () => {
       persistEvent(db, results, makeEvent(metricA, playerB, 3, 1))
       persistEvent(db, results, makeEvent(metricB, playerB, 3, 2))
 
-      const divisionView = getDivisionView(db, divisionId)!
+      const divisionView = listDivisions(db).find((division) => division.id === divisionId)!
       const standing = computeDivisionStanding(results, divisionView)
       const entries = standing.categories[0].entries
 
@@ -188,7 +183,10 @@ describe('standings computation', () => {
       // Partial player posts a higher raw total but fewer items
       persistEvent(db, results, makeEvent(metricA, playerPartial, 20, 1))
 
-      const standing = computeDivisionStanding(results, getDivisionView(db, divisionId)!)
+      const standing = computeDivisionStanding(
+        results,
+        listDivisions(db).find((division) => division.id === divisionId)!
+      )
       const [categoryStanding] = standing.categories
 
       expect(categoryStanding.entries.map((entry) => entry.playerId)).toEqual([
@@ -249,7 +247,10 @@ describe('standings computation', () => {
       persistEvent(db, results, makeEvent(metricA, playerMissing, 12, 1))
       persistEvent(db, results, makeEvent(metricB, playerMissing, 9, 2))
 
-      const standing = computeDivisionStanding(results, getDivisionView(db, divisionId)!)
+      const standing = computeDivisionStanding(
+        results,
+        listDivisions(db).find((division) => division.id === divisionId)!
+      )
       const [categoryStanding] = standing.categories
 
       expect(categoryStanding.entries.map((entry) => entry.playerId)).toEqual([playerComplete])
@@ -288,7 +289,10 @@ describe('standings computation', () => {
       persistEvent(db, results, makeEvent(playerEarly, 15, 1))
       persistEvent(db, results, makeEvent(playerLate, 15, 10))
 
-      const standing = computeDivisionStanding(results, getDivisionView(db, divisionId)!)
+      const standing = computeDivisionStanding(
+        results,
+        listDivisions(db).find((division) => division.id === divisionId)!
+      )
       const [categoryStanding] = standing.categories
       const [first, second] = categoryStanding.entries
 

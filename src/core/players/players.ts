@@ -1,6 +1,6 @@
 import type { AppDatabase } from '@core/db/db'
 import { division as dv, player as pl, playerDivision as pd } from '@core/db/schema'
-import { listDivisionViews, type DivisionRecord } from '@core/tournaments/divisions'
+import { listDivisions, type DivisionRecord } from '@core/tournaments/divisions'
 import { eq, asc } from 'drizzle-orm'
 import { ulid } from 'ulid'
 import type { MetricRecord } from '@core/tournaments/metrics'
@@ -84,26 +84,26 @@ export function listAllPlayerAssignments(db: AppDatabase): PlayerAssignment[] {
     .orderBy(asc(pd.playerId), asc(dv.name))
     .all()
 
-  const divisionMap = new Map<string, DivisionRecord[]>()
+  const playerDivisionMap = new Map<string, DivisionRecord[]>()
   for (const { playerId, division } of assignments) {
     if (!division) continue
-    const list = divisionMap.get(playerId)
+    const list = playerDivisionMap.get(playerId)
     if (list) {
       list.push(division)
     } else {
-      divisionMap.set(playerId, [division])
+      playerDivisionMap.set(playerId, [division])
     }
   }
 
-  const divisionViews = listDivisionViews(db)
-  const divisionViewMap = new Map(divisionViews.map((view) => [view.id, view]))
+  const divisions = listDivisions(db)
+  const divisionLookup = new Map(divisions.map((division) => [division.id, division]))
 
   return players.map((player) => {
-    const divisions = divisionMap.get(player.id) ?? []
+    const playerDivisions = playerDivisionMap.get(player.id) ?? []
     const metricMap = new Map<string, MetricRecord>()
 
-    for (const division of divisions) {
-      const view = divisionViewMap.get(division.id)
+    for (const division of playerDivisions) {
+      const view = divisionLookup.get(division.id)
       if (!view) continue
       for (const categoryView of view.categories) {
         for (const metric of categoryView.metrics) {
@@ -118,8 +118,8 @@ export function listAllPlayerAssignments(db: AppDatabase): PlayerAssignment[] {
 
     return {
       player,
-      divisions,
-      divisionIds: divisions.map((division) => division.id),
+      divisions: playerDivisions,
+      divisionIds: playerDivisions.map((division) => division.id),
       metrics,
       metricIds: metrics.map((metric) => metric.id)
     }

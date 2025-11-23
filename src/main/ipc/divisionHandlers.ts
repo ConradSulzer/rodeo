@@ -4,11 +4,9 @@ import {
   createDivision,
   deleteDivision,
   getDivision,
-  getDivisionView,
-  listAllDivisions,
+  listDivisions,
   listCategoriesForDivision,
   listDivisionIdsForPlayer,
-  listDivisionViews,
   listDivisionsForCategory,
   listPlayerIdsForDivision,
   moveDivision,
@@ -47,7 +45,7 @@ ipcMain.handle('divisions:get', (_evt, id: string) => {
 
 ipcMain.handle('divisions:list', () => {
   const db = getTournamentDb()
-  return listAllDivisions(db)
+  return listDivisions(db)
 })
 
 ipcMain.handle('divisions:move', (_evt, id: string, direction: 'up' | 'down') => {
@@ -95,15 +93,6 @@ ipcMain.handle('divisions:listForCategory', (_evt, categoryId: string) => {
   return listDivisionsForCategory(db, categoryId)
 })
 
-ipcMain.handle('divisions:getView', (_evt, id: string) => {
-  const db = getTournamentDb()
-  return getDivisionView(db, id)
-})
-
-ipcMain.handle('divisions:listViews', () => {
-  const db = getTournamentDb()
-  return listDivisionViews(db)
-})
 
 ipcMain.handle('divisions:addPlayer', (_evt, divisionId: string, playerId: string) => {
   const db = getTournamentDb()

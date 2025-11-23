@@ -1,7 +1,7 @@
 import { appendEvent, getEvent, type RodeoEvent } from '@core/events/events'
 import { computeAllDivisionStandings } from '@core/tournaments/standings'
 import { buildResults, type Results } from '@core/tournaments/results'
-import { listDivisionViews } from '@core/tournaments/divisions'
+import { listDivisions } from '@core/tournaments/divisions'
 import type { AppDatabase } from '@core/db/db'
 import type { SerializableTournamentState, SerializedResults } from '@core/tournaments/state'
 import type { DivisionStanding } from '@core/tournaments/standings'
@@ -45,8 +45,8 @@ export function hydrate(db: AppDatabase): SerializableTournamentState {
     console.warn('Errors encountered while hydrating results', errors)
   }
 
-  const divisionViews = listDivisionViews(db)
-  const standings = computeAllDivisionStandings(results, divisionViews)
+  const divisions = listDivisions(db)
+  const standings = computeAllDivisionStandings(results, divisions)
 
   state = {
     results,
@@ -91,9 +91,9 @@ export function applyEvent(db: AppDatabase, event: RodeoEvent): ReturnType<typeo
 }
 
 export function refreshStandings(db: AppDatabase) {
-  const divisionViews = listDivisionViews(db)
+  const divisions = listDivisions(db)
 
-  const standings = computeAllDivisionStandings(state.results, divisionViews)
+  const standings = computeAllDivisionStandings(state.results, divisions)
 
   state = {
     ...state,

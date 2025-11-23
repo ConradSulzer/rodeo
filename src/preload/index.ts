@@ -53,8 +53,6 @@ const api = {
       ipcRenderer.invoke('divisions:updateCategoryLink', divisionId, categoryId, patch),
     listForCategory: (categoryId: string) =>
       ipcRenderer.invoke('divisions:listForCategory', categoryId),
-    getView: (id: string) => ipcRenderer.invoke('divisions:getView', id),
-    listViews: () => ipcRenderer.invoke('divisions:listViews'),
     addPlayer: (divisionId: string, playerId: string) =>
       ipcRenderer.invoke('divisions:addPlayer', divisionId, playerId),
     removePlayer: (divisionId: string, playerId: string) =>

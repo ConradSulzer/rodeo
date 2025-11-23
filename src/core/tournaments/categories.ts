@@ -5,16 +5,21 @@ import { and, eq } from 'drizzle-orm'
 import type { MetricRecord } from './metrics'
 
 export type CategoryRecord = typeof cat.$inferSelect
+
 export type Category = CategoryRecord & {
   metrics: MetricRecord[]
   divisions: { id: string; name: string }[]
 }
+
 type CategoryWritableFields = Omit<CategoryRecord, 'id' | 'createdAt' | 'updatedAt'>
+
 type CategoryOptionalFields = 'rules' | 'showMetricsCount' | 'metricsCountName'
+
 export type NewCategory = Omit<CategoryWritableFields, CategoryOptionalFields> &
   Partial<Pick<CategoryWritableFields, CategoryOptionalFields>> & {
     rules?: string[]
   }
+
 export type PatchCategory = Partial<CategoryWritableFields>
 
 const now = () => Date.now()

@@ -1,10 +1,10 @@
 import type { PlayerStanding } from './standings'
-import type { DivisionCategoryView } from './divisions'
+import type { DivisionCategory } from './divisions'
 import { moreItemsTrumpFewerApply } from './standingRules/moreItemsTrumpFewer'
 import { requireAllMetricsApply } from './standingRules/requireAllMetrics'
 
 export type StandingRuleContext = {
-  categoryView: DivisionCategoryView
+  categoryView: DivisionCategory
 }
 
 export type StandingRule = {

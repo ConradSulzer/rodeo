@@ -1,4 +1,4 @@
-import type { DivisionView } from '@core/tournaments/divisions'
+import type { Division } from '@core/tournaments/divisions'
 import { Modal } from '../../../components/Modal'
 import { Field } from '../../../components/ui/field'
 import { Label } from '../../../components/ui/label'
@@ -8,7 +8,7 @@ import { Pill } from '../../../components/ui/pill'
 
 type DivisionDetailsModalProps = {
   open: boolean
-  division?: DivisionView
+  division?: Division
   onClose: () => void
 }
 

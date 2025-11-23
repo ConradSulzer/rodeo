@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { Player, PlayerAssignment } from '@core/players/players'
-import type { DivisionView } from '@core/tournaments/divisions'
+import type { Division } from '@core/tournaments/divisions'
 import type { Metric } from '@core/tournaments/metrics'
 import type { SerializableTournamentState } from '@core/tournaments/state'
 import type { Category } from '@core/tournaments/categories'
@@ -9,7 +9,7 @@ export type PlayerDirectory = Map<string, Player>
 
 type StoreData = {
   playerAssignments: PlayerAssignment[]
-  divisionViews: DivisionView[]
+  divisions: Division[]
   metrics: Metric[]
   categories: Category[]
   tournamentState?: SerializableTournamentState
@@ -30,7 +30,7 @@ type DataStoreState = StoreData & {
 
 const createInitialData = (): StoreData => ({
   playerAssignments: [],
-  divisionViews: [],
+  divisions: [],
   metrics: [],
   categories: [],
   tournamentState: undefined,
@@ -52,8 +52,8 @@ export const useDataStore = create<DataStoreState>((set, get) => ({
   },
   async fetchDivisionViews() {
     try {
-      const views = await window.api.divisions.listViews()
-      set({ divisionViews: views })
+      const divisions = await window.api.divisions.list()
+      set({ divisions })
     } catch {
       set({ error: 'Failed to load divisions' })
     }

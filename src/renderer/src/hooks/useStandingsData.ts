@@ -5,7 +5,7 @@ import { usePlayerDirectory } from '@renderer/queries/players'
 import { useTournamentStateQuery } from '@renderer/queries/tournament'
 
 export type StandingsData = {
-  divisionViews: ReturnType<typeof useDivisionCatalog>['list']
+  divisions: ReturnType<typeof useDivisionCatalog>['list']
   standings: DivisionStanding[]
   players: Map<string, string>
   isLoading: boolean
@@ -13,13 +13,13 @@ export type StandingsData = {
 
 export function useStandingsData(): StandingsData {
   const { data: tournamentState, isLoading: stateLoading } = useTournamentStateQuery()
-  const { list: divisionViews, isLoading: divisionsLoading } = useDivisionCatalog()
+  const { list: divisions, isLoading: divisionsLoading } = useDivisionCatalog()
   const { map: players, isLoading: playersLoading } = usePlayerDirectory()
 
   const standings = useMemo(() => tournamentState?.standings ?? [], [tournamentState])
 
   return {
-    divisionViews,
+    divisions,
     standings,
     players,
     isLoading: stateLoading || divisionsLoading || playersLoading

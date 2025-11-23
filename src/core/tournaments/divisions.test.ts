@@ -6,12 +6,9 @@ import {
   createDivision,
   deleteDivision,
   getDivision,
-  getDivisionView,
-  listAllDivisions,
   listDivisions,
   listCategoriesForDivision,
   listDivisionIdsForPlayer,
-  listDivisionViews,
   listDivisionsForCategory,
   listPlayerIdsForDivision,
   removeCategoryFromDivision,
@@ -103,7 +100,7 @@ describe('divisions data access', () => {
       createDivision(db, { name: 'Amateur', order: 1 })
       createDivision(db, { name: 'Pro', order: 1 })
 
-      const divisions = listAllDivisions(db)
+      const divisions = listDivisions(db)
       expect(divisions.map((d) => d.name)).toEqual(['Amateur', 'Pro', 'Masters'])
       expect(divisions.map((d) => d.order)).toEqual([1, 1, 2])
     })
@@ -229,7 +226,7 @@ describe('divisions data access', () => {
       addPlayerToDivision(db, divisionId, playerA)
       addPlayerToDivision(db, divisionId, playerB)
 
-      const view = getDivisionView(db, divisionId)
+      const view = listDivisions(db).find((division) => division.id === divisionId)
       expect(view).toBeDefined()
       expect(view?.categories).toHaveLength(1)
       expect(new Set(view?.eligiblePlayerIds)).toEqual(new Set([playerA, playerB]))
@@ -244,7 +241,7 @@ describe('divisions data access', () => {
         label: baseMetric.label
       })
 
-      const all = listDivisionViews(db)
+      const all = listDivisions(db)
       expect(all).toHaveLength(1)
       expect(all[0].categories[0].metrics[0].unit).toBe(baseMetric.unit)
       expect(new Set(all[0].eligiblePlayerIds)).toEqual(new Set([playerA, playerB]))
