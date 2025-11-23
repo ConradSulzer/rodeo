@@ -1,7 +1,7 @@
 import { reduceBatch } from '@core/events/eventReducer'
 import { EventId, getEvent, listAllEvents, ItemState } from '@core/events/events'
 import { Timestamp } from '@core/types/Shared'
-import { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
+import type { AppDatabase } from '@core/db/db'
 
 import type { ULID } from 'ulid'
 
@@ -62,7 +62,7 @@ export function getOrCreatePlayerItems(results: Results, playerId: ULID) {
 /**
  * Build a results map from all the events in a given store/DB
  */
-export function buildResults(db: BetterSQLite3Database) {
+export function buildResults(db: AppDatabase) {
   const events = listAllEvents(db)
   const resolve = (id: ULID) => getEvent(db, id)
   const emptyResults: Results = new Map()

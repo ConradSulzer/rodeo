@@ -3,6 +3,7 @@ import Database from 'better-sqlite3'
 import { type BetterSQLite3Database, drizzle } from 'drizzle-orm/better-sqlite3'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
 import fs from 'node:fs'
+import * as schema from './schema'
 
 export function migrationsPath() {
   const candidates = [
@@ -24,7 +25,7 @@ export function migrationsPath() {
   )
 }
 
-export type AppDatabase = BetterSQLite3Database
+export type AppDatabase = BetterSQLite3Database<typeof schema>
 
 export type OpenDb = {
   db: AppDatabase
@@ -38,7 +39,7 @@ export function openDb(filePath: string): OpenDb {
   sqlite.pragma('journal_mode = WAL') // use .wal file and merge changes in later isntead of rewriting the file every trans
   sqlite.pragma('synchronous = NORMAL') // fsync less aggressively, but still don't corrupt on crash
 
-  const db = drizzle(sqlite) as AppDatabase
+  const db = drizzle(sqlite, { schema })
 
   migrate(db, { migrationsFolder: migrationsPath() }) // this is idempotent
 
@@ -59,7 +60,7 @@ export function openDb(filePath: string): OpenDb {
 // This function will return the result of that operation.
 export function withInMemoryDb<T>(fn: (db: AppDatabase) => T) {
   const sqlite = new Database(':memory:')
-  const db = drizzle(sqlite) as AppDatabase
+  const db = drizzle(sqlite, { schema })
   migrate(db, { migrationsFolder: migrationsPath() })
   try {
     return fn(db)

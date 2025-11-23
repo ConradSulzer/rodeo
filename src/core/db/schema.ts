@@ -1,3 +1,4 @@
+import { relations } from 'drizzle-orm'
 import {
   sqliteTable,
   text,
@@ -153,3 +154,75 @@ export const tournamentMeta = sqliteTable('tournament', {
   createdAt: integer('created_at', { mode: 'number' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'number' }).notNull()
 })
+
+export const playerRelations = relations(player, ({ many }) => ({
+  playerDivisions: many(playerDivision),
+  events: many(event)
+}))
+
+export const metricRelations = relations(metric, ({ many }) => ({
+  categoryMetrics: many(categoryMetric),
+  events: many(event)
+}))
+
+export const categoryRelations = relations(category, ({ many }) => ({
+  categoryMetrics: many(categoryMetric),
+  divisionCategories: many(divisionCategory)
+}))
+
+export const divisionRelations = relations(division, ({ many }) => ({
+  divisionCategories: many(divisionCategory),
+  playerDivisions: many(playerDivision)
+}))
+
+export const categoryMetricRelations = relations(categoryMetric, ({ one }) => ({
+  category: one(category, {
+    fields: [categoryMetric.categoryId],
+    references: [category.id]
+  }),
+  metric: one(metric, {
+    fields: [categoryMetric.metricId],
+    references: [metric.id]
+  })
+}))
+
+export const divisionCategoryRelations = relations(divisionCategory, ({ one }) => ({
+  division: one(division, {
+    fields: [divisionCategory.divisionId],
+    references: [division.id]
+  }),
+  category: one(category, {
+    fields: [divisionCategory.categoryId],
+    references: [category.id]
+  })
+}))
+
+export const playerDivisionRelations = relations(playerDivision, ({ one }) => ({
+  player: one(player, {
+    fields: [playerDivision.playerId],
+    references: [player.id]
+  }),
+  division: one(division, {
+    fields: [playerDivision.divisionId],
+    references: [division.id]
+  })
+}))
+
+export const eventRelations = relations(event, ({ one, many }) => ({
+  player: one(player, {
+    fields: [event.playerId],
+    references: [player.id]
+  }),
+  metric: one(metric, {
+    fields: [event.metricId],
+    references: [metric.id]
+  }),
+  priorEvent: one(event, {
+    fields: [event.priorEventId],
+    references: [event.id],
+    relationName: 'priorEvent'
+  }),
+  nextEvents: many(event, {
+    relationName: 'priorEvent'
+  })
+}))

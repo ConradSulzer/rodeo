@@ -1,6 +1,6 @@
 import { ulid } from 'ulid'
 import type { AppDatabase } from '@core/db/db'
-import { category as cat, categoryMetric as catMetric, metric as sc } from '@core/db/schema'
+import { category as cat, categoryMetric as catMetric } from '@core/db/schema'
 import { and, asc, eq } from 'drizzle-orm'
 import type { MetricRecord } from './metrics'
 
@@ -130,42 +130,28 @@ export function listCategoryIdsForMetric(db: AppDatabase, metricId: string) {
 }
 
 export function listCategoryViews(db: AppDatabase): CategoryView[] {
-  const categories = listAllCategories(db)
-  if (!categories.length) return []
-
-  const metricsByCategory = db
-    .select({
-      categoryId: catMetric.categoryId,
-      metricId: sc.id,
-      label: sc.label,
-      unit: sc.unit,
-      createdAt: sc.createdAt,
-      updatedAt: sc.updatedAt
+  const categoriesWithRelations = db
+    .query.category.findMany({
+      orderBy: (categories, { asc }) => [asc(categories.name)],
+      with: {
+        categoryMetrics: {
+          with: {
+            metric: true
+          }
+        }
+      }
     })
-    .from(catMetric)
-    .innerJoin(sc, eq(catMetric.metricId, sc.id))
-    .orderBy(asc(catMetric.categoryId), asc(sc.label))
-    .all()
+    .sync()
 
-  const map = new Map<string, MetricRecord[]>()
-  for (const row of metricsByCategory) {
-    const metric: MetricRecord = {
-      id: row.metricId,
-      label: row.label ?? '',
-      unit: row.unit ?? '',
-      createdAt: row.createdAt ?? 0,
-      updatedAt: row.updatedAt ?? 0
-    }
-    const list = map.get(row.categoryId)
-    if (list) {
-      list.push(metric)
-    } else {
-      map.set(row.categoryId, [metric])
-    }
-  }
+  return categoriesWithRelations.map(({ categoryMetrics, ...category }) => {
+    const metrics = categoryMetrics
+      .map((link) => link.metric)
+      .filter((metric): metric is MetricRecord => Boolean(metric))
+      .sort((a, b) => a.label.localeCompare(b.label))
 
-  return categories.map((category) => ({
-    ...category,
-    metrics: map.get(category.id) ?? []
-  }))
+    return {
+      ...(category as CategoryRecord),
+      metrics
+    }
+  })
 }
