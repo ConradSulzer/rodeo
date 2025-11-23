@@ -2,7 +2,7 @@ import { ulid } from 'ulid'
 import type { AppDatabase } from '@core/db/db'
 import { category as cat, categoryMetric as catMetric, metric as sc } from '@core/db/schema'
 import { and, asc, eq } from 'drizzle-orm'
-import type { Metric } from './metrics'
+import type { MetricRecord } from './metrics'
 
 export type Category = typeof cat.$inferSelect
 type CategoryWritableFields = Omit<Category, 'id' | 'createdAt' | 'updatedAt'>
@@ -12,7 +12,7 @@ export type NewCategory = Omit<CategoryWritableFields, CategoryOptionalFields> &
     rules?: string[]
   }
 export type PatchCategory = Partial<CategoryWritableFields>
-export type CategoryView = Category & { metrics: Metric[] }
+export type CategoryView = Category & { metrics: MetricRecord[] }
 
 const now = () => Date.now()
 
@@ -147,9 +147,9 @@ export function listCategoryViews(db: AppDatabase): CategoryView[] {
     .orderBy(asc(catMetric.categoryId), asc(sc.label))
     .all()
 
-  const map = new Map<string, Metric[]>()
+  const map = new Map<string, MetricRecord[]>()
   for (const row of metricsByCategory) {
-    const metric: Metric = {
+    const metric: MetricRecord = {
       id: row.metricId,
       label: row.label ?? '',
       unit: row.unit ?? '',

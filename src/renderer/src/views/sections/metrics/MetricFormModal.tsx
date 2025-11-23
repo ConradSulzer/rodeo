@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import type { Metric } from '@core/tournaments/metrics'
+import type { MetricRecord } from '@core/tournaments/metrics'
 import {
   metricFormSchema,
   type MetricFormData,
@@ -14,7 +14,7 @@ import { Button } from '../../../components/ui/button'
 type MetricFormModalProps = {
   open: boolean
   mode: 'create' | 'edit'
-  metric?: Metric
+  metric?: MetricRecord
   submitting?: boolean
   onSubmit: (values: MetricFormData) => Promise<void>
   onClose: () => void
@@ -27,7 +27,7 @@ const emptyForm: MetricFormInput = {
   unit: ''
 }
 
-function toInitialValues(metric?: Metric): MetricFormInput {
+function toInitialValues(metric?: MetricRecord): MetricFormInput {
   if (!metric) return emptyForm
   return {
     label: metric.label ?? '',

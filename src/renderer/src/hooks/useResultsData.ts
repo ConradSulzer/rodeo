@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import type { Player } from '@core/players/players'
 import type { ItemResult } from '@core/tournaments/results'
-import type { Metric } from '@core/tournaments/metrics'
+import type { MetricRecord } from '@core/tournaments/metrics'
 import { useMetricCatalog } from '@renderer/queries/metrics'
 import { usePlayerAssignmentsQuery } from '@renderer/queries/players'
 import { useTournamentStateQuery } from '@renderer/queries/tournament'
@@ -15,7 +15,7 @@ export type ResultRow = {
 }
 
 export type ResultsData = {
-  metrics: Metric[]
+  metrics: MetricRecord[]
   rows: ResultRow[]
   isLoading: boolean
 }

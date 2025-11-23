@@ -7,7 +7,7 @@ import {
 } from '@core/db/schema'
 import { and, asc, eq } from 'drizzle-orm'
 import { getCategory, listMetricIdsForCategory, type Category } from '@core/tournaments/categories'
-import { getMetric, type Metric } from '@core/tournaments/metrics'
+import { getMetric, type MetricRecord } from '@core/tournaments/metrics'
 
 export type Division = typeof dv.$inferSelect
 export type NewDivision = Omit<Division, 'id' | 'createdAt' | 'updatedAt' | 'order'> & {
@@ -192,7 +192,7 @@ export type DivisionCategoryView = {
   category: Category
   depth: number
   order: number
-  metrics: Metric[]
+  metrics: MetricRecord[]
 }
 
 export type DivisionView = Division & {
@@ -232,7 +232,7 @@ function buildDivisionCategories(db: AppDatabase, divisionId: string): DivisionC
 
       const metrics = listMetricIdsForCategory(db, link.categoryId)
         .map((metricId) => getMetric(db, metricId))
-        .filter((metric): metric is Metric => Boolean(metric))
+        .filter((metric): metric is MetricRecord => Boolean(metric))
 
       return {
         category,

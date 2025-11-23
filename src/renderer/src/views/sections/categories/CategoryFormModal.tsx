@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import type { Category } from '@core/tournaments/categories'
-import type { Metric } from '@core/tournaments/metrics'
+import type { MetricRecord } from '@core/tournaments/metrics'
 import type { StandingRuleSummary } from '@core/tournaments/standingRules'
 import { Modal } from '@renderer/components/Modal'
 import { Field } from '@renderer/components/ui/field'
@@ -30,7 +30,7 @@ type CategoryFormModalProps = {
   open: boolean
   mode: 'create' | 'edit'
   category?: Category & { metricIds?: string[] }
-  metrics: Metric[]
+  metrics: MetricRecord[]
   standingRules: StandingRuleSummary[]
   submitting?: boolean
   onSubmit: (values: CategoryFormValues) => Promise<void>

@@ -10,7 +10,7 @@ import {
   NewDivision,
   PatchDivision
 } from '@core/tournaments/divisions'
-import { NewMetric, PatchMetric, Metric } from '@core/tournaments/metrics'
+import { NewMetric, PatchMetric, MetricRecord } from '@core/tournaments/metrics'
 import type { SerializableTournamentState } from '@core/tournaments/state'
 import type { RodeoEvent, ScoreEventInput } from '@core/events/events'
 
@@ -26,10 +26,10 @@ interface MetricAPI {
   create(data: NewMetric): Promise<string>
   update(id: string, data: PatchMetric): Promise<boolean>
   delete(id: string): Promise<boolean>
-  get(id: string): Promise<Metric>
-  list(): Promise<Metric[]>
+  get(id: string): Promise<MetricRecord>
+  list(): Promise<MetricRecord[]>
   listViews(): Promise<
-    (Metric & {
+    (MetricRecord & {
       divisions: string[]
     })[]
   >
@@ -43,7 +43,7 @@ interface CategoryAPI {
   list(): Promise<Category[]>
   listViews(): Promise<
     (Category & {
-      metrics: Metric[]
+      metrics: MetricRecord[]
     })[]
   >
   listRules(): Promise<StandingRuleSummary[]>

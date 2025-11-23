@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import type { Player } from '@core/players/players'
-import type { Metric } from '@core/tournaments/metrics'
+import type { MetricRecord } from '@core/tournaments/metrics'
 import type { ItemResult } from '@core/tournaments/results'
 import type { ItemScoreEventInput } from '@core/events/events'
 import { Modal } from '@renderer/components/Modal'
@@ -18,7 +18,7 @@ export type SubmissionResult = {
 type ScorePlayerModalProps = {
   open: boolean
   player?: Player
-  metrics: Metric[]
+  metrics: MetricRecord[]
   existingResults?: Map<string, ItemResult>
   onSubmit: (entries: ItemScoreEventInput[]) => Promise<SubmissionResult>
   onVoidScorecard?: () => Promise<void>

@@ -5,7 +5,7 @@ import { requireAllMetricsApply } from './standingRules/requireAllMetrics'
 import type { PlayerStanding } from './standings'
 import type { DivisionCategoryView } from './divisions'
 import type { Timestamp } from '@core/types/Shared'
-import type { Metric } from './metrics'
+import type { MetricRecord } from './metrics'
 
 const baseStanding = (overrides: Partial<PlayerStanding> = {}): PlayerStanding => ({
   playerId: '01TESTPLAYER',
@@ -18,7 +18,7 @@ const baseStanding = (overrides: Partial<PlayerStanding> = {}): PlayerStanding =
 })
 
 const baseCategoryContext = (direction: 'asc' | 'desc', metricCount = 0): StandingRuleContext => {
-  const metrics: Metric[] = Array.from({ length: metricCount }, (_, idx) => ({
+  const metrics: MetricRecord[] = Array.from({ length: metricCount }, (_, idx) => ({
     id: `metric-${idx}`,
     label: `Metric ${idx}`,
     unit: 'unit',

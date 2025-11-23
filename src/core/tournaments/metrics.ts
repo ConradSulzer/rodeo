@@ -8,13 +8,13 @@ import {
 } from '@core/db/schema'
 import { asc, eq } from 'drizzle-orm'
 
-export type Metric = typeof sc.$inferSelect
+export type MetricRecord = typeof sc.$inferSelect
 export type NewMetric = {
   label: string
   unit: string
 }
 export type PatchMetric = Partial<NewMetric>
-export type MetricView = Metric & {
+export type MetricView = MetricRecord & {
   divisions: string[]
 }
 
@@ -58,11 +58,11 @@ export function deleteMetric(db: AppDatabase, id: string) {
   return result.changes > 0
 }
 
-export function getMetric(db: AppDatabase, id: string): Metric | undefined {
+export function getMetric(db: AppDatabase, id: string): MetricRecord | undefined {
   return db.select().from(sc).where(eq(sc.id, id)).get()
 }
 
-export function listAllMetrics(db: AppDatabase): Metric[] {
+export function listAllMetrics(db: AppDatabase): MetricRecord[] {
   return db.select().from(sc).orderBy(asc(sc.label)).all()
 }
 

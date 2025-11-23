@@ -3,7 +3,7 @@ import { division as dv, player as pl, playerDivision as pd } from '@core/db/sch
 import { listDivisionViews, type Division } from '@core/tournaments/divisions'
 import { eq, asc } from 'drizzle-orm'
 import { ulid } from 'ulid'
-import type { Metric } from '@core/tournaments/metrics'
+import type { MetricRecord } from '@core/tournaments/metrics'
 
 export type Player = typeof pl.$inferSelect
 
@@ -24,7 +24,7 @@ export type PlayerAssignment = {
   player: Player
   divisions: Division[]
   divisionIds: string[]
-  metrics: Metric[]
+  metrics: MetricRecord[]
   metricIds: string[]
 }
 
@@ -100,7 +100,7 @@ export function listAllPlayerAssignments(db: AppDatabase): PlayerAssignment[] {
 
   return players.map((player) => {
     const divisions = divisionMap.get(player.id) ?? []
-    const metricMap = new Map<string, Metric>()
+    const metricMap = new Map<string, MetricRecord>()
 
     for (const division of divisions) {
       const view = divisionViewMap.get(division.id)
