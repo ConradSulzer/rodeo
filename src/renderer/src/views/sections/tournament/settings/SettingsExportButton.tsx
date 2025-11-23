@@ -39,23 +39,22 @@ export function SettingsExportButton() {
         metrics: category.metrics.map((metric) => sanitizeName(metric.label))
       }))
 
-      const divisionRows: TemplateDivisionRow[] = []
-      for (const division of divisions) {
-        const links = await window.api.divisions.listCategories(division.id)
-        const sorted = [...links].sort((a, b) => {
+      const divisionRows: TemplateDivisionRow[] = divisions.map((division) => {
+        const sortedCategories = [...division.categories].sort((a, b) => {
           const orderA = a.order ?? 0
           const orderB = b.order ?? 0
           if (orderA !== orderB) return orderA - orderB
-          return a.categoryId.localeCompare(b.categoryId)
+          return a.category.id.localeCompare(b.category.id)
         })
-        divisionRows.push({
+
+        return {
           name: sanitizeName(division.name),
           description: '',
-          categories: sorted
-            .map((link) => sanitizeName(categoryMap.get(link.categoryId)?.name ?? ''))
+          categories: sortedCategories
+            .map((entry) => sanitizeName(categoryMap.get(entry.category.id)?.name ?? ''))
             .filter(Boolean)
-        })
-      }
+        }
+      })
 
       const csv = buildTournamentTemplate({
         metrics: metricRows,

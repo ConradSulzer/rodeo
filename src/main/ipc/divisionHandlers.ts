@@ -5,10 +5,6 @@ import {
   deleteDivision,
   getDivision,
   listDivisions,
-  listCategoriesForDivision,
-  listDivisionIdsForPlayer,
-  listDivisionsForCategory,
-  listPlayerIdsForDivision,
   moveDivision,
   reorderDivisions,
   removeCategoryFromDivision,
@@ -73,11 +69,6 @@ ipcMain.handle('divisions:removeCategory', (_evt, divisionId: string, categoryId
   return withStandingsRefresh(db, () => removeCategoryFromDivision(db, divisionId, categoryId))
 })
 
-ipcMain.handle('divisions:listCategories', (_evt, divisionId: string) => {
-  const db = getTournamentDb()
-  return listCategoriesForDivision(db, divisionId)
-})
-
 ipcMain.handle(
   'divisions:updateCategoryLink',
   (_evt, divisionId: string, categoryId: string, patch: DivisionCategoryPatch) => {
@@ -88,11 +79,6 @@ ipcMain.handle(
   }
 )
 
-ipcMain.handle('divisions:listForCategory', (_evt, categoryId: string) => {
-  const db = getTournamentDb()
-  return listDivisionsForCategory(db, categoryId)
-})
-
 
 ipcMain.handle('divisions:addPlayer', (_evt, divisionId: string, playerId: string) => {
   const db = getTournamentDb()
@@ -102,14 +88,4 @@ ipcMain.handle('divisions:addPlayer', (_evt, divisionId: string, playerId: strin
 ipcMain.handle('divisions:removePlayer', (_evt, divisionId: string, playerId: string) => {
   const db = getTournamentDb()
   return withStandingsRefresh(db, () => removePlayerFromDivision(db, divisionId, playerId))
-})
-
-ipcMain.handle('divisions:listPlayers', (_evt, divisionId: string) => {
-  const db = getTournamentDb()
-  return listPlayerIdsForDivision(db, divisionId)
-})
-
-ipcMain.handle('divisions:listForPlayer', (_evt, playerId: string) => {
-  const db = getTournamentDb()
-  return listDivisionIdsForPlayer(db, playerId)
 })

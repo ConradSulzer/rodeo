@@ -54,17 +54,13 @@ interface DivisionAPI {
     order?: number
   ): Promise<boolean>
   removeCategory(divisionId: string, categoryId: string): Promise<boolean>
-  listCategories(divisionId: string): Promise<DivisionCategoryLink[]>
   updateCategoryLink(
     divisionId: string,
     categoryId: string,
     patch: DivisionCategoryPatch
   ): Promise<boolean>
-  listForCategory(categoryId: string): Promise<DivisionCategoryLink[]>
   addPlayer(divisionId: string, playerId: string): Promise<boolean>
   removePlayer(divisionId: string, playerId: string): Promise<boolean>
-  listPlayers(divisionId: string): Promise<string[]>
-  listForPlayer(playerId: string): Promise<string[]>
   move(id: string, direction: 'up' | 'down'): Promise<boolean>
   reorder(orderedIds: string[]): Promise<boolean>
 }

@@ -5,7 +5,7 @@ import {
   divisionCategory as dvCategory,
   playerDivision as pd
 } from '@core/db/schema'
-import { and, asc, eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import type { CategoryRecord } from '@core/tournaments/categories'
 import type { MetricRecord } from '@core/tournaments/metrics'
 
@@ -225,40 +225,6 @@ export function updateDivisionCategoryLink(
   return result.changes > 0
 }
 
-export function listCategoriesForDivision(
-  db: AppDatabase,
-  divisionId: string
-): DivisionCategoryLink[] {
-  return db
-    .select({
-      divisionId: dvCategory.divisionId,
-      categoryId: dvCategory.categoryId,
-      depth: dvCategory.depth,
-      order: dvCategory.order
-    })
-    .from(dvCategory)
-    .where(eq(dvCategory.divisionId, divisionId))
-    .orderBy(asc(dvCategory.order), asc(dvCategory.categoryId))
-    .all()
-}
-
-export function listDivisionsForCategory(
-  db: AppDatabase,
-  categoryId: string
-): DivisionCategoryLink[] {
-  return db
-    .select({
-      divisionId: dvCategory.divisionId,
-      categoryId: dvCategory.categoryId,
-      depth: dvCategory.depth,
-      order: dvCategory.order
-    })
-    .from(dvCategory)
-    .where(eq(dvCategory.categoryId, categoryId))
-    .orderBy(asc(dvCategory.order), asc(dvCategory.divisionId))
-    .all()
-}
-
 export function addPlayerToDivision(
   db: AppDatabase,
   divisionId: string,
@@ -280,26 +246,6 @@ export function removePlayerFromDivision(
     .run()
 
   return result.changes > 0
-}
-
-export function listPlayerIdsForDivision(db: AppDatabase, divisionId: string): string[] {
-  return db
-    .select({ playerId: pd.playerId })
-    .from(pd)
-    .where(eq(pd.divisionId, divisionId))
-    .orderBy(asc(pd.playerId))
-    .all()
-    .map((row) => row.playerId)
-}
-
-export function listDivisionIdsForPlayer(db: AppDatabase, playerId: string): string[] {
-  return db
-    .select({ divisionId: pd.divisionId })
-    .from(pd)
-    .where(eq(pd.playerId, playerId))
-    .orderBy(asc(pd.divisionId))
-    .all()
-    .map((row) => row.divisionId)
 }
 
 export function moveDivision(db: AppDatabase, id: string, direction: 'up' | 'down') {

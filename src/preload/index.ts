@@ -47,18 +47,12 @@ const api = {
       ipcRenderer.invoke('divisions:addCategory', divisionId, categoryId, depth, order),
     removeCategory: (divisionId: string, categoryId: string) =>
       ipcRenderer.invoke('divisions:removeCategory', divisionId, categoryId),
-    listCategories: (divisionId: string) =>
-      ipcRenderer.invoke('divisions:listCategories', divisionId),
     updateCategoryLink: (divisionId: string, categoryId: string, patch: DivisionCategoryPatch) =>
       ipcRenderer.invoke('divisions:updateCategoryLink', divisionId, categoryId, patch),
-    listForCategory: (categoryId: string) =>
-      ipcRenderer.invoke('divisions:listForCategory', categoryId),
     addPlayer: (divisionId: string, playerId: string) =>
       ipcRenderer.invoke('divisions:addPlayer', divisionId, playerId),
     removePlayer: (divisionId: string, playerId: string) =>
       ipcRenderer.invoke('divisions:removePlayer', divisionId, playerId),
-    listPlayers: (divisionId: string) => ipcRenderer.invoke('divisions:listPlayers', divisionId),
-    listForPlayer: (playerId: string) => ipcRenderer.invoke('divisions:listForPlayer', playerId),
     move: (id: string, direction: 'up' | 'down') =>
       ipcRenderer.invoke('divisions:move', id, direction),
     reorder: (orderedIds: string[]) => ipcRenderer.invoke('divisions:reorder', orderedIds)
