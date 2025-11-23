@@ -4,15 +4,15 @@ import { category as cat, categoryMetric as catMetric, metric as sc } from '@cor
 import { and, asc, eq } from 'drizzle-orm'
 import type { MetricRecord } from './metrics'
 
-export type Category = typeof cat.$inferSelect
-type CategoryWritableFields = Omit<Category, 'id' | 'createdAt' | 'updatedAt'>
+export type CategoryRecord = typeof cat.$inferSelect
+type CategoryWritableFields = Omit<CategoryRecord, 'id' | 'createdAt' | 'updatedAt'>
 type CategoryOptionalFields = 'rules' | 'showMetricsCount' | 'metricsCountName'
 export type NewCategory = Omit<CategoryWritableFields, CategoryOptionalFields> &
   Partial<Pick<CategoryWritableFields, CategoryOptionalFields>> & {
     rules?: string[]
   }
 export type PatchCategory = Partial<CategoryWritableFields>
-export type CategoryView = Category & { metrics: MetricRecord[] }
+export type CategoryView = CategoryRecord & { metrics: MetricRecord[] }
 
 const now = () => Date.now()
 
@@ -88,11 +88,11 @@ export function deleteCategory(db: AppDatabase, id: string) {
   return result.changes > 0
 }
 
-export function getCategory(db: AppDatabase, id: string): Category | undefined {
+export function getCategory(db: AppDatabase, id: string): CategoryRecord | undefined {
   return db.select().from(cat).where(eq(cat.id, id)).get()
 }
 
-export function listAllCategories(db: AppDatabase): Category[] {
+export function listAllCategories(db: AppDatabase): CategoryRecord[] {
   return db.select().from(cat).orderBy(asc(cat.name)).all()
 }
 

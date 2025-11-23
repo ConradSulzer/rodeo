@@ -6,7 +6,11 @@ import {
   playerDivision as pd
 } from '@core/db/schema'
 import { and, asc, eq } from 'drizzle-orm'
-import { getCategory, listMetricIdsForCategory, type Category } from '@core/tournaments/categories'
+import {
+  getCategory,
+  listMetricIdsForCategory,
+  type CategoryRecord
+} from '@core/tournaments/categories'
 import { getMetric, type MetricRecord } from '@core/tournaments/metrics'
 
 export type Division = typeof dv.$inferSelect
@@ -189,7 +193,7 @@ export function listDivisionsForCategory(
 }
 
 export type DivisionCategoryView = {
-  category: Category
+  category: CategoryRecord
   depth: number
   order: number
   metrics: MetricRecord[]

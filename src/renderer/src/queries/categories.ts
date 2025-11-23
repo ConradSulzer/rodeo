@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import type { Category } from '@core/tournaments/categories'
-import type { CategoryView } from '@core/tournaments/categories'
+import type { CategoryRecord, CategoryView } from '@core/tournaments/categories'
 import type { StandingRuleSummary } from '@core/tournaments/standingRules'
 import { queryKeys } from './queryKeys'
 
@@ -12,7 +11,7 @@ const fetchStandingRules = async (): Promise<StandingRuleSummary[]> => {
   return window.api.categories.listRules()
 }
 
-const fetchCategories = async (): Promise<Category[]> => {
+const fetchCategories = async (): Promise<CategoryRecord[]> => {
   return window.api.categories.list()
 }
 
