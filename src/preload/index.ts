@@ -23,8 +23,7 @@ const api = {
     update: (id: string, data: PatchMetric) => ipcRenderer.invoke('metrics:update', id, data),
     delete: (id: string) => ipcRenderer.invoke('metrics:delete', id),
     get: (id: string) => ipcRenderer.invoke('metrics:get', id),
-    list: () => ipcRenderer.invoke('metrics:list'),
-    listViews: () => ipcRenderer.invoke('metrics:listViews')
+    list: () => ipcRenderer.invoke('metrics:list')
   },
   categories: {
     create: (data: NewCategory) => ipcRenderer.invoke('categories:create', data),

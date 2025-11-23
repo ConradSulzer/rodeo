@@ -3,6 +3,7 @@ import type { Player, PlayerAssignment } from '@core/players/players'
 import type { DivisionView } from '@core/tournaments/divisions'
 import type { Metric } from '@core/tournaments/metrics'
 import type { SerializableTournamentState } from '@core/tournaments/state'
+import type { CategoryRecord } from '@core/tournaments/categories'
 
 export type PlayerDirectory = Map<string, Player>
 
@@ -10,6 +11,7 @@ type DataStoreState = {
   playerAssignments: PlayerAssignment[]
   divisionViews: DivisionView[]
   metrics: Metric[]
+  categories: CategoryRecord[]
   tournamentState?: SerializableTournamentState
   playerDirectory: PlayerDirectory
   loading: boolean
@@ -17,6 +19,7 @@ type DataStoreState = {
   fetchPlayerAssignments: () => Promise<void>
   fetchDivisionViews: () => Promise<void>
   fetchMetrics: () => Promise<void>
+  fetchCategories: () => Promise<void>
   fetchTournamentState: () => Promise<void>
   refreshAll: () => Promise<void>
 }
@@ -25,6 +28,7 @@ export const useDataStore = create<DataStoreState>((set, get) => ({
   playerAssignments: [],
   divisionViews: [],
   metrics: [],
+  categories: [],
   tournamentState: undefined,
   playerDirectory: new Map(),
   loading: false,
@@ -54,6 +58,14 @@ export const useDataStore = create<DataStoreState>((set, get) => ({
       set({ error: 'Failed to load metrics' })
     }
   },
+  async fetchCategories() {
+    try {
+      const categories = await window.api.categories.list()
+      set({ categories })
+    } catch {
+      set({ error: 'Failed to load categories' })
+    }
+  },
   async fetchTournamentState() {
     try {
       const state = await window.api.tournaments.getState()
@@ -69,6 +81,7 @@ export const useDataStore = create<DataStoreState>((set, get) => ({
         get().fetchPlayerAssignments(),
         get().fetchDivisionViews(),
         get().fetchMetrics(),
+        get().fetchCategories(),
         get().fetchTournamentState()
       ])
     } finally {

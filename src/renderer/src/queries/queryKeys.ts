@@ -6,8 +6,7 @@ export const queryKeys = {
   },
   metrics: {
     all: () => ['metrics'] as const,
-    list: () => ['metrics', 'list'] as const,
-    views: () => ['metrics', 'views'] as const
+    list: () => ['metrics', 'list'] as const
   },
   categories: {
     all: () => ['categories'] as const,

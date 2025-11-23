@@ -1,4 +1,3 @@
-import type { MetricView } from '@core/tournaments/metrics'
 import { Modal } from '../../../components/Modal'
 import { Field } from '../../../components/ui/field'
 import { Label } from '../../../components/ui/label'
@@ -8,7 +7,11 @@ import { Pill } from '../../../components/ui/pill'
 
 type MetricDetailsModalProps = {
   open: boolean
-  metric?: MetricView
+  metric?: {
+    label: string
+    unit: string
+    categoryNames: string[]
+  }
   onClose: () => void
 }
 
@@ -27,17 +30,17 @@ export function MetricDetailsModal({ open, metric, onClose }: MetricDetailsModal
           </Field>
         </div>
         <div className="flex flex-col gap-2">
-          <Label>Divisions</Label>
-          {metric.divisions.length ? (
+          <Label>Categories</Label>
+          {metric.categoryNames.length ? (
             <div className="flex flex-wrap gap-2">
-              {metric.divisions.map((division) => (
-                <Pill key={division} size="sm">
-                  {division}
+              {metric.categoryNames.map((category) => (
+                <Pill key={category} size="sm">
+                  {category}
                 </Pill>
               ))}
             </div>
           ) : (
-            <p className="text-sm ro-text-muted">No divisions assigned.</p>
+            <p className="text-sm ro-text-muted">No categories assigned.</p>
           )}
         </div>
         <div className="flex justify-end">

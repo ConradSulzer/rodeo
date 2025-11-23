@@ -1,12 +1,7 @@
 import { ulid } from 'ulid'
 import type { AppDatabase } from '@core/db/db'
-import {
-  categoryMetric as categoryMetricTable,
-  division as divisionTable,
-  divisionCategory as divisionCategoryTable,
-  metric as sc
-} from '@core/db/schema'
-import { asc, eq } from 'drizzle-orm'
+import { metric as sc } from '@core/db/schema'
+import { eq } from 'drizzle-orm'
 
 export type MetricRecord = typeof sc.$inferSelect
 export type Metric = MetricRecord & { categories: string[] }
@@ -15,10 +10,6 @@ export type NewMetric = {
   unit: string
 }
 export type PatchMetric = Partial<NewMetric>
-export type MetricView = MetricRecord & {
-  divisions: string[]
-}
-
 const now = () => Date.now()
 
 export function createMetric(db: AppDatabase, data: NewMetric): string {
@@ -83,41 +74,4 @@ export function listMetrics(db: AppDatabase): Metric[] {
       categories
     }
   })
-}
-
-export function listMetricViews(db: AppDatabase): MetricView[] {
-  const metrics = listMetrics(db)
-  if (!metrics.length) return []
-
-  const results = db
-    .select({
-      metricId: sc.id,
-      divisionName: divisionTable.name
-    })
-    .from(sc)
-    .leftJoin(categoryMetricTable, eq(categoryMetricTable.metricId, sc.id))
-    .leftJoin(
-      divisionCategoryTable,
-      eq(divisionCategoryTable.categoryId, categoryMetricTable.categoryId)
-    )
-    .leftJoin(divisionTable, eq(divisionTable.id, divisionCategoryTable.divisionId))
-    .orderBy(asc(sc.label), asc(divisionTable.name))
-    .all()
-
-  const divisionMap = new Map<string, Set<string>>()
-
-  for (const row of results) {
-    if (!row.metricId || !row.divisionName) continue
-    const set = divisionMap.get(row.metricId)
-    if (set) {
-      set.add(row.divisionName)
-    } else {
-      divisionMap.set(row.metricId, new Set([row.divisionName]))
-    }
-  }
-
-  return metrics.map((metric) => ({
-    ...metric,
-    divisions: Array.from(divisionMap.get(metric.id) ?? []).sort((a, b) => a.localeCompare(b))
-  }))
 }

@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi'
 import type { MetricFormData } from '@core/metrics/metricFormSchema'
-import type { NewMetric, PatchMetric, MetricView } from '@core/tournaments/metrics'
+import type { Metric, NewMetric, PatchMetric } from '@core/tournaments/metrics'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 import { CrudTableActions } from '@renderer/components/crud/CrudTableActions'
 import {
@@ -16,37 +16,40 @@ import { MetricDetailsModal } from './MetricDetailsModal'
 import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
 import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
 import { Pill } from '@renderer/components/ui/pill'
-import { useMetricViewsQuery } from '@renderer/queries/metrics'
-import { useQueryClient } from '@tanstack/react-query'
-import { queryKeys } from '@renderer/queries/queryKeys'
+import { useDataStore } from '@renderer/store/useDataStore'
+
+type MetricRow = Metric & { categoryNames: string[] }
 
 type FormState =
   | { open: false; mode: null; metric?: undefined }
   | { open: true; mode: 'create'; metric?: undefined }
-  | { open: true; mode: 'edit'; metric: MetricView }
+  | { open: true; mode: 'edit'; metric: MetricRow }
 
 type DetailsState = {
   open: boolean
-  metric?: MetricView
+  metric?: MetricRow
 }
 
 type DeleteState = {
   open: boolean
-  metric?: MetricView
+  metric?: MetricRow
   deleting: boolean
 }
 
-const columns: ReadonlyArray<CrudTableColumn<MetricView, 'actions' | 'divisions'>> = [
+const columns: ReadonlyArray<CrudTableColumn<MetricRow, 'actions' | 'categoryNames'>> = [
   { key: 'label', label: 'Metric', sortable: true },
   { key: 'unit', label: 'Unit', sortable: true },
-  { key: 'divisions', label: 'Divisions', sortable: false },
+  { key: 'categoryNames', label: 'Categories', sortable: false },
   { key: 'actions', label: 'Actions', sortable: false, align: 'right' }
 ]
 
-const METRIC_FUZZY_FIELDS: Array<keyof MetricView & string> = ['label', 'id']
+const METRIC_FUZZY_FIELDS: Array<keyof MetricRow & string> = ['label', 'id']
 
 export function MetricsSection() {
-  const queryClient = useQueryClient()
+  const metrics = useDataStore((state) => state.metrics)
+  const categories = useDataStore((state) => state.categories)
+  const fetchMetrics = useDataStore((state) => state.fetchMetrics)
+  const fetchCategories = useDataStore((state) => state.fetchCategories)
   const [formState, setFormState] = useState<FormState>({ open: false, mode: null })
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [detailsState, setDetailsState] = useState<DetailsState>({ open: false })
@@ -54,14 +57,51 @@ export function MetricsSection() {
     open: false,
     deleting: false
   })
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
-  const { data: metrics = [], isLoading, isFetching } = useMetricViewsQuery()
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      setInitialLoading(true)
+      try {
+        await Promise.all([fetchMetrics(), fetchCategories()])
+      } finally {
+        if (!cancelled) setInitialLoading(false)
+      }
+    }
+    load().catch(() => {
+      if (!cancelled) setInitialLoading(false)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [fetchMetrics, fetchCategories])
 
-  const invalidateMetrics = () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.metrics.views() }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.metrics.list() })
-    ])
+  const refreshMetricsData = async () => {
+    setRefreshing(true)
+    try {
+      await Promise.all([fetchMetrics(), fetchCategories()])
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  const categoryLookup = useMemo(
+    () => new Map(categories.map((category) => [category.id, category.name])),
+    [categories]
+  )
+
+  const metricsWithCategories = useMemo<MetricRow[]>(
+    () =>
+      metrics.map((metric) => ({
+        ...metric,
+        categoryNames: metric.categories
+          .map((categoryId) => categoryLookup.get(categoryId) ?? 'Unknown')
+          .sort((a, b) => a.localeCompare(b))
+      })),
+    [metrics, categoryLookup]
+  )
 
   const {
     results: filteredMetrics,
@@ -69,8 +109,8 @@ export function MetricsSection() {
     setQuery,
     sort,
     toggleSort
-  } = useUniversalSearchSort<MetricView>({
-    items: metrics,
+  } = useUniversalSearchSort<MetricRow>({
+    items: metricsWithCategories,
     searchKeys: METRIC_FUZZY_FIELDS,
     initialSort: { key: 'label', direction: 'asc' }
   })
@@ -79,7 +119,7 @@ export function MetricsSection() {
     setFormState({ open: true, mode: 'create' })
   }
 
-  const openEditModal = (metric: MetricView) => {
+  const openEditModal = (metric: MetricRow) => {
     setFormState({ open: true, mode: 'edit', metric })
   }
 
@@ -88,13 +128,13 @@ export function MetricsSection() {
     setFormState({ open: false, mode: null })
   }
 
-  const openDetails = (metric: MetricView) => {
+  const openDetails = (metric: MetricRow) => {
     setDetailsState({ open: true, metric })
   }
 
   const closeDetails = () => setDetailsState({ open: false })
 
-  const requestDelete = (metric: MetricView) => {
+  const requestDelete = (metric: MetricRow) => {
     setDeleteState({ open: true, metric, deleting: false })
   }
 
@@ -134,7 +174,7 @@ export function MetricsSection() {
         toast.success('Metric updated')
       }
 
-      await invalidateMetrics()
+      await refreshMetricsData()
       setFormState({ open: false, mode: null })
     } catch (error) {
       console.error('Failed to submit metric form', error)
@@ -155,7 +195,7 @@ export function MetricsSection() {
       }
       toast.success(`Deleted ${deleteState.metric.label}`)
       setDeleteState({ open: false, metric: undefined, deleting: false })
-      await invalidateMetrics()
+      await refreshMetricsData()
     } catch (error) {
       console.error('Failed to delete metric', error)
       toast.error('Could not delete metric')
@@ -163,10 +203,9 @@ export function MetricsSection() {
     }
   }
 
-  const refreshing = isFetching && !isLoading
-  const isEmpty = !isLoading && metrics.length === 0
-  const metricCount = metrics.length
-  const metricCountLabel = isLoading ? '—' : metricCount.toLocaleString()
+  const isEmpty = !initialLoading && metricsWithCategories.length === 0
+  const metricCount = metricsWithCategories.length
+  const metricCountLabel = initialLoading ? '—' : metricCount.toLocaleString()
 
   return (
     <>
@@ -181,7 +220,7 @@ export function MetricsSection() {
         searchValue={query}
         onSearchChange={setQuery}
       >
-        {isLoading ? (
+        {initialLoading ? (
           <div className="flex flex-1 items-center justify-center ro-text-muted">
             Loading metrics...
           </div>
@@ -198,7 +237,7 @@ export function MetricsSection() {
               <Table containerClassName="h-full">
                 <TableHeader>
                   <TableRow>
-                    {renderCrudTableHeader<MetricView, 'actions' | 'divisions'>({
+                    {renderCrudTableHeader<MetricRow, 'actions' | 'categoryNames'>({
                       columns,
                       sort,
                       toggleSort
@@ -211,16 +250,16 @@ export function MetricsSection() {
                       <TableCell>{metric.label}</TableCell>
                       <TableCell>{metric.unit}</TableCell>
                       <TableCell>
-                        {metric.divisions.length ? (
+                        {metric.categoryNames.length ? (
                           <div className="flex flex-wrap gap-2">
-                            {metric.divisions.map((division) => (
-                              <Pill key={division} size="sm">
-                                {division}
+                            {metric.categoryNames.map((category) => (
+                              <Pill key={category} size="sm">
+                                {category}
                               </Pill>
                             ))}
                           </div>
                         ) : (
-                          <span className="text-sm ro-text-muted">No divisions</span>
+                          <span className="text-sm ro-text-muted">No categories</span>
                         )}
                       </TableCell>
                       <TableCell align="right">

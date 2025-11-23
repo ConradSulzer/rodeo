@@ -1,21 +1,10 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import type { MetricRecord, MetricView } from '@core/tournaments/metrics'
+import type { MetricRecord } from '@core/tournaments/metrics'
 import { queryKeys } from './queryKeys'
-
-const fetchMetricViews = async (): Promise<MetricView[]> => {
-  return window.api.metrics.listViews()
-}
 
 const fetchMetrics = async (): Promise<MetricRecord[]> => {
   return window.api.metrics.list()
-}
-
-export function useMetricViewsQuery() {
-  return useQuery({
-    queryKey: queryKeys.metrics.views(),
-    queryFn: fetchMetricViews
-  })
 }
 
 export function useMetricsListQuery() {
