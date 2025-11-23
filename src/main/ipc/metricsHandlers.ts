@@ -4,7 +4,7 @@ import {
   getMetric,
   listAllMetrics,
   listMetricViews,
-  listMetricsWithCategories,
+  listMetrics,
   NewMetric,
   PatchMetric,
   updateMetric
@@ -45,7 +45,7 @@ ipcMain.handle('metrics:list', () => {
 
 ipcMain.handle('metrics:listWithCategories', () => {
   const db = getTournamentDb()
-  return listMetricsWithCategories(db)
+  return listMetrics(db)
 })
 
 ipcMain.handle('metrics:listViews', () => {

@@ -5,7 +5,7 @@ import {
   deleteMetric,
   getMetric,
   listAllMetrics,
-  listMetricsWithCategories,
+  listMetrics,
   updateMetric,
   type NewMetric
 } from './metrics'
@@ -85,7 +85,8 @@ describe('metrics data access', () => {
       const categoryId = createCategory(db, { name: 'Cat', direction: 'desc' })
       addMetricToCategory(db, categoryId, metricId)
 
-      const metrics = listMetricsWithCategories(db)
+      const metrics = listMetrics(db)
+
       expect(metrics).toHaveLength(1)
       expect(metrics[0].categories).toEqual([categoryId])
     })
