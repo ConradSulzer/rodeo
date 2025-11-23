@@ -1,10 +1,14 @@
 import { ulid } from 'ulid'
 import type { AppDatabase } from '@core/db/db'
 import { category as cat, categoryMetric as catMetric } from '@core/db/schema'
-import { and, asc, eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import type { MetricRecord } from './metrics'
 
 export type CategoryRecord = typeof cat.$inferSelect
+export type Category = CategoryRecord & {
+  metrics: MetricRecord[]
+  divisions: { id: string; name: string }[]
+}
 type CategoryWritableFields = Omit<CategoryRecord, 'id' | 'createdAt' | 'updatedAt'>
 type CategoryOptionalFields = 'rules' | 'showMetricsCount' | 'metricsCountName'
 export type NewCategory = Omit<CategoryWritableFields, CategoryOptionalFields> &
@@ -12,7 +16,6 @@ export type NewCategory = Omit<CategoryWritableFields, CategoryOptionalFields> &
     rules?: string[]
   }
 export type PatchCategory = Partial<CategoryWritableFields>
-export type CategoryView = CategoryRecord & { metrics: MetricRecord[] }
 
 const now = () => Date.now()
 
@@ -92,8 +95,46 @@ export function getCategory(db: AppDatabase, id: string): CategoryRecord | undef
   return db.select().from(cat).where(eq(cat.id, id)).get()
 }
 
-export function listAllCategories(db: AppDatabase): CategoryRecord[] {
-  return db.select().from(cat).orderBy(asc(cat.name)).all()
+export function listCategories(db: AppDatabase): Category[] {
+  const categoriesWithRelations = db
+    .query.category.findMany({
+      orderBy: (categories, { asc }) => [asc(categories.name)],
+      with: {
+        categoryMetrics: {
+          with: {
+            metric: true
+          }
+        },
+        divisionCategories: {
+          with: {
+            division: true
+          }
+        }
+      }
+    })
+    .sync()
+
+  return categoriesWithRelations.map(({ categoryMetrics, divisionCategories, ...category }) => {
+    const metrics = categoryMetrics
+      .map((link) => link.metric)
+      .filter((metric): metric is MetricRecord => Boolean(metric))
+      .sort((a, b) => a.label.localeCompare(b.label))
+
+    const divisions = divisionCategories
+      .map((link) => link.division)
+      .filter(
+        (division): division is NonNullable<(typeof divisionCategories)[number]['division']> =>
+          Boolean(division)
+      )
+      .map(({ id, name }) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+
+    return {
+      ...(category as CategoryRecord),
+      metrics,
+      divisions
+    }
+  })
 }
 
 export function addMetricToCategory(db: AppDatabase, categoryId: string, metricId: string) {
@@ -127,31 +168,4 @@ export function listCategoryIdsForMetric(db: AppDatabase, metricId: string) {
     .where(eq(catMetric.metricId, metricId))
     .all()
     .map((row) => row.categoryId)
-}
-
-export function listCategoryViews(db: AppDatabase): CategoryView[] {
-  const categoriesWithRelations = db
-    .query.category.findMany({
-      orderBy: (categories, { asc }) => [asc(categories.name)],
-      with: {
-        categoryMetrics: {
-          with: {
-            metric: true
-          }
-        }
-      }
-    })
-    .sync()
-
-  return categoriesWithRelations.map(({ categoryMetrics, ...category }) => {
-    const metrics = categoryMetrics
-      .map((link) => link.metric)
-      .filter((metric): metric is MetricRecord => Boolean(metric))
-      .sort((a, b) => a.label.localeCompare(b.label))
-
-    return {
-      ...(category as CategoryRecord),
-      metrics
-    }
-  })
 }

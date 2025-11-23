@@ -1,4 +1,4 @@
-import type { CategoryView } from '@core/tournaments/categories'
+import type { Category } from '@core/tournaments/categories'
 import { Modal } from '@renderer/components/Modal'
 import { Field } from '@renderer/components/ui/field'
 import { Label } from '@renderer/components/ui/label'
@@ -8,7 +8,7 @@ import { Pill } from '@renderer/components/ui/pill'
 
 type CategoryDetailsModalProps = {
   open: boolean
-  category?: CategoryView
+  category?: Category
   onClose: () => void
 }
 
@@ -17,6 +17,7 @@ export function CategoryDetailsModal({ open, category, onClose }: CategoryDetail
 
   const hasMetrics = category.metrics.length > 0
   const hasRules = category.rules.length > 0
+  const hasDivisions = category.divisions.length > 0
 
   return (
     <Modal open={open} onClose={onClose} title="Category Details">
@@ -53,6 +54,20 @@ export function CategoryDetailsModal({ open, category, onClose }: CategoryDetail
             </div>
           ) : (
             <p className="text-sm ro-text-muted">No metrics assigned.</p>
+          )}
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label>Divisions</Label>
+          {hasDivisions ? (
+            <div className="flex flex-wrap gap-2">
+              {category.divisions.map((division) => (
+                <Pill key={division.id} size="sm">
+                  {division.name}
+                </Pill>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm ro-text-muted">No divisions reference this category.</p>
           )}
         </div>
 

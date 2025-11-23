@@ -3,7 +3,7 @@ import type { Player, PlayerAssignment } from '@core/players/players'
 import type { DivisionView } from '@core/tournaments/divisions'
 import type { Metric } from '@core/tournaments/metrics'
 import type { SerializableTournamentState } from '@core/tournaments/state'
-import type { CategoryRecord } from '@core/tournaments/categories'
+import type { Category } from '@core/tournaments/categories'
 
 export type PlayerDirectory = Map<string, Player>
 
@@ -11,7 +11,7 @@ type DataStoreState = {
   playerAssignments: PlayerAssignment[]
   divisionViews: DivisionView[]
   metrics: Metric[]
-  categories: CategoryRecord[]
+  categories: Category[]
   tournamentState?: SerializableTournamentState
   playerDirectory: PlayerDirectory
   loading: boolean

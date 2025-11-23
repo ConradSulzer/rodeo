@@ -5,7 +5,7 @@ import {
   createCategory,
   deleteCategory,
   getCategory,
-  listAllCategories,
+  listCategories,
   listCategoryIdsForMetric,
   listMetricIdsForCategory,
   removeMetricFromCategory,
@@ -13,6 +13,7 @@ import {
   type NewCategory
 } from './categories'
 import { createMetric, type NewMetric } from './metrics'
+import { addCategoryToDivision, createDivision } from './divisions'
 
 const baseCategory: NewCategory = {
   name: 'Overall',
@@ -129,8 +130,29 @@ describe('categories data access', () => {
       createCategory(db, { name: 'Accuracy', direction: 'desc' })
       createCategory(db, { name: 'Strength', direction: 'asc' })
 
-      const categories = listAllCategories(db)
+      const categories = listCategories(db)
       expect(categories.map((c) => c.name)).toEqual(['Accuracy', 'Speed', 'Strength'])
+    })
+  })
+
+  it('includes referencing divisions in each category', () => {
+    withInMemoryDb((db) => {
+      const categoryId = createCategory(db, baseCategory)
+      const alpha = createDivision(db, { name: 'Alpha' })
+      const beta = createDivision(db, { name: 'Beta' })
+
+      addCategoryToDivision(db, alpha, categoryId)
+      addCategoryToDivision(db, beta, categoryId)
+
+      const [category] = listCategories(db)
+      expect(category.divisions).toEqual(
+        [alpha, beta]
+          .sort((a, b) => a.localeCompare(b))
+          .map((id) => ({
+            id,
+            name: id === alpha ? 'Alpha' : 'Beta'
+          }))
+      )
     })
   })
 

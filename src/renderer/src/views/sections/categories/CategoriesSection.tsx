@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi'
-import type { CategoryView, NewCategory, PatchCategory } from '@core/tournaments/categories'
+import type { Category, NewCategory, PatchCategory } from '@core/tournaments/categories'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 import {
   type CrudTableColumn,
@@ -15,47 +15,53 @@ import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
 import { CategoryFormModal, type CategoryFormValues } from './CategoryFormModal'
 import { CategoryDetailsModal } from './CategoryDetailsModal'
 import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
-import { useCategoryViewsQuery, useStandingRulesQuery } from '@renderer/queries/categories'
+import { useStandingRulesQuery } from '@renderer/queries/categories'
 import { useMetricsListQuery } from '@renderer/queries/metrics'
-import { useQueryClient } from '@tanstack/react-query'
-import { queryKeys } from '@renderer/queries/queryKeys'
+import { useDataStore } from '@renderer/store/useDataStore'
 
 type FormState =
   | { open: false; mode: null; category?: undefined }
   | { open: true; mode: 'create'; category?: undefined }
-  | { open: true; mode: 'edit'; category: CategoryView }
+  | { open: true; mode: 'edit'; category: Category }
 
 type DetailsState = {
   open: boolean
-  category?: CategoryView
+  category?: Category
 }
 
 type DeleteState = {
   open: boolean
-  category?: CategoryView
+  category?: Category
   deleting: boolean
 }
 
-const columns: ReadonlyArray<CrudTableColumn<CategoryView, 'actions'>> = [
+const columns: ReadonlyArray<CrudTableColumn<Category, 'actions'>> = [
   { key: 'name', label: 'Category', sortable: true },
   { key: 'metrics', label: 'Metrics', sortable: false },
   { key: 'actions', label: 'Actions', sortable: false, align: 'right' }
 ]
 
-const CATEGORY_FUZZY_FIELDS: Array<keyof CategoryView & string> = ['name', 'id']
+const CATEGORY_FUZZY_FIELDS: Array<keyof Category & string> = ['name', 'id']
 
 export function CategoriesSection() {
-  const queryClient = useQueryClient()
+  const categories = useDataStore((state) => state.categories)
+  const refreshCategories = useDataStore((state) => state.fetchCategories)
   const [formState, setFormState] = useState<FormState>({ open: false, mode: null })
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [detailsState, setDetailsState] = useState<DetailsState>({ open: false })
   const [deleteState, setDeleteState] = useState<DeleteState>({ open: false, deleting: false })
-  const { data: categories = [], isLoading, isFetching } = useCategoryViewsQuery()
+  const [refreshing, setRefreshing] = useState(false)
   const { data: metrics = [] } = useMetricsListQuery()
   const { data: standingRules = [] } = useStandingRulesQuery()
 
-  const invalidateCategories = () =>
-    queryClient.invalidateQueries({ queryKey: queryKeys.categories.views() })
+  const handleRefreshCategories = async () => {
+    setRefreshing(true)
+    try {
+      await handleRefreshCategories()
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   const {
     results: filteredCategories,
@@ -63,7 +69,7 @@ export function CategoriesSection() {
     setQuery,
     sort,
     toggleSort
-  } = useUniversalSearchSort<CategoryView>({
+  } = useUniversalSearchSort<Category>({
     items: categories,
     searchKeys: CATEGORY_FUZZY_FIELDS,
     initialSort: { key: 'name', direction: 'asc' }
@@ -71,7 +77,7 @@ export function CategoriesSection() {
 
   const openCreateModal = () => setFormState({ open: true, mode: 'create' })
 
-  const openEditModal = (category: CategoryView) =>
+  const openEditModal = (category: Category) =>
     setFormState({ open: true, mode: 'edit', category })
 
   const closeFormModal = () => {
@@ -79,10 +85,10 @@ export function CategoriesSection() {
     setFormState({ open: false, mode: null })
   }
 
-  const openDetails = (category: CategoryView) => setDetailsState({ open: true, category })
+  const openDetails = (category: Category) => setDetailsState({ open: true, category })
   const closeDetails = () => setDetailsState({ open: false })
 
-  const requestDelete = (category: CategoryView) =>
+  const requestDelete = (category: Category) =>
     setDeleteState({ open: true, deleting: false, category })
 
   const cancelDelete = () => {
@@ -162,7 +168,7 @@ export function CategoriesSection() {
         toast.success('Category updated')
       }
 
-      await invalidateCategories()
+      await handleRefreshCategories()
       setFormState({ open: false, mode: null })
     } catch (error) {
       console.error('Failed to submit category form', error)
@@ -182,7 +188,7 @@ export function CategoriesSection() {
       }
       toast.success(`Deleted ${deleteState.category.name}`)
       setDeleteState({ open: false, deleting: false, category: undefined })
-      await invalidateCategories()
+      await refreshCategories()
     } catch (error) {
       console.error('Failed to delete category', error)
       toast.error('Could not delete category')
@@ -190,10 +196,9 @@ export function CategoriesSection() {
     }
   }
 
-  const refreshing = isFetching && !isLoading
-  const isEmpty = !isLoading && categories.length === 0
+  const isEmpty = categories.length === 0
   const categoryCount = categories.length
-  const categoryCountLabel = isLoading ? '—' : categoryCount.toLocaleString()
+  const categoryCountLabel = categoryCount.toLocaleString()
 
   const editModalCategory = useMemo(() => {
     if (!formState.open || formState.mode !== 'edit' || !formState.category) return undefined
@@ -216,11 +221,7 @@ export function CategoriesSection() {
         searchValue={query}
         onSearchChange={setQuery}
       >
-        {isLoading ? (
-          <div className="flex flex-1 items-center justify-center ro-text-muted">
-            Loading categories...
-          </div>
-        ) : isEmpty ? (
+        {isEmpty ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center ro-text-muted">
             <p className="text-sm">No categories yet. Start by adding one.</p>
             <Button type="button" variant="outline" size="sm" onClick={openCreateModal}>
@@ -233,7 +234,7 @@ export function CategoriesSection() {
               <Table containerClassName="h-full">
                 <TableHeader>
                   <TableRow>
-                    {renderCrudTableHeader<CategoryView, 'actions'>({
+                    {renderCrudTableHeader<Category, 'actions'>({
                       columns,
                       sort,
                       toggleSort

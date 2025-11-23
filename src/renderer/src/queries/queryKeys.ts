@@ -10,8 +10,6 @@ export const queryKeys = {
   },
   categories: {
     all: () => ['categories'] as const,
-    list: () => ['categories', 'list'] as const,
-    views: () => ['categories', 'views'] as const,
     rules: () => ['categories', 'rules'] as const
   },
   divisions: {

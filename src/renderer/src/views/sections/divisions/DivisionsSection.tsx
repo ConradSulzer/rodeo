@@ -22,7 +22,7 @@ import { DivisionFormModal, type DivisionFormValues } from './DivisionFormModal'
 import { DivisionDetailsModal } from './DivisionDetailsModal'
 import { Pill } from '@renderer/components/ui/pill'
 import { useDivisionViewsQuery } from '@renderer/queries/divisions'
-import { useCategoryListQuery } from '@renderer/queries/categories'
+import { useDataStore } from '@renderer/store/useDataStore'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@renderer/queries/queryKeys'
 
@@ -61,13 +61,11 @@ export function DivisionsSection() {
   const [deleteState, setDeleteState] = useState<DeleteState>({ open: false, deleting: false })
 
   const { data: divisionData = [], isLoading, isFetching } = useDivisionViewsQuery()
-  const { data: categoriesList = [] } = useCategoryListQuery()
+  const categories = useDataStore((state) => state.categories)
 
   useEffect(() => {
     setDivisions(divisionData)
   }, [divisionData])
-
-  const categories = categoriesList
 
   const invalidateDivisions = () =>
     queryClient.invalidateQueries({ queryKey: queryKeys.divisions.views() })

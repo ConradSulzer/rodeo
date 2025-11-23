@@ -3,8 +3,7 @@ import {
   createCategory,
   deleteCategory,
   getCategory,
-  listAllCategories,
-  listCategoryViews,
+  listCategories,
   removeMetricFromCategory,
   updateCategory,
   type NewCategory,
@@ -37,12 +36,7 @@ ipcMain.handle('categories:get', (_evt, id: string) => {
 
 ipcMain.handle('categories:list', () => {
   const db = getTournamentDb()
-  return listAllCategories(db)
-})
-
-ipcMain.handle('categories:listViews', () => {
-  const db = getTournamentDb()
-  return listCategoryViews(db)
+  return listCategories(db)
 })
 
 ipcMain.handle('categories:listRules', () => {

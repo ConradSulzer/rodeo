@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import type { CategoryRecord } from '@core/tournaments/categories'
+import type { Category } from '@core/tournaments/categories'
 import type { MetricRecord } from '@core/tournaments/metrics'
 import type { StandingRuleSummary } from '@core/tournaments/standingRules'
 import { Modal } from '@renderer/components/Modal'
@@ -29,7 +29,7 @@ const defaultValues: CategoryFormValues = {
 type CategoryFormModalProps = {
   open: boolean
   mode: 'create' | 'edit'
-  category?: CategoryRecord & { metricIds?: string[] }
+  category?: Category & { metricIds?: string[] }
   metrics: MetricRecord[]
   standingRules: StandingRuleSummary[]
   submitting?: boolean

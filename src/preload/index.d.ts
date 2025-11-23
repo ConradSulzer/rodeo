@@ -1,6 +1,6 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 import { Player, PlayerAssignment, NewPlayer, PatchPlayer } from '@core/players/players'
-import { CategoryRecord, NewCategory, PatchCategory } from '@core/tournaments/categories'
+import { Category, CategoryRecord, NewCategory, PatchCategory } from '@core/tournaments/categories'
 import { StandingRuleSummary } from '@core/tournaments/standingRules'
 import {
   Division,
@@ -35,12 +35,7 @@ interface CategoryAPI {
   update(id: string, data: PatchCategory): Promise<boolean>
   delete(id: string): Promise<boolean>
   get(id: string): Promise<CategoryRecord>
-  list(): Promise<CategoryRecord[]>
-  listViews(): Promise<
-    (CategoryRecord & {
-      metrics: MetricRecord[]
-    })[]
-  >
+  list(): Promise<Category[]>
   listRules(): Promise<StandingRuleSummary[]>
   addMetric(categoryId: string, metricId: string): Promise<boolean>
   removeMetric(categoryId: string, metricId: string): Promise<boolean>

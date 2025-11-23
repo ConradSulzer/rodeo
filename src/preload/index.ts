@@ -31,7 +31,6 @@ const api = {
     delete: (id: string) => ipcRenderer.invoke('categories:delete', id),
     get: (id: string) => ipcRenderer.invoke('categories:get', id),
     list: () => ipcRenderer.invoke('categories:list'),
-    listViews: () => ipcRenderer.invoke('categories:listViews'),
     listRules: () => ipcRenderer.invoke('categories:listRules'),
     addMetric: (categoryId: string, metricId: string) =>
       ipcRenderer.invoke('categories:addMetric', categoryId, metricId),

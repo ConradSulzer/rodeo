@@ -19,7 +19,7 @@ export function SettingsExportButton() {
     try {
       const [metrics, categories, divisions, metadata] = await Promise.all([
         window.api.metrics.list(),
-        window.api.categories.listViews(),
+        window.api.categories.list(),
         window.api.divisions.list(),
         window.api.tournaments.getMetadata()
       ])
