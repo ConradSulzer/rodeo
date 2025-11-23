@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import type { DivisionStanding } from '@core/tournaments/standings'
 import { useDivisionCatalog } from '@renderer/queries/divisions'
-import { usePlayerAssignmentsQuery } from '@renderer/queries/players'
+import { usePlayerDirectory } from '@renderer/queries/players'
 import { useTournamentStateQuery } from '@renderer/queries/tournament'
 
 export type StandingsData = {
@@ -14,14 +14,9 @@ export type StandingsData = {
 export function useStandingsData(): StandingsData {
   const { data: tournamentState, isLoading: stateLoading } = useTournamentStateQuery()
   const { list: divisionViews, isLoading: divisionsLoading } = useDivisionCatalog()
-  const { data: playerAssignments = [], isLoading: playersLoading } = usePlayerAssignmentsQuery()
+  const { map: players, isLoading: playersLoading } = usePlayerDirectory()
 
   const standings = useMemo(() => tournamentState?.standings ?? [], [tournamentState])
-  const players = useMemo(() => {
-    const lookup = new Map<string, string>()
-    playerAssignments.forEach(({ player }) => lookup.set(player.id, player.displayName))
-    return lookup
-  }, [playerAssignments])
 
   return {
     divisionViews,

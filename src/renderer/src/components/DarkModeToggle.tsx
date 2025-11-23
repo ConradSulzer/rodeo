@@ -30,13 +30,13 @@ export function DarkModeToggle({ isDark, toggle }: DarkModeToggleProps) {
         <FaSun
           size={18}
           className={`transition-opacity ${
-            isDark ? 'opacity-20 text-amber-500' : 'opacity-90 text-amber-500'
+            isDark ? 'opacity-20 text-amber-500' : 'opacity-90 text-amber-500 mr-1.5'
           }`}
         />
       </motion.div>
 
       <motion.div
-        className="z-10 h-6 w-6 rounded-full bg-white shadow"
+        className="z-10 h-6 w-6 rounded-full bg-white shadow cursor-pointer"
         animate={{ x: isDark ? 38 : 0 }}
         transition={{ type: 'tween', ease: 'easeInOut', duration: 0.25 }}
       />

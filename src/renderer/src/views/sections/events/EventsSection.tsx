@@ -12,6 +12,8 @@ import { Table, TableBody, TableCell, TableHeader, TableRow } from '@renderer/co
 import { MdOutlineSubdirectoryArrowRight } from 'react-icons/md'
 import { Button } from '@renderer/components/ui/button'
 import { EventDetailsModal } from './EventDetailsModal'
+import { usePlayerDirectory } from '@renderer/queries/players'
+import { useMetricCatalog } from '@renderer/queries/metrics'
 
 export type EventRow = {
   id: string
@@ -57,16 +59,13 @@ export function EventsSection() {
   const [events, setEvents] = useState<EventRow[]>([])
   const [typeFilter, setTypeFilter] = useState<EventTypeFilter>('all')
   const [detailsEvent, setDetailsEvent] = useState<EventRow | null>(null)
+  const { map: playerMap } = usePlayerDirectory()
+  const { map: metricMap } = useMetricCatalog()
 
   const fetchEvents = useCallback(async () => {
     try {
-      const [rawEvents, players, metrics] = await Promise.all([
-        window.api.events.list(),
-        window.api.players.list(),
-        window.api.metrics.list()
-      ])
-      const playerMap = new Map(players.map((player) => [player.id, player.displayName]))
-      const metricMap = new Map(metrics.map((metric) => [metric.id, metric.label]))
+      const rawEvents = await window.api.events.list()
+      const metrics = metricMap
       const rows: EventRow[] = rawEvents
         .map((event) => ({
           id: event.id,
@@ -77,7 +76,7 @@ export function EventsSection() {
           metricId: 'metricId' in event ? event.metricId : undefined,
           metricLabel:
             'metricId' in event && event.metricId
-              ? (metricMap.get(event.metricId) ?? event.metricId)
+              ? (metrics.get(event.metricId)?.label ?? event.metricId)
               : undefined,
           state: event.type === 'ItemStateChanged' ? event.state : undefined,
           value:
@@ -93,7 +92,7 @@ export function EventsSection() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [metricMap, playerMap])
 
   useEffect(() => {
     fetchEvents()
