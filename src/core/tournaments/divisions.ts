@@ -6,15 +6,11 @@ import {
   playerDivision as pd
 } from '@core/db/schema'
 import { and, asc, eq } from 'drizzle-orm'
-import {
-  getCategory,
-  listMetricIdsForCategory,
-  type CategoryRecord
-} from '@core/tournaments/categories'
-import { getMetric, type MetricRecord } from '@core/tournaments/metrics'
+import type { CategoryRecord } from '@core/tournaments/categories'
+import type { MetricRecord } from '@core/tournaments/metrics'
 
-export type Division = typeof dv.$inferSelect
-export type NewDivision = Omit<Division, 'id' | 'createdAt' | 'updatedAt' | 'order'> & {
+export type DivisionRecord = typeof dv.$inferSelect
+export type NewDivision = Omit<DivisionRecord, 'id' | 'createdAt' | 'updatedAt' | 'order'> & {
   order?: number
 }
 export type PatchDivision = Partial<NewDivision>
@@ -74,12 +70,77 @@ export function deleteDivision(db: AppDatabase, id: string) {
   return result.changes > 0
 }
 
-export function getDivision(db: AppDatabase, id: string): Division | undefined {
+export function getDivision(db: AppDatabase, id: string): DivisionRecord | undefined {
   return db.select().from(dv).where(eq(dv.id, id)).get()
 }
 
-export function listAllDivisions(db: AppDatabase): Division[] {
+export function listAllDivisions(db: AppDatabase): DivisionRecord[] {
   return db.select().from(dv).orderBy(asc(dv.order), asc(dv.name)).all()
+}
+
+export function listDivisions(db: AppDatabase): Division[] {
+  const divisionsWithRelations = db
+    .query.division.findMany({
+      orderBy: (divisions, { asc }) => [asc(divisions.order), asc(divisions.name)],
+      with: {
+        divisionCategories: {
+          with: {
+            category: {
+              with: {
+                categoryMetrics: {
+                  with: {
+                    metric: true
+                  }
+                }
+              }
+            }
+          }
+        },
+        playerDivisions: true
+      }
+    })
+    .sync()
+
+  return divisionsWithRelations.map(({ divisionCategories, playerDivisions, ...division }) => {
+    const categories = divisionCategories
+      .map((link) => {
+        const category = link.category
+        if (!category) return null
+
+        const { categoryMetrics: categoryMetricLinks = [], ...categoryData } = category
+
+        const metrics = categoryMetricLinks
+          .map((metricLink) => metricLink.metric)
+          .filter((metric): metric is MetricRecord => Boolean(metric))
+          .sort((a, b) => a.label.localeCompare(b.label))
+
+        return {
+          category: categoryData,
+          depth: link.depth,
+          order: link.order,
+          metrics
+        }
+      })
+      .filter((entry): entry is DivisionCategoryView => entry !== null)
+      .sort((a, b) => {
+        const orderA = a.order ?? 0
+        const orderB = b.order ?? 0
+        return orderA === orderB
+          ? a.category.id.localeCompare(b.category.id)
+          : orderA - orderB
+      })
+
+    const eligiblePlayerIds = playerDivisions
+      .map((link) => link.playerId)
+      .filter((playerId): playerId is string => Boolean(playerId))
+      .sort((a, b) => a.localeCompare(b))
+
+    return {
+      ...(division as DivisionRecord),
+      categories,
+      eligiblePlayerIds
+    }
+  })
 }
 
 export function addCategoryToDivision(
@@ -199,53 +260,19 @@ export type DivisionCategoryView = {
   metrics: MetricRecord[]
 }
 
-export type DivisionView = Division & {
+export type Division = DivisionRecord & {
   categories: DivisionCategoryView[]
   eligiblePlayerIds: string[]
 }
 
+export type DivisionView = Division
+
 export function getDivisionView(db: AppDatabase, divisionId: string): DivisionView | undefined {
-  const division = getDivision(db, divisionId)
-  if (!division) return undefined
-
-  const categories = buildDivisionCategories(db, divisionId)
-  const eligiblePlayerIds = listPlayerIdsForDivision(db, divisionId)
-
-  return {
-    ...division,
-    categories,
-    eligiblePlayerIds
-  }
+  return listDivisions(db).find((division) => division.id === divisionId)
 }
 
 export function listDivisionViews(db: AppDatabase): DivisionView[] {
-  return listAllDivisions(db).map((division) => ({
-    ...division,
-    categories: buildDivisionCategories(db, division.id),
-    eligiblePlayerIds: listPlayerIdsForDivision(db, division.id)
-  }))
-}
-
-function buildDivisionCategories(db: AppDatabase, divisionId: string): DivisionCategoryView[] {
-  const links = listCategoriesForDivision(db, divisionId)
-
-  return links
-    .map((link) => {
-      const category = getCategory(db, link.categoryId)
-      if (!category) return null
-
-      const metrics = listMetricIdsForCategory(db, link.categoryId)
-        .map((metricId) => getMetric(db, metricId))
-        .filter((metric): metric is MetricRecord => Boolean(metric))
-
-      return {
-        category,
-        depth: link.depth,
-        order: link.order,
-        metrics
-      }
-    })
-    .filter((entry): entry is DivisionCategoryView => entry !== null)
+  return listDivisions(db)
 }
 
 export function addPlayerToDivision(

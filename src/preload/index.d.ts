@@ -6,6 +6,7 @@ import {
   Division,
   DivisionCategoryLink,
   DivisionCategoryPatch,
+  DivisionRecord,
   DivisionView,
   NewDivision,
   PatchDivision
@@ -45,8 +46,8 @@ interface DivisionAPI {
   create(data: NewDivision): Promise<string>
   update(id: string, data: PatchDivision): Promise<boolean>
   delete(id: string): Promise<boolean>
-  get(id: string): Promise<Division>
-  list(): Promise<Division[]>
+  get(id: string): Promise<DivisionRecord>
+  list(): Promise<DivisionRecord[]>
   addCategory(
     divisionId: string,
     categoryId: string,

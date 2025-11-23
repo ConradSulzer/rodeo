@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import type { Player } from '@core/players/players'
-import type { Division } from '@core/tournaments/divisions'
+import type { DivisionRecord } from '@core/tournaments/divisions'
 import {
   buildPlayerDisplayName,
   playerFormSchema,
@@ -21,7 +21,7 @@ type PlayerFormModalProps = {
   player?: Player & { divisionIds?: string[] }
   submitting?: boolean
   onSubmit: (values: PlayerFormValues & { divisionIds: string[] }) => Promise<void>
-  divisions: Division[]
+  divisions: DivisionRecord[]
   onClose: () => void
 }
 

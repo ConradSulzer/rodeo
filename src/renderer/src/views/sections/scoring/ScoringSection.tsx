@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { FiCheck } from 'react-icons/fi'
 import type { Player } from '@core/players/players'
-import type { Division } from '@core/tournaments/divisions'
+import type { DivisionRecord } from '@core/tournaments/divisions'
 import type { MetricRecord } from '@core/tournaments/metrics'
 import type { SerializableTournamentState } from '@core/tournaments/state'
 import type { ItemResult } from '@core/tournaments/results'
@@ -20,7 +20,7 @@ import { ScorePlayerModal, type SubmissionResult } from './ScorePlayerModal'
 import { cn } from '@renderer/lib/utils'
 
 type PlayerRow = Player & {
-  divisions: Division[]
+  divisions: DivisionRecord[]
   metrics: MetricRecord[]
 }
 

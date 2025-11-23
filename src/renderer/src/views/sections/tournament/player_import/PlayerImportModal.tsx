@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { toast } from 'sonner'
-import type { Division } from '@core/tournaments/divisions'
+import type { DivisionRecord } from '@core/tournaments/divisions'
 import {
   buildPlayerDisplayName,
   playerFormSchema,
@@ -60,7 +60,7 @@ const suggestFieldMapping = (headers: string[]): PlayerFieldMapping => {
 const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '')
 
 const buildDivisionMappings = (
-  divisions: Division[],
+  divisions: DivisionRecord[],
   headers: string[]
 ): Record<string, DivisionMapping> => {
   const normalizedHeaders = headers.map((header) => normalize(header))
@@ -100,7 +100,7 @@ export function PlayerImportModal({ open, file, onClose, onComplete }: PlayerImp
   const [divisionMappings, setDivisionMappings] = useState<Record<string, DivisionMapping>>({})
   const [rowErrors, setRowErrors] = useState<string[]>([])
   const [importing, setImporting] = useState(false)
-  const [divisions, setDivisions] = useState<Division[]>([])
+  const [divisions, setDivisions] = useState<DivisionRecord[]>([])
   const [loadingDivisions, setLoadingDivisions] = useState(false)
   const [existingPlayers, setExistingPlayers] = useState<Player[]>([])
   const [loadingPlayers, setLoadingPlayers] = useState(false)

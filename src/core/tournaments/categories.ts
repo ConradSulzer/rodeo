@@ -96,8 +96,8 @@ export function getCategory(db: AppDatabase, id: string): CategoryRecord | undef
 }
 
 export function listCategories(db: AppDatabase): Category[] {
-  const categoriesWithRelations = db
-    .query.category.findMany({
+  const categoriesWithRelations = db.query.category
+    .findMany({
       orderBy: (categories, { asc }) => [asc(categories.name)],
       with: {
         categoryMetrics: {
@@ -114,6 +114,7 @@ export function listCategories(db: AppDatabase): Category[] {
     })
     .sync()
 
+  // Clean up any invalid entries from the query and sort and shape associations
   return categoriesWithRelations.map(({ categoryMetrics, divisionCategories, ...category }) => {
     const metrics = categoryMetrics
       .map((link) => link.metric)

@@ -8,6 +8,7 @@ import {
   getDivision,
   getDivisionView,
   listAllDivisions,
+  listDivisions,
   listCategoriesForDivision,
   listDivisionIdsForPlayer,
   listDivisionViews,
@@ -105,6 +106,37 @@ describe('divisions data access', () => {
       const divisions = listAllDivisions(db)
       expect(divisions.map((d) => d.name)).toEqual(['Amateur', 'Pro', 'Masters'])
       expect(divisions.map((d) => d.order)).toEqual([1, 1, 2])
+    })
+  })
+
+  it('lists divisions with categories and eligible players', () => {
+    withInMemoryDb((db) => {
+      const divisionId = createDivision(db, { name: 'Pro', order: 1 })
+      const categoryId = createCategory(db, baseCategory)
+      const metricId = createMetric(db, baseMetric)
+      const playerOne = createPlayer(db, basePlayer('One'))
+      const playerTwo = createPlayer(db, basePlayer('Two'))
+
+      addMetricToCategory(db, categoryId, metricId)
+      addCategoryToDivision(db, divisionId, categoryId, 2, 3)
+      addPlayerToDivision(db, divisionId, playerOne)
+      addPlayerToDivision(db, divisionId, playerTwo)
+
+      const divisions = listDivisions(db)
+      console.log(listDivisions(db))
+      expect(divisions).toHaveLength(1)
+
+      const [division] = divisions
+      expect(division.id).toBe(divisionId)
+      expect(division.categories).toHaveLength(1)
+
+      const [categoryView] = division.categories
+      expect(categoryView.category.id).toBe(categoryId)
+      expect(categoryView.depth).toBe(2)
+      expect(categoryView.order).toBe(3)
+      expect(categoryView.metrics.map((metric) => metric.id)).toEqual([metricId])
+
+      expect(division.eligiblePlayerIds).toEqual([playerOne, playerTwo].sort())
     })
   })
 

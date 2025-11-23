@@ -1,4 +1,4 @@
-import type { Division } from '@core/tournaments/divisions'
+import type { DivisionRecord } from '@core/tournaments/divisions'
 import type { PlayerAssignment } from '@core/players/players'
 import type { MetricRecord } from '@core/tournaments/metrics'
 import type { ResultRow } from '@renderer/hooks/useResultsData'
@@ -14,7 +14,7 @@ export function buildResultsCsv({
   metrics: MetricRecord[]
   playerAssignments: PlayerAssignment[]
   rows: ResultRow[]
-  divisions: Division[]
+  divisions: DivisionRecord[]
   includeUnscored: boolean
 }): string {
   const divisionOrder = [...divisions].sort((a, b) => {
@@ -52,7 +52,11 @@ export function buildResultsCsv({
   return Papa.unparse({ fields: header, data: rowsData })
 }
 
-function formatRowForCsv(row: ResultRow, metrics: MetricRecord[], divisions: Division[]): string[] {
+function formatRowForCsv(
+  row: ResultRow,
+  metrics: MetricRecord[],
+  divisions: DivisionRecord[]
+): string[] {
   const membershipSet = new Set(row.divisionIds)
   return [
     row.displayName,

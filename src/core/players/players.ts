@@ -1,6 +1,6 @@
 import type { AppDatabase } from '@core/db/db'
 import { division as dv, player as pl, playerDivision as pd } from '@core/db/schema'
-import { listDivisionViews, type Division } from '@core/tournaments/divisions'
+import { listDivisionViews, type DivisionRecord } from '@core/tournaments/divisions'
 import { eq, asc } from 'drizzle-orm'
 import { ulid } from 'ulid'
 import type { MetricRecord } from '@core/tournaments/metrics'
@@ -22,7 +22,7 @@ export type NewPlayer = {
 export type PatchPlayer = Partial<NewPlayer>
 export type PlayerAssignment = {
   player: Player
-  divisions: Division[]
+  divisions: DivisionRecord[]
   divisionIds: string[]
   metrics: MetricRecord[]
   metricIds: string[]
@@ -84,7 +84,7 @@ export function listAllPlayerAssignments(db: AppDatabase): PlayerAssignment[] {
     .orderBy(asc(pd.playerId), asc(dv.name))
     .all()
 
-  const divisionMap = new Map<string, Division[]>()
+  const divisionMap = new Map<string, DivisionRecord[]>()
   for (const { playerId, division } of assignments) {
     if (!division) continue
     const list = divisionMap.get(playerId)
