@@ -6,6 +6,7 @@ import { usePreferences } from '../context/preferences'
 import { DarkModeToggle } from './DarkModeToggle'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
+import { useDataStore } from '@renderer/store/useDataStore'
 
 type NavItem = {
   label: string
@@ -31,11 +32,13 @@ const RUN_EVENT_ITEMS: NavItem[] = [
 export function Sidebar() {
   const navigate = useNavigate()
   const { theme, setTheme } = usePreferences()
+  const clearDataStore = useDataStore((state) => state.clear)
 
   const handleExit = async () => {
     try {
       const success = await window.api.tournaments.close()
       if (success) {
+        clearDataStore()
         toast.success('Tournament closed')
         navigate('/')
       } else {

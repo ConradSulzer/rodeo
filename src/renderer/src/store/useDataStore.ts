@@ -7,7 +7,7 @@ import type { Category } from '@core/tournaments/categories'
 
 export type PlayerDirectory = Map<string, Player>
 
-type DataStoreState = {
+type StoreData = {
   playerAssignments: PlayerAssignment[]
   divisionViews: DivisionView[]
   metrics: Metric[]
@@ -16,15 +16,19 @@ type DataStoreState = {
   playerDirectory: PlayerDirectory
   loading: boolean
   error?: string
+}
+
+type DataStoreState = StoreData & {
   fetchPlayerAssignments: () => Promise<void>
   fetchDivisionViews: () => Promise<void>
   fetchMetrics: () => Promise<void>
   fetchCategories: () => Promise<void>
   fetchTournamentState: () => Promise<void>
   refreshAll: () => Promise<void>
+  clear: () => void
 }
 
-export const useDataStore = create<DataStoreState>((set, get) => ({
+const createInitialData = (): StoreData => ({
   playerAssignments: [],
   divisionViews: [],
   metrics: [],
@@ -32,7 +36,11 @@ export const useDataStore = create<DataStoreState>((set, get) => ({
   tournamentState: undefined,
   playerDirectory: new Map(),
   loading: false,
-  error: undefined,
+  error: undefined
+})
+
+export const useDataStore = create<DataStoreState>((set, get) => ({
+  ...createInitialData(),
   async fetchPlayerAssignments() {
     try {
       const assignments = await window.api.players.listAssignments()
@@ -87,5 +95,11 @@ export const useDataStore = create<DataStoreState>((set, get) => ({
     } finally {
       set({ loading: false })
     }
+  },
+  clear() {
+    set((state) => ({
+      ...state,
+      ...createInitialData()
+    }))
   }
 }))
