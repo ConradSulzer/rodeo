@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { FiCheck } from 'react-icons/fi'
-import type { Player } from '@core/players/players'
-import type { DivisionRecord } from '@core/tournaments/divisions'
-import type { MetricRecord } from '@core/tournaments/metrics'
+import type { Player, PlayerMetric } from '@core/players/players'
 import type { SerializableTournamentState } from '@core/tournaments/state'
 import type { ItemResult } from '@core/tournaments/results'
 import type { ItemScoreEventInput } from '@core/events/events'
@@ -19,10 +17,7 @@ import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
 import { ScorePlayerModal, type SubmissionResult } from './ScorePlayerModal'
 import { cn } from '@renderer/lib/utils'
 
-type PlayerRow = Player & {
-  divisions: DivisionRecord[]
-  metrics: MetricRecord[]
-}
+type PlayerRow = Player
 
 type PlayerResultsMap = Map<string, Map<string, ItemResult>>
 
@@ -31,7 +26,7 @@ type ScoreModalState =
   | {
       open: true
       player: PlayerRow
-      metrics: MetricRecord[]
+      metrics: PlayerMetric[]
       existingResults?: Map<string, ItemResult>
     }
 
@@ -51,14 +46,8 @@ export function ScoringSection() {
   const [modalSubmitting, setModalSubmitting] = useState(false)
 
   const fetchPlayers = useCallback(async () => {
-    const assignments = await window.api.players.listAssignments()
-    setPlayers(
-      assignments.map(({ player, divisions, metrics }) => ({
-        ...player,
-        divisions,
-        metrics
-      }))
-    )
+    const list = await window.api.players.list()
+    setPlayers(list)
   }, [])
 
   const fetchResults = useCallback(async () => {
@@ -98,7 +87,7 @@ export function ScoringSection() {
     initialSort: { key: 'displayName', direction: 'asc' }
   })
 
-  const handleOpenModal = (player: PlayerRow, metrics: MetricRecord[]) => {
+  const handleOpenModal = (player: PlayerRow, metrics: PlayerMetric[]) => {
     if (!metrics.length) return
     setModalState({
       open: true,
@@ -173,7 +162,7 @@ export function ScoringSection() {
   }
 
   const isPlayerScored = useCallback(
-    (playerId: string, metrics: MetricRecord[]) => {
+    (playerId: string, metrics: PlayerMetric[]) => {
       if (!metrics.length) return false
       const playerResults = results.get(playerId)
       if (!playerResults) return false

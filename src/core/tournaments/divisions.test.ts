@@ -116,7 +116,6 @@ describe('divisions data access', () => {
       addPlayerToDivision(db, divisionId, playerTwo)
 
       const divisions = listDivisions(db)
-      console.log(listDivisions(db))
       expect(divisions).toHaveLength(1)
 
       const [division] = divisions

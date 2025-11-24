@@ -1,7 +1,6 @@
 export const queryKeys = {
   players: {
     all: () => ['players'] as const,
-    assignments: () => ['players', 'assignments'] as const,
     list: () => ['players', 'list'] as const
   },
   metrics: {

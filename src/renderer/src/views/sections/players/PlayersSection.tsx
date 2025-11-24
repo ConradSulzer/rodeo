@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { FiEdit2, FiTrash2, FiEye } from 'react-icons/fi'
 import type { Player, PatchPlayer, NewPlayer } from '@core/players/players'
@@ -12,15 +12,12 @@ import { CrudTableActions } from '@renderer/components/crud/CrudTableActions'
 import { CrudTableColumn, renderCrudTableHeader } from '@renderer/components/crud/CrudTableHeader'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 import { Pill } from '@renderer/components/ui/pill'
-import { usePlayerAssignmentsQuery } from '@renderer/queries/players'
+import { usePlayersQuery } from '@renderer/queries/players'
 import { useDivisionsListQuery } from '@renderer/queries/divisions'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@renderer/queries/queryKeys'
 
-type PlayerRow = Player & {
-  divisions: string[]
-  divisionIds: string[]
-}
+type PlayerRow = Player
 
 type FormState =
   | { open: false; mode: null; player?: undefined }
@@ -85,20 +82,12 @@ export function PlayersSection() {
     player: undefined
   })
 
-  const { data: playerAssignments = [], isLoading, isFetching } = usePlayerAssignmentsQuery()
+  const { data: players = [], isLoading, isFetching } = usePlayersQuery()
   const { data: divisionOptions = [] } = useDivisionsListQuery()
-
-  const players = useMemo<PlayerRow[]>(() => {
-    return playerAssignments.map(({ player, divisions, divisionIds }) => ({
-      ...player,
-      divisions: divisions.map((division) => division.name),
-      divisionIds
-    }))
-  }, [playerAssignments])
 
   const invalidatePlayers = useCallback(() => {
     return queryClient.invalidateQueries({
-      queryKey: queryKeys.players.assignments()
+      queryKey: queryKeys.players.list()
     })
   }, [queryClient])
 
@@ -159,11 +148,11 @@ export function PlayersSection() {
         if (!player) return
 
         const patch = buildPatch(values, player)
-        const currentDivisionIds = new Set(player.divisionIds)
+        const currentDivisionIds = new Set(player.divisions.map((division) => division.id))
         const nextDivisionIds = new Set(values.divisionIds)
 
         const toAdd = values.divisionIds.filter((id) => !currentDivisionIds.has(id))
-        const toRemove = player.divisionIds.filter((id) => !nextDivisionIds.has(id))
+        const toRemove = Array.from(currentDivisionIds).filter((id) => !nextDivisionIds.has(id))
 
         if (!patch && toAdd.length === 0 && toRemove.length === 0) {
           toast.info('No changes to save')
@@ -205,6 +194,8 @@ export function PlayersSection() {
   }
 
   const requestDeletePlayer = (player: PlayerRow) => {
+    // TODO:  Should not be able to delete a scored player, must void first then delete.
+    // TODO: Should not be able to edit a player's divisions if they have already been scored.
     setDeleteState({ open: true, player, deleting: false })
   }
 
@@ -292,8 +283,8 @@ export function PlayersSection() {
                         {player.divisions.length ? (
                           <div className="flex flex-wrap gap-2">
                             {player.divisions.map((division) => (
-                              <Pill variant="solid" key={division}>
-                                {division}
+                              <Pill variant="solid" key={division.id}>
+                                {division.name}
                               </Pill>
                             ))}
                           </div>

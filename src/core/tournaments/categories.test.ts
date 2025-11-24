@@ -145,14 +145,10 @@ describe('categories data access', () => {
       addCategoryToDivision(db, beta, categoryId)
 
       const [category] = listCategories(db)
-      expect(category.divisions).toEqual(
-        [alpha, beta]
-          .sort((a, b) => a.localeCompare(b))
-          .map((id) => ({
-            id,
-            name: id === alpha ? 'Alpha' : 'Beta'
-          }))
-      )
+      expect(category.divisions).toEqual([
+        { id: alpha, name: 'Alpha' },
+        { id: beta, name: 'Beta' }
+      ])
     })
   })
 

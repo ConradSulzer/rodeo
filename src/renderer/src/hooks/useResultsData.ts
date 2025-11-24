@@ -3,7 +3,7 @@ import type { Player } from '@core/players/players'
 import type { ItemResult } from '@core/tournaments/results'
 import type { MetricRecord } from '@core/tournaments/metrics'
 import { useMetricCatalog } from '@renderer/queries/metrics'
-import { usePlayerAssignmentsQuery } from '@renderer/queries/players'
+import { usePlayersQuery } from '@renderer/queries/players'
 import { useTournamentStateQuery } from '@renderer/queries/tournament'
 
 export type ResultRow = {
@@ -22,20 +22,12 @@ export type ResultsData = {
 
 export function useResultsData(): ResultsData {
   const { list: metrics, isLoading: metricsLoading } = useMetricCatalog()
-  const { data: playerAssignments = [], isLoading: playersLoading } = usePlayerAssignmentsQuery()
+  const { data: players = [], isLoading: playersLoading } = usePlayersQuery()
   const { data: tournamentState, isLoading: stateLoading } = useTournamentStateQuery()
 
-  const { playerMap, divisionMembership } = useMemo(() => {
-    const playerMap = new Map<string, Player>()
-    const divisionMembership = new Map<string, string[]>()
-
-    playerAssignments.forEach(({ player, divisionIds }) => {
-      playerMap.set(player.id, player)
-      divisionMembership.set(player.id, divisionIds ?? [])
-    })
-
-    return { playerMap, divisionMembership }
-  }, [playerAssignments])
+  const playerMap = useMemo(() => {
+    return new Map(players.map((player) => [player.id, player]))
+  }, [players])
 
   const rows = useMemo<ResultRow[]>(() => {
     if (!tournamentState) return []
@@ -51,12 +43,12 @@ export function useResultsData(): ResultsData {
           player,
           displayName: player.displayName,
           email: player.email ?? '',
-          divisionIds: divisionMembership.get(entry.playerId) ?? [],
+          divisionIds: player.divisions.map((division) => division.id),
           scores
         }
       })
       .filter((row): row is ResultRow => row !== null)
-  }, [divisionMembership, playerMap, tournamentState])
+  }, [playerMap, tournamentState])
 
   return {
     metrics,

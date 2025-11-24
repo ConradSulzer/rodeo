@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Player, PlayerAssignment } from '@core/players/players'
+import type { Player } from '@core/players/players'
 import type { Division } from '@core/tournaments/divisions'
 import type { Metric } from '@core/tournaments/metrics'
 import type { SerializableTournamentState } from '@core/tournaments/state'
@@ -8,7 +8,7 @@ import type { Category } from '@core/tournaments/categories'
 export type PlayerDirectory = Map<string, Player>
 
 type StoreData = {
-  playerAssignments: PlayerAssignment[]
+  players: Player[]
   divisions: Division[]
   metrics: Metric[]
   categories: Category[]
@@ -19,7 +19,7 @@ type StoreData = {
 }
 
 type DataStoreState = StoreData & {
-  fetchPlayerAssignments: () => Promise<void>
+  fetchPlayers: () => Promise<void>
   fetchDivisionViews: () => Promise<void>
   fetchMetrics: () => Promise<void>
   fetchCategories: () => Promise<void>
@@ -29,7 +29,7 @@ type DataStoreState = StoreData & {
 }
 
 const createInitialData = (): StoreData => ({
-  playerAssignments: [],
+  players: [],
   divisions: [],
   metrics: [],
   categories: [],
@@ -41,11 +41,11 @@ const createInitialData = (): StoreData => ({
 
 export const useDataStore = create<DataStoreState>((set, get) => ({
   ...createInitialData(),
-  async fetchPlayerAssignments() {
+  async fetchPlayers() {
     try {
-      const assignments = await window.api.players.listAssignments()
-      const directory = new Map(assignments.map(({ player }) => [player.id, player]))
-      set({ playerAssignments: assignments, playerDirectory: directory })
+      const players = await window.api.players.list()
+      const directory = new Map(players.map((player) => [player.id, player]))
+      set({ players, playerDirectory: directory })
     } catch {
       set({ error: 'Failed to load players' })
     }
@@ -86,7 +86,7 @@ export const useDataStore = create<DataStoreState>((set, get) => ({
     set({ loading: true, error: undefined })
     try {
       await Promise.all([
-        get().fetchPlayerAssignments(),
+        get().fetchPlayers(),
         get().fetchDivisionViews(),
         get().fetchMetrics(),
         get().fetchCategories(),

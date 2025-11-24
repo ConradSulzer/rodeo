@@ -1,5 +1,5 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
-import { Player, PlayerAssignment, NewPlayer, PatchPlayer } from '@core/players/players'
+import { Player, NewPlayer, PatchPlayer } from '@core/players/players'
 import { Category, CategoryRecord, NewCategory, PatchCategory } from '@core/tournaments/categories'
 import { StandingRuleSummary } from '@core/tournaments/standingRules'
 import {
@@ -19,7 +19,6 @@ interface PlayerAPI {
   update(id: string, data: PatchPlayer): Promise<boolean>
   delete(id: string): Promise<boolean>
   list(): Promise<Player[]>
-  listAssignments(): Promise<PlayerAssignment[]>
 }
 
 interface MetricAPI {

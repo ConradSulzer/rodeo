@@ -15,8 +15,7 @@ const api = {
     create: (data: NewPlayer) => ipcRenderer.invoke('players:create', data),
     update: (id: string, data: PatchPlayer) => ipcRenderer.invoke('players:update', id, data),
     delete: (id: string) => ipcRenderer.invoke('players:delete', id),
-    list: () => ipcRenderer.invoke('players:list'),
-    listAssignments: () => ipcRenderer.invoke('players:listAssignments')
+    list: () => ipcRenderer.invoke('players:list')
   },
   metrics: {
     create: (data: NewMetric) => ipcRenderer.invoke('metrics:create', data),

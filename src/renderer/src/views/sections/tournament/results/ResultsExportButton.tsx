@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { buildCsvExportFilename } from '@core/utils/csv'
 import { useResultsData } from '@renderer/hooks/useResultsData'
 import { useDivisionCatalog } from '@renderer/queries/divisions'
-import { usePlayerAssignmentsQuery } from '@renderer/queries/players'
+import { usePlayersQuery } from '@renderer/queries/players'
 import { buildResultsCsv } from '@renderer/utils/reports/resultsCsv'
 
 export function ResultsExportButton() {
@@ -14,7 +14,7 @@ export function ResultsExportButton() {
   const [exporting, setExporting] = useState(false)
   const { metrics, rows } = useResultsData()
   const { list: divisionList = [] } = useDivisionCatalog()
-  const { data: playerAssignments = [] } = usePlayerAssignmentsQuery()
+  const { data: players = [] } = usePlayersQuery()
 
   const handleExport = async () => {
     setExporting(true)
@@ -22,7 +22,7 @@ export function ResultsExportButton() {
       const metadata = await window.api.tournaments.getMetadata()
       const csv = buildResultsCsv({
         metrics,
-        playerAssignments,
+        players,
         rows,
         divisions: divisionList,
         includeUnscored

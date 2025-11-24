@@ -1,25 +1,25 @@
 import { useQuery } from '@tanstack/react-query'
-import type { PlayerAssignment } from '@core/players/players'
+import type { Player } from '@core/players/players'
 import { queryKeys } from './queryKeys'
 
-const fetchPlayerAssignments = async (): Promise<PlayerAssignment[]> => {
-  return window.api.players.listAssignments()
+const fetchPlayers = async (): Promise<Player[]> => {
+  return window.api.players.list()
 }
 
-export function usePlayerAssignmentsQuery() {
+export function usePlayersQuery() {
   return useQuery({
-    queryKey: queryKeys.players.assignments(),
-    queryFn: fetchPlayerAssignments
+    queryKey: queryKeys.players.list(),
+    queryFn: fetchPlayers
   })
 }
 
 export function usePlayerDirectory() {
   const query = useQuery({
-    queryKey: queryKeys.players.assignments(),
-    queryFn: fetchPlayerAssignments,
-    select: (assignments) => {
+    queryKey: queryKeys.players.list(),
+    queryFn: fetchPlayers,
+    select: (players) => {
       const map = new Map<string, string>()
-      assignments.forEach(({ player }) => {
+      players.forEach((player) => {
         map.set(player.id, player.displayName)
       })
       return map

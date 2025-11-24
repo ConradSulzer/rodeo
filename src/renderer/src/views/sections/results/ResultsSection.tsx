@@ -13,9 +13,7 @@ type SortableRow = ReturnType<typeof useResultsData>['rows'][number] &
   Partial<Record<ScoreColumnKey, number | undefined>>
 
 export function ResultsSection() {
-  const { metrics, rows, isLoading, ...rest } = useResultsData()
-
-  console.log(rest)
+  const { metrics, rows, isLoading } = useResultsData()
 
   const columns: ReadonlyArray<CrudTableColumn<SortableRow, ScoreColumnKey>> = [
     { key: 'displayName', label: 'Player', sortable: true },

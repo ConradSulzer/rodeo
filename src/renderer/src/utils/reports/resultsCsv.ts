@@ -1,18 +1,18 @@
 import type { DivisionRecord } from '@core/tournaments/divisions'
-import type { PlayerAssignment } from '@core/players/players'
 import type { MetricRecord } from '@core/tournaments/metrics'
+import type { Player } from '@core/players/players'
 import type { ResultRow } from '@renderer/hooks/useResultsData'
 import Papa from 'papaparse'
 
 export function buildResultsCsv({
   metrics,
-  playerAssignments,
+  players,
   rows,
   divisions,
   includeUnscored
 }: {
   metrics: MetricRecord[]
-  playerAssignments: PlayerAssignment[]
+  players: Player[]
   rows: ResultRow[]
   divisions: DivisionRecord[]
   includeUnscored: boolean
@@ -28,13 +28,13 @@ export function buildResultsCsv({
 
   if (includeUnscored) {
     const scoredIds = new Set(rows.map((row) => row.player.id))
-    playerAssignments.forEach(({ player, divisionIds }) => {
+    players.forEach((player) => {
       if (scoredIds.has(player.id)) return
       combinedRows.push({
         player,
         displayName: player.displayName,
         email: player.email ?? '',
-        divisionIds: divisionIds ?? [],
+        divisionIds: player.divisions.map((division) => division.id),
         scores: {}
       })
     })

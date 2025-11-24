@@ -18,7 +18,7 @@ export type PlayerFormValues = PlayerFormData
 type PlayerFormModalProps = {
   open: boolean
   mode: 'create' | 'edit'
-  player?: Player & { divisionIds?: string[] }
+  player?: Player
   submitting?: boolean
   onSubmit: (values: PlayerFormValues & { divisionIds: string[] }) => Promise<void>
   divisions: DivisionRecord[]
@@ -68,7 +68,7 @@ export function PlayerFormModal({
     setValues(nextValues)
     setErrors({})
     setDisplayNameLocked(Boolean(player?.displayName))
-    setSelectedDivisions(new Set(player?.divisionIds ?? []))
+    setSelectedDivisions(new Set(player?.divisions.map((division) => division.id) ?? []))
   }, [open, player])
 
   const title = mode === 'create' ? 'Add Player' : 'Edit Player'
