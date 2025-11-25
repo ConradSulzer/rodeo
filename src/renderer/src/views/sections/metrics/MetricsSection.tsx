@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi'
 import type { MetricFormData } from '@core/metrics/metricFormSchema'
@@ -28,9 +28,7 @@ type FormState =
   | { status: 'creating' }
   | { status: 'editing'; metric: MetricRow }
 
-type DetailsState =
-  | { status: 'closed' }
-  | { status: 'open'; metric: MetricRow }
+type DetailsState = { status: 'closed' } | { status: 'open'; metric: MetricRow }
 
 type DeleteState =
   | { status: 'closed'; deleting: false }
@@ -47,10 +45,16 @@ const METRIC_FUZZY_FIELDS: Array<keyof MetricRow & string> = ['label', 'id']
 
 export function MetricsSection() {
   const queryClient = useQueryClient()
-  const { data: metrics = [], isLoading: metricsLoading, isFetching: metricsFetching } =
-    useMetricsListQuery()
-  const { data: categories = [], isLoading: categoriesLoading, isFetching: categoriesFetching } =
-    useCategoriesQuery()
+  const {
+    data: metrics = [],
+    isLoading: metricsLoading,
+    isFetching: metricsFetching
+  } = useMetricsListQuery()
+  const {
+    data: categories = [],
+    isLoading: categoriesLoading,
+    isFetching: categoriesFetching
+  } = useCategoriesQuery()
   const [formState, setFormState] = useState<FormState>({ status: 'closed' })
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [detailsState, setDetailsState] = useState<DetailsState>({ status: 'closed' })
@@ -112,6 +116,29 @@ export function MetricsSection() {
     setDeleteState({ status: 'closed', deleting: false })
   }
 
+  const refreshMetrics = useCallback(() => {
+    return queryClient.invalidateQueries({ queryKey: queryKeys.metrics.list() })
+  }, [queryClient])
+
+  const runMetricMutation = useCallback(
+    async (action: () => Promise<unknown>, successMessage: string, errorMessage: string) => {
+      try {
+        const result = await action()
+        if (result === false) {
+          throw new Error('Mutation returned false')
+        }
+        toast.success(successMessage)
+        await refreshMetrics()
+        return true
+      } catch (error) {
+        console.error(errorMessage, error)
+        toast.error(errorMessage)
+        return false
+      }
+    },
+    [refreshMetrics]
+  )
+
   const handleFormSubmit = async (values: MetricFormData) => {
     if (formState.status === 'closed') return
 
@@ -122,8 +149,12 @@ export function MetricsSection() {
           label: values.label,
           unit: values.unit
         }
-        await window.api.metrics.create(payload)
-        toast.success('Metric added')
+        const success = await runMetricMutation(
+          () => window.api.metrics.create(payload),
+          'Metric added',
+          'Unable to add metric'
+        )
+        if (!success) return
       } else if (formState.status === 'editing') {
         const metric = formState.metric
         const patch: PatchMetric = {}
@@ -136,14 +167,14 @@ export function MetricsSection() {
           return
         }
 
-        const success = await window.api.metrics.update(metric.id, patch)
-        if (!success) {
-          throw new Error('Update returned false')
-        }
-        toast.success('Metric updated')
+        const success = await runMetricMutation(
+          () => window.api.metrics.update(metric.id, patch),
+          'Metric updated',
+          'Unable to update metric'
+        )
+        if (!success) return
       }
 
-      await queryClient.invalidateQueries({ queryKey: queryKeys.metrics.list() })
       setFormState({ status: 'closed' })
     } catch (error) {
       console.error('Failed to submit metric form', error)
@@ -157,20 +188,16 @@ export function MetricsSection() {
     if (deleteState.status !== 'confirming') return
     setDeleteState({ ...deleteState, deleting: true })
 
-    try {
-      const success = await window.api.metrics.delete(deleteState.metric.id)
-      if (!success) {
-        throw new Error('Delete returned false')
-      }
-      toast.success(`Deleted ${deleteState.metric.label}`)
+    const success = await runMetricMutation(
+      () => window.api.metrics.delete(deleteState.metric.id),
+      `Deleted ${deleteState.metric.label}`,
+      'Could not delete ${deleteState.metric.label}'
+    )
+
+    if (success) {
       setDeleteState({ status: 'closed', deleting: false })
-      await queryClient.invalidateQueries({ queryKey: queryKeys.metrics.list() })
-    } catch (error) {
-      console.error('Failed to delete metric', error)
-      toast.error('Could not delete metric')
-      setDeleteState((prev) =>
-        prev.status === 'confirming' ? { ...prev, deleting: false } : prev
-      )
+    } else {
+      setDeleteState((prev) => (prev.status === 'confirming' ? { ...prev, deleting: false } : prev))
     }
   }
 
@@ -295,8 +322,8 @@ export function MetricsSection() {
         description={
           deleteMetric ? (
             <p>
-              This will permanently remove <strong>{deleteMetric.label}</strong> from the tournament.
-              This action cannot be undone.
+              This will permanently remove <strong>{deleteMetric.label}</strong> from the
+              tournament. This action cannot be undone.
             </p>
           ) : (
             'Are you sure you want to delete this metric?'
