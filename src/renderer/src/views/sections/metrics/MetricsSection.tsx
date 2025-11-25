@@ -24,20 +24,17 @@ import { queryKeys } from '@renderer/queries/queryKeys'
 type MetricRow = MetricRecord & { categoryNames: string[] }
 
 type FormState =
-  | { open: false; mode: null; metric?: undefined }
-  | { open: true; mode: 'create'; metric?: undefined }
-  | { open: true; mode: 'edit'; metric: MetricRow }
+  | { status: 'closed' }
+  | { status: 'creating' }
+  | { status: 'editing'; metric: MetricRow }
 
-type DetailsState = {
-  open: boolean
-  metric?: MetricRow
-}
+type DetailsState =
+  | { status: 'closed' }
+  | { status: 'open'; metric: MetricRow }
 
-type DeleteState = {
-  open: boolean
-  metric?: MetricRow
-  deleting: boolean
-}
+type DeleteState =
+  | { status: 'closed'; deleting: false }
+  | { status: 'confirming'; metric: MetricRow; deleting: boolean }
 
 const columns: ReadonlyArray<CrudTableColumn<MetricRow, 'actions' | 'categoryNames'>> = [
   { key: 'label', label: 'Metric', sortable: true },
@@ -54,13 +51,10 @@ export function MetricsSection() {
     useMetricsListQuery()
   const { data: categories = [], isLoading: categoriesLoading, isFetching: categoriesFetching } =
     useCategoriesQuery()
-  const [formState, setFormState] = useState<FormState>({ open: false, mode: null })
+  const [formState, setFormState] = useState<FormState>({ status: 'closed' })
   const [formSubmitting, setFormSubmitting] = useState(false)
-  const [detailsState, setDetailsState] = useState<DetailsState>({ open: false })
-  const [deleteState, setDeleteState] = useState<DeleteState>({
-    open: false,
-    deleting: false
-  })
+  const [detailsState, setDetailsState] = useState<DetailsState>({ status: 'closed' })
+  const [deleteState, setDeleteState] = useState<DeleteState>({ status: 'closed', deleting: false })
 
   const categoryLookup = useMemo(
     () => new Map(categories.map((category) => [category.id, category.name])),
@@ -91,46 +85,46 @@ export function MetricsSection() {
   })
 
   const openCreateModal = () => {
-    setFormState({ open: true, mode: 'create' })
+    setFormState({ status: 'creating' })
   }
 
   const openEditModal = (metric: MetricRow) => {
-    setFormState({ open: true, mode: 'edit', metric })
+    setFormState({ status: 'editing', metric })
   }
 
   const closeFormModal = () => {
     if (formSubmitting) return
-    setFormState({ open: false, mode: null })
+    setFormState({ status: 'closed' })
   }
 
   const openDetails = (metric: MetricRow) => {
-    setDetailsState({ open: true, metric })
+    setDetailsState({ status: 'open', metric })
   }
 
-  const closeDetails = () => setDetailsState({ open: false })
+  const closeDetails = () => setDetailsState({ status: 'closed' })
 
   const requestDelete = (metric: MetricRow) => {
-    setDeleteState({ open: true, metric, deleting: false })
+    setDeleteState({ status: 'confirming', metric, deleting: false })
   }
 
   const cancelDelete = () => {
     if (deleteState.deleting) return
-    setDeleteState({ open: false, metric: undefined, deleting: false })
+    setDeleteState({ status: 'closed', deleting: false })
   }
 
   const handleFormSubmit = async (values: MetricFormData) => {
-    if (!formState.open) return
+    if (formState.status === 'closed') return
 
     setFormSubmitting(true)
     try {
-      if (formState.mode === 'create') {
+      if (formState.status === 'creating') {
         const payload: NewMetric = {
           label: values.label,
           unit: values.unit
         }
         await window.api.metrics.create(payload)
         toast.success('Metric added')
-      } else if (formState.mode === 'edit' && formState.metric) {
+      } else if (formState.status === 'editing') {
         const metric = formState.metric
         const patch: PatchMetric = {}
         if (values.label !== metric.label) patch.label = values.label
@@ -150,7 +144,7 @@ export function MetricsSection() {
       }
 
       await queryClient.invalidateQueries({ queryKey: queryKeys.metrics.list() })
-      setFormState({ open: false, mode: null })
+      setFormState({ status: 'closed' })
     } catch (error) {
       console.error('Failed to submit metric form', error)
       toast.error('Unable to save metric')
@@ -160,8 +154,8 @@ export function MetricsSection() {
   }
 
   const confirmDelete = async () => {
-    if (!deleteState.open || !deleteState.metric) return
-    setDeleteState((prev) => ({ ...prev, deleting: true }))
+    if (deleteState.status !== 'confirming') return
+    setDeleteState({ ...deleteState, deleting: true })
 
     try {
       const success = await window.api.metrics.delete(deleteState.metric.id)
@@ -169,12 +163,14 @@ export function MetricsSection() {
         throw new Error('Delete returned false')
       }
       toast.success(`Deleted ${deleteState.metric.label}`)
-      setDeleteState({ open: false, metric: undefined, deleting: false })
+      setDeleteState({ status: 'closed', deleting: false })
       await queryClient.invalidateQueries({ queryKey: queryKeys.metrics.list() })
     } catch (error) {
       console.error('Failed to delete metric', error)
       toast.error('Could not delete metric')
-      setDeleteState((prev) => ({ ...prev, deleting: false }))
+      setDeleteState((prev) =>
+        prev.status === 'confirming' ? { ...prev, deleting: false } : prev
+      )
     }
   }
 
@@ -183,6 +179,14 @@ export function MetricsSection() {
   const isEmpty = !loading && metricsWithCategories.length === 0
   const metricCount = metricsWithCategories.length
   const metricCountLabel = loading ? '—' : metricCount.toLocaleString()
+  const formOpen = formState.status !== 'closed'
+  const formMode: 'create' | 'edit' = formState.status === 'editing' ? 'edit' : 'create'
+  const editingMetric = formState.status === 'editing' ? formState.metric : undefined
+  const detailsOpen = detailsState.status === 'open'
+  const detailsMetric = detailsState.status === 'open' ? detailsState.metric : undefined
+  const deleteOpen = deleteState.status === 'confirming'
+  const deleting = deleteState.status === 'confirming' ? deleteState.deleting : false
+  const deleteMetric = deleteState.status === 'confirming' ? deleteState.metric : undefined
 
   return (
     <>
@@ -271,32 +275,28 @@ export function MetricsSection() {
       </ManageSectionShell>
 
       <MetricFormModal
-        open={formState.open}
-        mode={formState.open ? formState.mode : 'create'}
-        metric={formState.open && formState.mode === 'edit' ? formState.metric : undefined}
+        open={formOpen}
+        mode={formMode}
+        metric={editingMetric}
         submitting={formSubmitting}
         onSubmit={handleFormSubmit}
         onClose={closeFormModal}
       />
 
-      <MetricDetailsModal
-        open={detailsState.open}
-        metric={detailsState.metric}
-        onClose={closeDetails}
-      />
+      <MetricDetailsModal open={detailsOpen} metric={detailsMetric} onClose={closeDetails} />
 
       <ConfirmDialog
-        open={deleteState.open}
+        open={deleteOpen}
         title="Delete Metric"
-        confirming={deleteState.deleting}
+        confirming={deleting}
         confirmLabel="Delete Metric"
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
         description={
-          deleteState.metric ? (
+          deleteMetric ? (
             <p>
-              This will permanently remove <strong>{deleteState.metric.label}</strong> from the
-              tournament. This action cannot be undone.
+              This will permanently remove <strong>{deleteMetric.label}</strong> from the tournament.
+              This action cannot be undone.
             </p>
           ) : (
             'Are you sure you want to delete this metric?'
