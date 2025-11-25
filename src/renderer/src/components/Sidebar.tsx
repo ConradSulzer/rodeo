@@ -6,7 +6,7 @@ import { usePreferences } from '../context/preferences'
 import { DarkModeToggle } from './DarkModeToggle'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
-import { useDataStore } from '@renderer/store/useDataStore'
+import { useQueryClient } from '@tanstack/react-query'
 
 type NavItem = {
   label: string
@@ -32,13 +32,13 @@ const RUN_EVENT_ITEMS: NavItem[] = [
 export function Sidebar() {
   const navigate = useNavigate()
   const { theme, setTheme } = usePreferences()
-  const clearDataStore = useDataStore((state) => state.clear)
+  const queryClient = useQueryClient()
 
   const handleExit = async () => {
     try {
       const success = await window.api.tournaments.close()
       if (success) {
-        clearDataStore()
+        queryClient.clear()
         toast.success('Tournament closed')
         navigate('/')
       } else {

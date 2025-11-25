@@ -6,23 +6,13 @@ import { Card, CardContent } from '../components/ui/card'
 import logo from '../assets/rodeo_logo.png'
 import { usePreferences } from '../context/preferences'
 import { Modal } from '../components/Modal'
-import { useDataStore } from '@renderer/store/useDataStore'
+import { useQueryClient } from '@tanstack/react-query'
 
 export function HomeView(): JSX.Element {
   const navigate = useNavigate()
   const { recents, addRecent } = usePreferences()
   const [showRecents, setShowRecents] = useState(false)
-  const refreshAll = useDataStore((state) => state.refreshAll)
-
-  const hydrateStore = async () => {
-    try {
-      await refreshAll()
-    } catch (error) {
-      console.error('Failed to hydrate data store', error)
-      toast.error('Failed to load tournament data')
-      throw error
-    }
-  }
+  const queryClient = useQueryClient()
 
   const handleCreate = async () => {
     try {
@@ -33,7 +23,7 @@ export function HomeView(): JSX.Element {
       if (!success) return
 
       addRecent(filePath)
-      await hydrateStore()
+      queryClient.clear()
       toast.success('Tournament created')
       navigate('/app/tournament', { replace: true })
     } catch (error) {
@@ -51,7 +41,7 @@ export function HomeView(): JSX.Element {
       if (!success) return
 
       addRecent(filePath)
-      await hydrateStore()
+      queryClient.clear()
       toast.success('Tournament opened')
       navigate('/app/tournament', { replace: true })
     } catch (error) {
@@ -68,7 +58,7 @@ export function HomeView(): JSX.Element {
       if (!success) return
 
       addRecent(filePath)
-      await hydrateStore()
+      queryClient.clear()
       toast.success('Tournament opened')
       navigate('/app/tournament', { replace: true })
       setShowRecents(false)
