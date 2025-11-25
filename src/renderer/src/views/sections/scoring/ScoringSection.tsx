@@ -87,6 +87,14 @@ export function ScoringSection() {
     setModalSubmitting(false)
   }
 
+  const reportMutationErrors = useCallback((errors: string[], fallbackMessage: string) => {
+    if (errors.length) {
+      errors.forEach((message) => toast.error(message))
+    } else {
+      toast.error(fallbackMessage)
+    }
+  }, [])
+
   const handleSaveScores = async (entries: ItemScoreEventInput[]): Promise<SubmissionResult> => {
     if (modalState.status !== 'open') {
       return { success: false, errors: ['Score modal is not open'] }
@@ -95,11 +103,7 @@ export function ScoringSection() {
     try {
       const result = await window.api.events.record(entries)
       if (!result.success) {
-        if (result.errors.length) {
-          result.errors.forEach((message) => toast.error(message))
-        } else {
-          toast.error('Unable to record scores')
-        }
+        reportMutationErrors(result.errors, 'Unable to record scores')
         return result
       }
       toast.success('Scores saved')
@@ -127,12 +131,7 @@ export function ScoringSection() {
       ]
       const result = await window.api.events.record(payload)
       if (!result.success) {
-        if (result.errors.length) {
-          result.errors.forEach((message) => toast.error(message))
-        } else {
-          toast.error('Unable to void scorecard')
-        }
-        setModalSubmitting(false)
+        reportMutationErrors(result.errors, 'Unable to void scorecard')
         return
       }
       toast.success('Scorecard voided')
