@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import type { Category } from '@core/tournaments/categories'
-import type { DivisionView } from '@core/tournaments/divisions'
+import type { Division } from '@core/tournaments/divisions'
 import { Modal } from '../../../components/Modal'
 import { Field } from '../../../components/ui/field'
 import { Label } from '../../../components/ui/label'
@@ -15,7 +15,7 @@ export type DivisionFormValues = {
 type DivisionFormModalProps = {
   open: boolean
   mode: 'create' | 'edit'
-  division?: DivisionView & { categoryIds?: string[] }
+  division?: Division & { categoryIds?: string[] }
   categories: Category[]
   submitting?: boolean
   onSubmit: (values: DivisionFormValues) => Promise<void>

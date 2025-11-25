@@ -21,7 +21,7 @@ export function reduceEvent(results: Results, e: RodeoEvent, resolve: ResolveFn)
 
   const newEvent: ItemStateChanged = e
   const playerItems = getOrCreatePlayerItems(results, newEvent.playerId)
-  const current = playerItems.get(newEvent.scoreableId)
+  const current = playerItems.get(newEvent.metricId)
 
   // Ignore self-applied replay
   if (current?.srcEventId === newEvent.id) return errors
@@ -63,7 +63,7 @@ export function reduceEvent(results: Results, e: RodeoEvent, resolve: ResolveFn)
       ? ({ status: 'value', value: newEvent.value, ...base } as const)
       : ({ status: 'empty', ...base } as const)
 
-  playerItems.set(newEvent.scoreableId, next)
+  playerItems.set(newEvent.metricId, next)
   return errors
 }
 
@@ -106,7 +106,7 @@ function validatePriorEvent(
   if (!isItemEvent(prior))
     return { error: createError(newEvent, 'Prior event is not an item event.') }
 
-  if (prior.playerId !== newEvent.playerId || prior.scoreableId !== newEvent.scoreableId) {
+  if (prior.playerId !== newEvent.playerId || prior.metricId !== newEvent.metricId) {
     return { error: createError(newEvent, 'Prior event does not match player/item.') }
   }
 
@@ -124,7 +124,7 @@ function requirePriorEventIfCurrentExists(
   if (current && !newEvent.priorEventId) {
     return createError(
       newEvent,
-      `${newEvent.scoreableId} already exists; reference the current event to update.`
+      `${newEvent.metricId} already exists; reference the current event to update.`
     )
   }
   return undefined

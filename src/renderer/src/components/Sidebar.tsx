@@ -6,6 +6,7 @@ import { usePreferences } from '../context/preferences'
 import { DarkModeToggle } from './DarkModeToggle'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
+import { useQueryClient } from '@tanstack/react-query'
 
 type NavItem = {
   label: string
@@ -15,7 +16,7 @@ type NavItem = {
 const MANAGE_ITEMS: NavItem[] = [
   { label: 'Tournament', path: 'tournament' },
   { label: 'Players', path: 'players' },
-  { label: 'Scoreables', path: 'scoreables' },
+  { label: 'Metrics', path: 'metrics' },
   { label: 'Categories', path: 'categories' },
   { label: 'Divisions', path: 'divisions' }
 ]
@@ -31,11 +32,13 @@ const RUN_EVENT_ITEMS: NavItem[] = [
 export function Sidebar() {
   const navigate = useNavigate()
   const { theme, setTheme } = usePreferences()
+  const queryClient = useQueryClient()
 
   const handleExit = async () => {
     try {
       const success = await window.api.tournaments.close()
       if (success) {
+        queryClient.clear()
         toast.success('Tournament closed')
         navigate('/')
       } else {

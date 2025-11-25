@@ -4,10 +4,10 @@ import path from 'node:path'
 import { openDb, type AppDatabase } from '../src/core/db/db'
 import { updateTournamentMetadata } from '../src/core/tournaments/tournaments'
 import { createPlayer, type NewPlayer } from '../src/core/players/players'
-import { createScoreable, type NewScoreable } from '../src/core/tournaments/scoreables'
+import { createMetric, type NewMetric } from '../src/core/tournaments/metrics'
 import {
   createCategory,
-  addScoreableToCategory,
+  addMetricToCategory,
   type NewCategory
 } from '../src/core/tournaments/categories'
 import {
@@ -21,8 +21,8 @@ type CliOptions = {
   force: boolean
 }
 
-type ScoreableSeed = NewScoreable & { key: string }
-type CategorySeed = NewCategory & { key: string; scoreables: string[] }
+type MetricSeed = NewMetric & { key: string }
+type CategorySeed = NewCategory & { key: string; metrics: string[] }
 type DivisionCategorySeed = { category: string; depth?: number; order?: number }
 type DivisionSeed = {
   name: string
@@ -262,8 +262,8 @@ function seedPlayers(db: AppDatabase) {
   return playerIds
 }
 
-function seedScoreables(db: AppDatabase) {
-  const scoreables: ScoreableSeed[] = [
+function seedMetrics(db: AppDatabase) {
+  const metrics: MetricSeed[] = [
     { key: 'redfish', label: 'Redfish', unit: 'lbs' },
     { key: 'trout', label: 'Trout', unit: 'lbs' },
     { key: 'flounder', label: 'Flounder', unit: 'lbs' },
@@ -271,64 +271,64 @@ function seedScoreables(db: AppDatabase) {
     { key: 'black_drum', label: 'Black Drum', unit: 'lbs' }
   ]
 
-  const scoreableIds = new Map<string, string>()
-  for (const scoreable of scoreables) {
-    const { key, ...data } = scoreable
-    scoreableIds.set(key, createScoreable(db, data))
+  const metricIds = new Map<string, string>()
+  for (const metric of metrics) {
+    const { key, ...data } = metric
+    metricIds.set(key, createMetric(db, data))
   }
 
-  return scoreableIds
+  return metricIds
 }
 
-function seedCategories(db: AppDatabase, scoreableIds: Map<string, string>) {
+function seedCategories(db: AppDatabase, metricIds: Map<string, string>) {
   const categories: CategorySeed[] = [
     {
       key: 'cajun_slam',
       name: 'Cajun Slam',
       direction: 'desc',
       rules: [],
-      scoreables: ['redfish', 'trout', 'flounder']
+      metrics: ['redfish', 'trout', 'flounder']
     },
     {
       key: 'stud_red',
       name: 'Stud Red',
       direction: 'desc',
       rules: [],
-      scoreables: ['redfish']
+      metrics: ['redfish']
     },
     {
       key: 'mule_trout',
       name: 'Mule Trout',
       direction: 'desc',
       rules: [],
-      scoreables: ['trout']
+      metrics: ['trout']
     },
     {
       key: 'saddle_flounder',
       name: 'Saddle Flounder',
       direction: 'desc',
       rules: [],
-      scoreables: ['flounder']
+      metrics: ['flounder']
     },
     {
       key: 'leopard_red',
       name: 'Leopard Red',
       direction: 'desc',
       rules: [],
-      scoreables: ['leopard']
+      metrics: ['leopard']
     }
   ]
 
   const categoryIds = new Map<string, string>()
   for (const category of categories) {
-    const { key, scoreables: scoreableKeys, ...data } = category
+    const { key, metrics: metricKeys, ...data } = category
     const categoryId = createCategory(db, data)
     categoryIds.set(key, categoryId)
 
-    for (const scoreableKey of scoreableKeys) {
-      const scoreableId = scoreableIds.get(scoreableKey)
-      if (!scoreableId) continue
-      addScoreableToCategory(db, categoryId, scoreableId)
+    for (const metricKey of metricKeys) {
+      const metricId = metricIds.get(metricKey)
+      if (!metricId) continue
+      addMetricToCategory(db, categoryId, metricId)
     }
   }
 
@@ -433,8 +433,8 @@ function main() {
 
   try {
     updateMetadata(db)
-    const scoreableIds = seedScoreables(db)
-    const categoryIds = seedCategories(db, scoreableIds)
+    const metricIds = seedMetrics(db)
+    const categoryIds = seedCategories(db, metricIds)
     const playerIds = seedPlayers(db)
     seedDivisions(db, categoryIds, playerIds)
   } finally {

@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi'
-import type { CategoryView, NewCategory, PatchCategory } from '@core/tournaments/categories'
+import type { Category, NewCategory, PatchCategory } from '@core/tournaments/categories'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 import {
   type CrudTableColumn,
@@ -15,47 +15,45 @@ import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
 import { CategoryFormModal, type CategoryFormValues } from './CategoryFormModal'
 import { CategoryDetailsModal } from './CategoryDetailsModal'
 import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
-import { useCategoryViewsQuery, useStandingRulesQuery } from '@renderer/queries/categories'
-import { useScoreablesListQuery } from '@renderer/queries/scoreables'
+import { useCategoriesQuery, useStandingRulesQuery } from '@renderer/queries/categories'
+import { useMetricsListQuery } from '@renderer/queries/metrics'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@renderer/queries/queryKeys'
 
 type FormState =
-  | { open: false; mode: null; category?: undefined }
-  | { open: true; mode: 'create'; category?: undefined }
-  | { open: true; mode: 'edit'; category: CategoryView }
+  | { status: 'closed' }
+  | { status: 'creating' }
+  | { status: 'editing'; category: Category }
 
-type DetailsState = {
-  open: boolean
-  category?: CategoryView
-}
+type DetailsState =
+  | { status: 'closed' }
+  | { status: 'open'; category: Category }
 
-type DeleteState = {
-  open: boolean
-  category?: CategoryView
-  deleting: boolean
-}
+type DeleteState =
+  | { status: 'closed'; deleting: false }
+  | { status: 'confirming'; category: Category; deleting: boolean }
 
-const columns: ReadonlyArray<CrudTableColumn<CategoryView, 'actions'>> = [
+const columns: ReadonlyArray<CrudTableColumn<Category, 'actions'>> = [
   { key: 'name', label: 'Category', sortable: true },
-  { key: 'scoreables', label: 'Scoreables', sortable: false },
+  { key: 'metrics', label: 'Metrics', sortable: false },
   { key: 'actions', label: 'Actions', sortable: false, align: 'right' }
 ]
 
-const CATEGORY_FUZZY_FIELDS: Array<keyof CategoryView & string> = ['name', 'id']
+const CATEGORY_FUZZY_FIELDS: Array<keyof Category & string> = ['name', 'id']
 
 export function CategoriesSection() {
   const queryClient = useQueryClient()
-  const [formState, setFormState] = useState<FormState>({ open: false, mode: null })
+  const {
+    data: categories = [],
+    isLoading: categoriesLoading,
+    isFetching: categoriesFetching
+  } = useCategoriesQuery()
+  const [formState, setFormState] = useState<FormState>({ status: 'closed' })
   const [formSubmitting, setFormSubmitting] = useState(false)
-  const [detailsState, setDetailsState] = useState<DetailsState>({ open: false })
-  const [deleteState, setDeleteState] = useState<DeleteState>({ open: false, deleting: false })
-  const { data: categories = [], isLoading, isFetching } = useCategoryViewsQuery()
-  const { data: scoreables = [] } = useScoreablesListQuery()
+  const [detailsState, setDetailsState] = useState<DetailsState>({ status: 'closed' })
+  const [deleteState, setDeleteState] = useState<DeleteState>({ status: 'closed', deleting: false })
+  const { data: metrics = [] } = useMetricsListQuery()
   const { data: standingRules = [] } = useStandingRulesQuery()
-
-  const invalidateCategories = () =>
-    queryClient.invalidateQueries({ queryKey: queryKeys.categories.views() })
 
   const {
     results: filteredCategories,
@@ -63,56 +61,93 @@ export function CategoriesSection() {
     setQuery,
     sort,
     toggleSort
-  } = useUniversalSearchSort<CategoryView>({
+  } = useUniversalSearchSort<Category>({
     items: categories,
     searchKeys: CATEGORY_FUZZY_FIELDS,
     initialSort: { key: 'name', direction: 'asc' }
   })
 
-  const openCreateModal = () => setFormState({ open: true, mode: 'create' })
+  const refreshCategories = useCallback(() => {
+    return queryClient.invalidateQueries({ queryKey: queryKeys.categories.all() })
+  }, [queryClient])
 
-  const openEditModal = (category: CategoryView) =>
-    setFormState({ open: true, mode: 'edit', category })
+  const runCategoryMutation = useCallback(
+    async (action: () => Promise<unknown>, successMessage: string, errorMessage: string) => {
+      try {
+        const result = await action()
+        if (result === false) throw new Error('Mutation returned false')
+        toast.success(successMessage)
+        await refreshCategories()
+        return true
+      } catch (error) {
+        console.error(errorMessage, error)
+        toast.error(errorMessage)
+        return false
+      }
+    },
+    [refreshCategories]
+  )
+
+  const openCreateModal = () => setFormState({ status: 'creating' })
+
+  const openEditModal = (category: Category) => setFormState({ status: 'editing', category })
 
   const closeFormModal = () => {
     if (formSubmitting) return
-    setFormState({ open: false, mode: null })
+    setFormState({ status: 'closed' })
   }
 
-  const openDetails = (category: CategoryView) => setDetailsState({ open: true, category })
-  const closeDetails = () => setDetailsState({ open: false })
+  const openDetails = (category: Category) => setDetailsState({ status: 'open', category })
+  const closeDetails = () => setDetailsState({ status: 'closed' })
 
-  const requestDelete = (category: CategoryView) =>
-    setDeleteState({ open: true, deleting: false, category })
+  const requestDelete = (category: Category) =>
+    setDeleteState({ status: 'confirming', deleting: false, category })
 
   const cancelDelete = () => {
-    if (deleteState.deleting) return
-    setDeleteState({ open: false, deleting: false, category: undefined })
+    if (deleteState.status === 'confirming' && deleteState.deleting) return
+    setDeleteState({ status: 'closed', deleting: false })
   }
 
   const handleFormSubmit = async (values: CategoryFormValues) => {
-    if (!formState.open) return
+    if (formState.status === 'closed') return
     setFormSubmitting(true)
     try {
-      const trimmedCountName = values.scoreablesCountName.trim()
-      if (formState.mode === 'create') {
+      const trimmedCountName = values.metricsCountName.trim()
+      if (formState.status === 'creating') {
         const payload: NewCategory = {
           name: values.name,
           direction: values.direction,
           rules: values.rules,
-          showScoreablesCount: values.showScoreablesCount,
-          scoreablesCountName: values.showScoreablesCount ? trimmedCountName : ''
+          showMetricsCount: values.showMetricsCount,
+          metricsCountName: values.showMetricsCount ? trimmedCountName : ''
         }
         const categoryId: string = await window.api.categories.create(payload)
-        if (values.scoreableIds.length) {
+        if (values.metricIds.length) {
           await Promise.all(
-            values.scoreableIds.map((scoreableId) =>
-              window.api.categories.addScoreable(categoryId, scoreableId)
+            values.metricIds.map((metricId) =>
+              window.api.categories.addMetric(categoryId, metricId)
             )
           )
         }
-        toast.success('Category added')
-      } else if (formState.mode === 'edit' && formState.category) {
+        const success = await runCategoryMutation(
+          async () => {
+            const categoryId: string = await window.api.categories.create(payload)
+            if (values.metricIds.length) {
+              await Promise.all(
+                values.metricIds.map((metricId) =>
+                  window.api.categories.addMetric(categoryId, metricId)
+                )
+              )
+            }
+            return true
+          },
+          'Category added',
+          'Unable to add category'
+        )
+        if (!success) {
+          return
+        }
+      } else if (formState.status === 'editing') {
         const category = formState.category
         const patch: PatchCategory = {}
         if (values.name !== category.name) patch.name = values.name
@@ -120,50 +155,54 @@ export function CategoriesSection() {
         if (!areStringArraysEqual(values.rules, category.rules)) {
           patch.rules = values.rules
         }
-        if (values.showScoreablesCount !== Boolean(category.showScoreablesCount)) {
-          patch.showScoreablesCount = values.showScoreablesCount
-          if (!values.showScoreablesCount) {
-            patch.scoreablesCountName = ''
+        if (values.showMetricsCount !== Boolean(category.showMetricsCount)) {
+          patch.showMetricsCount = values.showMetricsCount
+          if (!values.showMetricsCount) {
+            patch.metricsCountName = ''
           }
         }
-        const previousCountName = category.scoreablesCountName ?? ''
-        if (values.showScoreablesCount && trimmedCountName !== previousCountName) {
-          patch.scoreablesCountName = trimmedCountName
+        const previousCountName = category.metricsCountName ?? ''
+        if (values.showMetricsCount && trimmedCountName !== previousCountName) {
+          patch.metricsCountName = trimmedCountName
         }
 
-        let changed = false
-
-        if (Object.keys(patch).length) {
-          const success = await window.api.categories.update(category.id, patch)
-          if (!success) throw new Error('Update returned false')
-          changed = true
-        }
-
-        const prevIds = new Set(category.scoreables.map((scoreable) => scoreable.id))
-        const nextIds = new Set(values.scoreableIds)
+        const prevIds = new Set(category.metrics.map((metric) => metric.id))
+        const nextIds = new Set(values.metricIds)
 
         const toAdd = [...nextIds].filter((id) => !prevIds.has(id))
         const toRemove = [...prevIds].filter((id) => !nextIds.has(id))
 
-        if (toAdd.length || toRemove.length) {
-          await Promise.all([
-            ...toAdd.map((id) => window.api.categories.addScoreable(category.id, id)),
-            ...toRemove.map((id) => window.api.categories.removeScoreable(category.id, id))
-          ])
-          changed = true
-        }
-
-        if (!changed) {
+        if (!Object.keys(patch).length && toAdd.length === 0 && toRemove.length === 0) {
           toast.info('No changes to save')
-          setFormState({ open: false, mode: null })
+          setFormState({ status: 'closed' })
           return
         }
 
-        toast.success('Category updated')
+        const success = await runCategoryMutation(
+          async () => {
+            if (Object.keys(patch).length) {
+              const updated = await window.api.categories.update(category.id, patch)
+              if (!updated) throw new Error('Update returned false')
+            }
+
+            if (toAdd.length || toRemove.length) {
+              await Promise.all([
+                ...toAdd.map((id) => window.api.categories.addMetric(category.id, id)),
+                ...toRemove.map((id) => window.api.categories.removeMetric(category.id, id))
+              ])
+            }
+            return true
+          },
+          'Category updated',
+          'Unable to update category'
+        )
+
+        if (!success) {
+          return
+        }
       }
 
-      await invalidateCategories()
-      setFormState({ open: false, mode: null })
+      setFormState({ status: 'closed' })
     } catch (error) {
       console.error('Failed to submit category form', error)
       toast.error('Unable to save category')
@@ -173,33 +212,35 @@ export function CategoriesSection() {
   }
 
   const confirmDelete = async () => {
-    if (!deleteState.category) return
-    setDeleteState((prev) => ({ ...prev, deleting: true }))
-    try {
-      const success = await window.api.categories.delete(deleteState.category.id)
-      if (!success) {
-        throw new Error('Delete returned false')
-      }
-      toast.success(`Deleted ${deleteState.category.name}`)
-      setDeleteState({ open: false, deleting: false, category: undefined })
-      await invalidateCategories()
-    } catch (error) {
-      console.error('Failed to delete category', error)
-      toast.error('Could not delete category')
-      setDeleteState((prev) => ({ ...prev, deleting: false }))
+    if (deleteState.status !== 'confirming') return
+    setDeleteState({ ...deleteState, deleting: true })
+
+    const success = await runCategoryMutation(
+      () => window.api.categories.delete(deleteState.category.id),
+      `Deleted ${deleteState.category.name}`,
+      'Could not delete category'
+    )
+
+    if (success) {
+      setDeleteState({ status: 'closed', deleting: false })
+    } else {
+      setDeleteState((prev) =>
+        prev.status === 'confirming' ? { ...prev, deleting: false } : prev
+      )
     }
   }
 
-  const refreshing = isFetching && !isLoading
-  const isEmpty = !isLoading && categories.length === 0
+  const loading = categoriesLoading
+  const refreshing = (!loading && categoriesFetching) || false
+  const isEmpty = !loading && categories.length === 0
   const categoryCount = categories.length
-  const categoryCountLabel = isLoading ? '—' : categoryCount.toLocaleString()
+  const categoryCountLabel = loading ? '—' : categoryCount.toLocaleString()
 
   const editModalCategory = useMemo(() => {
-    if (!formState.open || formState.mode !== 'edit' || !formState.category) return undefined
+    if (formState.status !== 'editing') return undefined
     return {
       ...formState.category,
-      scoreableIds: formState.category.scoreables.map((scoreable) => scoreable.id)
+      metricIds: formState.category.metrics.map((metric) => metric.id)
     }
   }, [formState])
 
@@ -208,7 +249,7 @@ export function CategoriesSection() {
       <ManageSectionShell
         title="Categories"
         titleAdornment={<Pill>{categoryCountLabel}</Pill>}
-        description="Group scoreables into logical buckets for scoring."
+        description="Group metrics into logical buckets for scoring."
         onAdd={openCreateModal}
         addLabel="Add Category"
         refreshing={refreshing}
@@ -216,7 +257,7 @@ export function CategoriesSection() {
         searchValue={query}
         onSearchChange={setQuery}
       >
-        {isLoading ? (
+        {loading ? (
           <div className="flex flex-1 items-center justify-center ro-text-muted">
             Loading categories...
           </div>
@@ -233,7 +274,7 @@ export function CategoriesSection() {
               <Table containerClassName="h-full">
                 <TableHeader>
                   <TableRow>
-                    {renderCrudTableHeader<CategoryView, 'actions'>({
+                    {renderCrudTableHeader<Category, 'actions'>({
                       columns,
                       sort,
                       toggleSort
@@ -252,16 +293,16 @@ export function CategoriesSection() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {category.scoreables.length ? (
+                        {category.metrics.length ? (
                           <div className="flex flex-wrap gap-2">
-                            {category.scoreables.map((scoreable) => (
-                              <Pill key={scoreable.id} size="sm">
-                                {scoreable.label}
+                            {category.metrics.map((metric) => (
+                              <Pill key={metric.id} size="sm">
+                                {metric.label}
                               </Pill>
                             ))}
                           </div>
                         ) : (
-                          <span className="text-sm ro-text-muted">No scoreables</span>
+                          <span className="text-sm ro-text-muted">No metrics</span>
                         )}
                       </TableCell>
                       <TableCell align="right">
@@ -296,10 +337,10 @@ export function CategoriesSection() {
       </ManageSectionShell>
 
       <CategoryFormModal
-        open={formState.open}
-        mode={formState.open ? (formState.mode ?? 'create') : 'create'}
+        open={formState.status !== 'closed'}
+        mode={formState.status === 'creating' ? 'create' : 'edit'}
         category={editModalCategory}
-        scoreables={scoreables}
+        metrics={metrics}
         standingRules={standingRules}
         submitting={formSubmitting}
         onSubmit={handleFormSubmit}
@@ -307,23 +348,23 @@ export function CategoriesSection() {
       />
 
       <CategoryDetailsModal
-        open={detailsState.open}
-        category={detailsState.category}
+        open={detailsState.status === 'open'}
+        category={detailsState.status === 'open' ? detailsState.category : undefined}
         onClose={closeDetails}
       />
 
       <ConfirmDialog
-        open={deleteState.open}
+        open={deleteState.status === 'confirming'}
         title="Delete Category"
-        confirming={deleteState.deleting}
+        confirming={deleteState.status === 'confirming' ? deleteState.deleting : false}
         confirmLabel="Delete Category"
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
         description={
-          deleteState.category ? (
+          deleteState.status === 'confirming' ? (
             <p>
-              This will permanently remove <strong>{deleteState.category.name}</strong> and unlink
-              it from all divisions and scoreables. This action cannot be undone.
+              This will permanently remove <strong>{deleteState.category.name}</strong> and unlink it
+              from all divisions and metrics. This action cannot be undone.
             </p>
           ) : (
             'Are you sure you want to delete this category?'

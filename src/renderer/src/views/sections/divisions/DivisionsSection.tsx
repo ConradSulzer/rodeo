@@ -1,12 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi'
-import type {
-  DivisionCategoryView,
-  DivisionView,
-  NewDivision,
-  PatchDivision
-} from '@core/tournaments/divisions'
+import type { Division, NewDivision, PatchDivision } from '@core/tournaments/divisions'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 import {
   type CrudTableColumn,
@@ -21,102 +16,110 @@ import { DraggablePillList } from '@renderer/components/dnd/DraggablePillList'
 import { DivisionFormModal, type DivisionFormValues } from './DivisionFormModal'
 import { DivisionDetailsModal } from './DivisionDetailsModal'
 import { Pill } from '@renderer/components/ui/pill'
-import { useDivisionViewsQuery } from '@renderer/queries/divisions'
-import { useCategoryListQuery } from '@renderer/queries/categories'
+import { useCategoriesQuery } from '@renderer/queries/categories'
+import { useDivisionsQuery } from '@renderer/queries/divisions'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@renderer/queries/queryKeys'
 
 type FormState =
-  | { open: false; mode: null; division?: undefined }
-  | { open: true; mode: 'create'; division?: undefined }
-  | { open: true; mode: 'edit'; division: DivisionView }
+  | { status: 'closed' }
+  | { status: 'creating' }
+  | { status: 'editing'; division: Division }
 
-type DetailsState = {
-  open: boolean
-  division?: DivisionView
-}
+type DetailsState =
+  | { status: 'closed' }
+  | { status: 'open'; division: Division }
 
-type DeleteState = {
-  open: boolean
-  division?: DivisionView
-  deleting: boolean
-}
+type DeleteState =
+  | { status: 'closed'; deleting: false }
+  | { status: 'confirming'; division: Division; deleting: boolean }
 
-const columns: ReadonlyArray<CrudTableColumn<DivisionView, 'actions' | 'categories'>> = [
+const columns: ReadonlyArray<CrudTableColumn<Division, 'actions' | 'categories'>> = [
   { key: 'order', label: '#', sortable: false },
   { key: 'name', label: 'Division', sortable: false },
   { key: 'categories', label: 'Categories', sortable: false },
   { key: 'actions', label: 'Actions', sortable: false, align: 'right' }
 ]
 
-const sortPlaceholder = { key: 'order' as keyof DivisionView & string, direction: 'asc' as const }
+const sortPlaceholder = { key: 'order' as keyof Division & string, direction: 'asc' as const }
 
 export function DivisionsSection() {
   const queryClient = useQueryClient()
-  const [divisions, setDivisions] = useState<DivisionView[]>([])
-
-  const [formState, setFormState] = useState<FormState>({ open: false, mode: null })
+  const { data: categories = [] } = useCategoriesQuery()
+  const [formState, setFormState] = useState<FormState>({ status: 'closed' })
   const [formSubmitting, setFormSubmitting] = useState(false)
-  const [detailsState, setDetailsState] = useState<DetailsState>({ open: false })
-  const [deleteState, setDeleteState] = useState<DeleteState>({ open: false, deleting: false })
+  const [detailsState, setDetailsState] = useState<DetailsState>({ status: 'closed' })
+  const [deleteState, setDeleteState] = useState<DeleteState>({ status: 'closed', deleting: false })
 
-  const { data: divisionData = [], isLoading, isFetching } = useDivisionViewsQuery()
-  const { data: categoriesList = [] } = useCategoryListQuery()
+  const { data: divisionData = [], isLoading, isFetching } = useDivisionsQuery()
+  const invalidateDivisions = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: queryKeys.divisions.list() }),
+    [queryClient]
+  )
 
-  useEffect(() => {
-    setDivisions(divisionData)
-  }, [divisionData])
+  const runDivisionMutation = useCallback(
+    async (action: () => Promise<unknown>, successMessage: string, errorMessage: string) => {
+      try {
+        const result = await action()
+        if (result === false) throw new Error('Mutation returned false')
+        toast.success(successMessage)
+        await invalidateDivisions()
+        return true
+      } catch (error) {
+        console.error(errorMessage, error)
+        toast.error(errorMessage)
+        return false
+      }
+    },
+    [invalidateDivisions]
+  )
 
-  const categories = categoriesList
-
-  const invalidateDivisions = () =>
-    queryClient.invalidateQueries({ queryKey: queryKeys.divisions.views() })
-
-  const openCreateModal = () => setFormState({ open: true, mode: 'create' })
-  const openEditModal = (division: DivisionView) =>
-    setFormState({ open: true, mode: 'edit', division })
+  const openCreateModal = () => setFormState({ status: 'creating' })
+  const openEditModal = (division: Division) => setFormState({ status: 'editing', division })
 
   const closeFormModal = () => {
     if (formSubmitting) return
-    setFormState({ open: false, mode: null })
+    setFormState({ status: 'closed' })
   }
 
-  const openDetails = (division: DivisionView) => setDetailsState({ open: true, division })
-  const closeDetails = () => setDetailsState({ open: false })
+  const openDetails = (division: Division) => setDetailsState({ status: 'open', division })
+  const closeDetails = () => setDetailsState({ status: 'closed' })
 
-  const requestDelete = (division: DivisionView) =>
-    setDeleteState({ open: true, deleting: false, division })
+  const requestDelete = (division: Division) =>
+    setDeleteState({ status: 'confirming', deleting: false, division })
   const cancelDelete = () => {
-    if (deleteState.deleting) return
-    setDeleteState({ open: false, deleting: false, division: undefined })
+    if (deleteState.status === 'confirming' && deleteState.deleting) return
+    setDeleteState({ status: 'closed', deleting: false })
   }
 
   const handleFormSubmit = async (values: DivisionFormValues) => {
-    if (!formState.open) return
+    if (formState.status === 'closed') return
     setFormSubmitting(true)
     try {
-      if (formState.mode === 'create') {
-        const payload: NewDivision = { name: values.name }
-        const divisionId: string = await window.api.divisions.create(payload)
-        if (values.categoryIds.length) {
-          await Promise.all(
-            values.categoryIds.map((categoryId, index) =>
-              window.api.divisions.addCategory(divisionId, categoryId, 1, index + 1)
-            )
-          )
+      if (formState.status === 'creating') {
+        const success = await runDivisionMutation(
+          async () => {
+            const payload: NewDivision = { name: values.name }
+            const divisionId: string = await window.api.divisions.create(payload)
+            if (values.categoryIds.length) {
+              await Promise.all(
+                values.categoryIds.map((categoryId, index) =>
+                  window.api.divisions.addCategory(divisionId, categoryId, 1, index + 1)
+                )
+              )
+            }
+            return true
+          },
+          'Division added',
+          'Unable to add division'
+        )
+        if (!success) {
+          return
         }
-        toast.success('Division added')
-      } else if (formState.mode === 'edit' && formState.division) {
+      } else if (formState.status === 'editing') {
         const division = formState.division
         const patch: PatchDivision = {}
         if (values.name !== division.name) patch.name = values.name
-        let changed = false
-
-        if (Object.keys(patch).length) {
-          const success = await window.api.divisions.update(division.id, patch)
-          if (!success) throw new Error('Update returned false')
-          changed = true
-        }
 
         const prevIds = division.categories.map((entry) => entry.category.id)
         const prevSet = new Set(prevIds)
@@ -129,37 +132,49 @@ export function DivisionsSection() {
           return desired !== undefined && desired !== entry.order
         })
 
-        if (toAdd.length || toRemove.length || orderChanges.length) {
-          await Promise.all([
-            ...toAdd.map((id) =>
-              window.api.divisions.addCategory(
-                division.id,
-                id,
-                1,
-                desiredOrder.get(id) ?? values.categoryIds.indexOf(id) + 1
-              )
-            ),
-            ...toRemove.map((id) => window.api.divisions.removeCategory(division.id, id)),
-            ...orderChanges.map((entry) =>
-              window.api.divisions.updateCategoryLink(division.id, entry.category.id, {
-                order: desiredOrder.get(entry.category.id)
-              })
-            )
-          ])
-          changed = true
-        }
-
-        if (!changed) {
+        if (!Object.keys(patch).length && !toAdd.length && !toRemove.length && !orderChanges.length) {
           toast.info('No changes to save')
-          setFormState({ open: false, mode: null })
+          setFormState({ status: 'closed' })
           return
         }
 
-        toast.success('Division updated')
+        const success = await runDivisionMutation(
+          async () => {
+            if (Object.keys(patch).length) {
+              const updated = await window.api.divisions.update(division.id, patch)
+              if (!updated) throw new Error('Update returned false')
+            }
+
+            if (toAdd.length || toRemove.length || orderChanges.length) {
+              await Promise.all([
+                ...toAdd.map((id) =>
+                  window.api.divisions.addCategory(
+                    division.id,
+                    id,
+                    1,
+                    desiredOrder.get(id) ?? values.categoryIds.indexOf(id) + 1
+                  )
+                ),
+                ...toRemove.map((id) => window.api.divisions.removeCategory(division.id, id)),
+                ...orderChanges.map((entry) =>
+                  window.api.divisions.updateCategoryLink(division.id, entry.category.id, {
+                    order: desiredOrder.get(entry.category.id)
+                  })
+                )
+              ])
+            }
+            return true
+          },
+          'Division updated',
+          'Unable to update division'
+        )
+
+        if (!success) {
+          return
+        }
       }
 
-      await invalidateDivisions()
-      setFormState({ open: false, mode: null })
+      setFormState({ status: 'closed' })
     } catch (error) {
       console.error('Failed to submit division form', error)
       toast.error('Unable to save division')
@@ -169,60 +184,37 @@ export function DivisionsSection() {
   }
 
   const confirmDelete = async () => {
-    if (!deleteState.division) return
-    setDeleteState((prev) => ({ ...prev, deleting: true }))
-    try {
-      const success = await window.api.divisions.delete(deleteState.division.id)
-      if (!success) throw new Error('Delete returned false')
-      toast.success(`Deleted ${deleteState.division.name}`)
-      setDeleteState({ open: false, deleting: false, division: undefined })
-      await invalidateDivisions()
-    } catch (error) {
-      console.error('Failed to delete division', error)
-      toast.error('Could not delete division')
-      setDeleteState((prev) => ({ ...prev, deleting: false }))
+    if (deleteState.status !== 'confirming') return
+    setDeleteState({ ...deleteState, deleting: true })
+    const success = await runDivisionMutation(
+      () => window.api.divisions.delete(deleteState.division.id),
+      `Deleted ${deleteState.division.name}`,
+      'Could not delete division'
+    )
+    if (success) {
+      setDeleteState({ status: 'closed', deleting: false })
+    } else {
+      setDeleteState((prev) =>
+        prev.status === 'confirming' ? { ...prev, deleting: false } : prev
+      )
     }
   }
-
-  const handleReorder = async (ordered: DivisionView[]) => {
-    setDivisions(ordered)
+  const handleReorder = async (ordered: Division[]) => {
     try {
       const success = await window.api.divisions.reorder(ordered.map((item) => item.id))
       if (!success) {
         toast.error('Unable to reorder divisions')
-        setDivisions(divisionData)
       } else {
         await invalidateDivisions()
       }
     } catch (error) {
       console.error('Failed to reorder divisions', error)
       toast.error('Unable to reorder divisions')
-      setDivisions(divisionData)
+      await invalidateDivisions()
     }
   }
 
   const handleCategoryPillReorder = async (divisionId: string, orderedCategoryIds: string[]) => {
-    setDivisions((prev) =>
-      prev.map((division) => {
-        if (division.id !== divisionId) return division
-        const dictionary = new Map(division.categories.map((entry) => [entry.category.id, entry]))
-        const reordered: DivisionCategoryView[] = orderedCategoryIds
-          .map((categoryId, index) => {
-            const entry = dictionary.get(categoryId)
-            if (!entry) return null
-            return {
-              ...entry,
-              order: index + 1
-            }
-          })
-          .filter((entry): entry is DivisionCategoryView => entry !== null)
-        return {
-          ...division,
-          categories: reordered.length ? reordered : division.categories
-        }
-      })
-    )
-
     try {
       await Promise.all(
         orderedCategoryIds.map((categoryId, index) =>
@@ -233,7 +225,7 @@ export function DivisionsSection() {
     } catch (error) {
       console.error('Failed to reorder division categories', error)
       toast.error('Unable to reorder categories')
-      invalidateDivisions()
+      await invalidateDivisions()
     }
   }
 
@@ -243,7 +235,7 @@ export function DivisionsSection() {
   const divisionCountLabel = isLoading ? '—' : divisionCount.toLocaleString()
 
   const editModalDivision = useMemo(() => {
-    if (!formState.open || formState.mode !== 'edit' || !formState.division) return undefined
+    if (formState.status !== 'editing') return undefined
     return {
       ...formState.division,
       categoryIds: formState.division.categories.map((entry) => entry.category.id)
@@ -277,7 +269,7 @@ export function DivisionsSection() {
               <Table containerClassName="h-full">
                 <TableHeader>
                   <TableRow>
-                    {renderCrudTableHeader<DivisionView, 'actions' | 'categories'>({
+                    {renderCrudTableHeader<Division, 'actions' | 'categories'>({
                       columns,
                       sort: sortPlaceholder,
                       toggleSort: () => {}
@@ -285,7 +277,7 @@ export function DivisionsSection() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <DragDropTable items={divisions} onReorder={handleReorder}>
+                  <DragDropTable items={divisionData} onReorder={handleReorder}>
                     {(division, { listeners, setActivatorNodeRef }) => (
                       <>
                         <TableCell>
@@ -350,8 +342,8 @@ export function DivisionsSection() {
       </ManageSectionShell>
 
       <DivisionFormModal
-        open={formState.open}
-        mode={formState.open ? (formState.mode ?? 'create') : 'create'}
+        open={formState.status !== 'closed'}
+        mode={formState.status === 'creating' ? 'create' : 'edit'}
         division={editModalDivision}
         categories={categories}
         submitting={formSubmitting}
@@ -360,23 +352,23 @@ export function DivisionsSection() {
       />
 
       <DivisionDetailsModal
-        open={detailsState.open}
-        division={detailsState.division}
+        open={detailsState.status === 'open'}
+        division={detailsState.status === 'open' ? detailsState.division : undefined}
         onClose={closeDetails}
       />
 
       <ConfirmDialog
-        open={deleteState.open}
+        open={deleteState.status === 'confirming'}
         title="Delete Division"
-        confirming={deleteState.deleting}
+        confirming={deleteState.status === 'confirming' ? deleteState.deleting : false}
         confirmLabel="Delete Division"
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
         description={
-          deleteState.division ? (
+          deleteState.status === 'confirming' ? (
             <p>
-              This will permanently remove <strong>{deleteState.division.name}</strong> and unlink
-              it from players and categories. This action cannot be undone.
+              This will permanently remove <strong>{deleteState.division.name}</strong> and unlink it
+              from players and categories. This action cannot be undone.
             </p>
           ) : (
             'Are you sure you want to delete this division?'

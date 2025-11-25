@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import type { Player } from '@core/players/players'
-import type { Division } from '@core/tournaments/divisions'
+import type { EnrichedPlayer } from '@core/players/players'
+import type { DivisionRecord } from '@core/tournaments/divisions'
 import {
   buildPlayerDisplayName,
   playerFormSchema,
@@ -18,10 +18,10 @@ export type PlayerFormValues = PlayerFormData
 type PlayerFormModalProps = {
   open: boolean
   mode: 'create' | 'edit'
-  player?: Player & { divisionIds?: string[] }
+  player?: EnrichedPlayer
   submitting?: boolean
   onSubmit: (values: PlayerFormValues & { divisionIds: string[] }) => Promise<void>
-  divisions: Division[]
+  divisions: DivisionRecord[]
   onClose: () => void
 }
 
@@ -36,7 +36,7 @@ const emptyForm: PlayerFormInput = {
   emergencyContact: ''
 }
 
-function toInitialValues(player?: Player): PlayerFormInput {
+function toInitialValues(player?: EnrichedPlayer): PlayerFormInput {
   if (!player) return emptyForm
   return {
     firstName: player.firstName ?? '',
@@ -68,7 +68,7 @@ export function PlayerFormModal({
     setValues(nextValues)
     setErrors({})
     setDisplayNameLocked(Boolean(player?.displayName))
-    setSelectedDivisions(new Set(player?.divisionIds ?? []))
+    setSelectedDivisions(new Set(player?.divisions.map((division) => division.id) ?? []))
   }, [open, player])
 
   const title = mode === 'create' ? 'Add Player' : 'Edit Player'

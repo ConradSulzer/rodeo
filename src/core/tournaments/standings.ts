@@ -1,5 +1,5 @@
 import type { ULID } from 'ulid'
-import type { DivisionView, DivisionCategoryView } from './divisions'
+import type { Division, DivisionCategory } from './divisions'
 import type { Results } from './results'
 import type { Timestamp } from '@core/types/Shared'
 import { applyRulesToStanding } from './standingRules'
@@ -13,7 +13,7 @@ export type PlayerStanding = {
   ts: Timestamp
 }
 
-type RankDirection = DivisionCategoryView['category']['direction']
+type RankDirection = DivisionCategory['category']['direction']
 
 export type CategoryStanding = {
   categoryId: string
@@ -29,13 +29,13 @@ export type DivisionStanding = {
 
 export function computeDivisionStanding(
   results: Results,
-  division: DivisionView
+  division: Division
 ): DivisionStanding {
   const eligible = division.eligiblePlayerIds.length
     ? new Set<ULID>(division.eligiblePlayerIds)
     : null
-  const categories = division.categories.map((categoryView) =>
-    computeCategoryStanding(results, categoryView, eligible)
+  const categories = division.categories.map((category) =>
+    computeCategoryStanding(results, category, eligible)
   )
 
   return {
@@ -46,14 +46,14 @@ export function computeDivisionStanding(
 
 export function computeAllDivisionStandings(
   results: Results,
-  divisions: DivisionView[]
+  divisions: Division[]
 ): DivisionStanding[] {
   return divisions.map((division) => computeDivisionStanding(results, division))
 }
 
 function computeCategoryStanding(
   results: Results,
-  categoryView: DivisionCategoryView,
+  categoryView: DivisionCategory,
   eligible: Set<ULID> | null
 ): CategoryStanding {
   const entries: PlayerStanding[] = []
@@ -64,8 +64,8 @@ function computeCategoryStanding(
     let itemCount = 0
     let earliestTs: number | null = null
 
-    for (const scoreable of categoryView.scoreables) {
-      const item = playerItems.get(scoreable.id)
+    for (const metric of categoryView.metrics) {
+      const item = playerItems.get(metric.id)
       if (!item || item.status !== 'value' || item.value === undefined) continue
       total += item.value
       itemCount += 1

@@ -1,10 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { FiCheck } from 'react-icons/fi'
-import type { Player } from '@core/players/players'
-import type { Division, DivisionView } from '@core/tournaments/divisions'
-import type { Scoreable } from '@core/tournaments/scoreables'
-import type { SerializableTournamentState } from '@core/tournaments/state'
+import type { EnrichedPlayer, PlayerMetric } from '@core/players/players'
 import type { ItemResult } from '@core/tournaments/results'
 import type { ItemScoreEventInput } from '@core/events/events'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
@@ -18,19 +15,20 @@ import { Pill } from '@renderer/components/ui/pill'
 import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
 import { ScorePlayerModal, type SubmissionResult } from './ScorePlayerModal'
 import { cn } from '@renderer/lib/utils'
+import { usePlayersQuery } from '@renderer/queries/players'
+import { useTournamentResultsMap } from '@renderer/queries/tournament'
+import { useMetricCatalog } from '@renderer/queries/metrics'
+import { useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@renderer/queries/queryKeys'
 
-type PlayerRow = Player & {
-  divisions: Division[]
-}
-
-type PlayerResultsMap = Map<string, Map<string, ItemResult>>
+type PlayerRow = EnrichedPlayer
 
 type ScoreModalState =
-  | { open: false }
+  | { status: 'closed' }
   | {
-      open: true
+      status: 'open'
       player: PlayerRow
-      scoreables: Scoreable[]
+      metrics: PlayerMetric[]
       existingResults?: Map<string, ItemResult>
     }
 
@@ -43,51 +41,24 @@ const columns: ReadonlyArray<CrudTableColumn<PlayerRow, 'actions' | 'divisions'>
 const PLAYER_FUZZY_FIELDS: Array<keyof PlayerRow & string> = ['displayName', 'email', 'id']
 
 export function ScoringSection() {
-  const [loading, setLoading] = useState(true)
-  const [players, setPlayers] = useState<PlayerRow[]>([])
-  const [divisionViews, setDivisionViews] = useState<DivisionView[]>([])
-  const [results, setResults] = useState<PlayerResultsMap>(new Map())
-  const [modalState, setModalState] = useState<ScoreModalState>({ open: false })
+  const queryClient = useQueryClient()
+  const [modalState, setModalState] = useState<ScoreModalState>({ status: 'closed' })
   const [modalSubmitting, setModalSubmitting] = useState(false)
 
-  const fetchPlayers = useCallback(async () => {
-    const tuples = await window.api.players.listWithDivisions()
-    setPlayers(tuples.map(([player, divisions]) => ({ ...player, divisions })))
-  }, [])
+  const {
+    data: players = [],
+    isLoading: playersLoading,
+    isFetching: playersFetching
+  } = usePlayersQuery()
+  const {
+    map: results,
+    isLoading: resultsLoading,
+    isFetching: resultsFetching
+  } = useTournamentResultsMap()
+  useMetricCatalog()
 
-  const fetchDivisionViews = useCallback(async () => {
-    const views = await window.api.divisions.listViews()
-    setDivisionViews(views)
-  }, [])
-
-  const fetchResults = useCallback(async () => {
-    const state = await window.api.tournaments.getState()
-    setResults(buildResultsMap(state))
-  }, [])
-
-  useEffect(() => {
-    let mounted = true
-    const load = async () => {
-      try {
-        await Promise.all([fetchPlayers(), fetchDivisionViews(), fetchResults()])
-      } catch (error) {
-        console.error('Failed to load scoring data', error)
-        toast.error('Failed to load scoring data')
-      } finally {
-        if (mounted) {
-          setLoading(false)
-        }
-      }
-    }
-    load()
-    return () => {
-      mounted = false
-    }
-  }, [fetchPlayers, fetchDivisionViews, fetchResults])
-
-  const divisionMap = useMemo(() => {
-    return new Map(divisionViews.map((view) => [view.id, view]))
-  }, [divisionViews])
+  const loading = playersLoading || resultsLoading
+  const refreshing = (!loading && (playersFetching || resultsFetching)) || false
 
   const {
     results: filteredPlayers,
@@ -101,61 +72,43 @@ export function ScoringSection() {
     initialSort: { key: 'displayName', direction: 'asc' }
   })
 
-  const buildScoreables = useCallback(
-    (player: PlayerRow): Scoreable[] => {
-      const scoreableMap = new Map<string, Scoreable>()
-
-      for (const division of player.divisions) {
-        const view = divisionMap.get(division.id)
-        if (!view) continue
-
-        for (const categoryView of view.categories) {
-          for (const scoreable of categoryView.scoreables) {
-            if (!scoreableMap.has(scoreable.id)) {
-              scoreableMap.set(scoreable.id, scoreable)
-            }
-          }
-        }
-      }
-
-      return Array.from(scoreableMap.values()).sort((a, b) => a.label.localeCompare(b.label))
-    },
-    [divisionMap]
-  )
-
-  const handleOpenModal = (player: PlayerRow, scoreables: Scoreable[]) => {
-    if (!scoreables.length) return
+  const handleOpenModal = (player: PlayerRow, metrics: PlayerMetric[]) => {
+    if (!metrics.length) return
     setModalState({
-      open: true,
+      status: 'open',
       player,
-      scoreables,
+      metrics,
       existingResults: results.get(player.id)
     })
   }
 
   const closeModal = () => {
-    setModalState({ open: false })
+    setModalState({ status: 'closed' })
     setModalSubmitting(false)
   }
 
+  const reportMutationErrors = useCallback((errors: string[], fallbackMessage: string) => {
+    if (errors.length) {
+      errors.forEach((message) => toast.error(message))
+    } else {
+      toast.error(fallbackMessage)
+    }
+  }, [])
+
   const handleSaveScores = async (entries: ItemScoreEventInput[]): Promise<SubmissionResult> => {
-    if (!modalState.open) {
+    if (modalState.status !== 'open') {
       return { success: false, errors: ['Score modal is not open'] }
     }
     setModalSubmitting(true)
     try {
       const result = await window.api.events.record(entries)
       if (!result.success) {
-        if (result.errors.length) {
-          result.errors.forEach((message) => toast.error(message))
-        } else {
-          toast.error('Unable to record scores')
-        }
+        reportMutationErrors(result.errors, 'Unable to record scores')
         return result
       }
       toast.success('Scores saved')
       closeModal()
-      await fetchResults()
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tournament.state() })
       return result
     } catch (error) {
       console.error('Failed to record scores', error)
@@ -167,7 +120,7 @@ export function ScoringSection() {
   }
 
   const handleVoidScorecard = async () => {
-    if (!modalState.open) return
+    if (modalState.status !== 'open') return
     setModalSubmitting(true)
     try {
       const payload = [
@@ -178,17 +131,12 @@ export function ScoringSection() {
       ]
       const result = await window.api.events.record(payload)
       if (!result.success) {
-        if (result.errors.length) {
-          result.errors.forEach((message) => toast.error(message))
-        } else {
-          toast.error('Unable to void scorecard')
-        }
-        setModalSubmitting(false)
+        reportMutationErrors(result.errors, 'Unable to void scorecard')
         return
       }
       toast.success('Scorecard voided')
       closeModal()
-      await fetchResults()
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tournament.state() })
     } catch (error) {
       console.error('Failed to void scorecard', error)
       toast.error('Unable to void scorecard')
@@ -198,12 +146,12 @@ export function ScoringSection() {
   }
 
   const isPlayerScored = useCallback(
-    (playerId: string, scoreables: Scoreable[]) => {
-      if (!scoreables.length) return false
+    (playerId: string, metrics: PlayerMetric[]) => {
+      if (!metrics.length) return false
       const playerResults = results.get(playerId)
       if (!playerResults) return false
-      for (const scoreable of scoreables) {
-        if (!playerResults.has(scoreable.id)) {
+      for (const metric of metrics) {
+        if (!playerResults.has(metric.id)) {
           return false
         }
       }
@@ -227,14 +175,25 @@ export function ScoringSection() {
     )
   }
 
+  const modalOpen = modalState.status === 'open'
+  const modalPlayer = modalOpen ? modalState.player : undefined
+  const modalMetrics = modalOpen ? modalState.metrics : []
+  const modalResults = modalOpen ? modalState.existingResults : undefined
+
   return (
     <>
       <ManageSectionShell
         title="Scoring"
+        titleAdornment={
+          <Pill>
+            {results.size.toLocaleString()} / {players.length.toLocaleString()}
+          </Pill>
+        }
         description="Enter or update scores for each angler."
         searchPlaceholder="Search players"
         searchValue={query}
         onSearchChange={setQuery}
+        refreshing={refreshing}
       >
         {loading ? (
           <div className="flex flex-1 items-center justify-center ro-text-muted">
@@ -255,9 +214,11 @@ export function ScoringSection() {
                 </TableHeader>
                 <TableBody>
                   {filteredPlayers.map((player) => {
-                    const scoreables = buildScoreables(player)
-                    const hasRequirements = scoreables.length > 0
-                    const scored = isPlayerScored(player.id, scoreables)
+                    const metrics = player.metrics
+                    const hasRequirements = metrics.length > 0
+                    const scored = isPlayerScored(player.id, metrics)
+                    const hasScorecard = results.has(player.id)
+                    const partial = hasScorecard && !scored
                     return (
                       <TableRow key={player.id} className="ro-row-hover">
                         <TableCell>
@@ -274,16 +235,19 @@ export function ScoringSection() {
                             variant={scored ? 'default' : 'outline'}
                             className={cn(
                               'min-w-[120px]',
-                              scored ? 'ro-bg-success ro-text-success-dark border-transparent' : ''
+                              scored ? 'ro-bg-success ro-text-success-dark border-transparent' : '',
+                              partial ? 'ro-bg-warn ro-text-warn-dark border-transparent' : ''
                             )}
                             disabled={!hasRequirements}
-                            onClick={() => handleOpenModal(player, scoreables)}
+                            onClick={() => handleOpenModal(player, metrics)}
                           >
                             {scored ? (
                               <span className="flex items-center gap-2">
                                 <FiCheck />
                                 Scored
                               </span>
+                            ) : partial ? (
+                              'Partial'
                             ) : (
                               'Score'
                             )}
@@ -300,26 +264,15 @@ export function ScoringSection() {
       </ManageSectionShell>
 
       <ScorePlayerModal
-        open={modalState.open}
-        player={modalState.open ? modalState.player : undefined}
-        scoreables={modalState.open ? modalState.scoreables : []}
-        existingResults={modalState.open ? modalState.existingResults : undefined}
+        open={modalOpen}
+        player={modalPlayer}
+        metrics={modalMetrics}
+        existingResults={modalResults}
         submitting={modalSubmitting}
         onSubmit={handleSaveScores}
-        onVoidScorecard={modalState.open ? handleVoidScorecard : undefined}
+        onVoidScorecard={modalOpen ? handleVoidScorecard : undefined}
         onClose={closeModal}
       />
     </>
   )
-}
-
-function buildResultsMap(state: SerializableTournamentState): PlayerResultsMap {
-  const map: PlayerResultsMap = new Map()
-  for (const entry of state.results) {
-    map.set(
-      entry.playerId,
-      new Map(entry.items.map(({ scoreableId, result }) => [scoreableId, result]))
-    )
-  }
-  return map
 }

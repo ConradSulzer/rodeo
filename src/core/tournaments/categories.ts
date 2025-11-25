@@ -1,22 +1,26 @@
 import { ulid } from 'ulid'
 import type { AppDatabase } from '@core/db/db'
-import {
-  category as cat,
-  categoryScoreable as catScoreable,
-  scoreable as sc
-} from '@core/db/schema'
-import { and, asc, eq } from 'drizzle-orm'
-import type { Scoreable } from './scoreables'
+import { category as cat, categoryMetric as catMetric } from '@core/db/schema'
+import { and, eq } from 'drizzle-orm'
+import type { MetricRecord } from './metrics'
 
-export type Category = typeof cat.$inferSelect
-type CategoryWritableFields = Omit<Category, 'id' | 'createdAt' | 'updatedAt'>
-type CategoryOptionalFields = 'rules' | 'showScoreablesCount' | 'scoreablesCountName'
+export type CategoryRecord = typeof cat.$inferSelect
+
+export type Category = CategoryRecord & {
+  metrics: MetricRecord[]
+  divisions: { id: string; name: string }[]
+}
+
+type CategoryWritableFields = Omit<CategoryRecord, 'id' | 'createdAt' | 'updatedAt'>
+
+type CategoryOptionalFields = 'rules' | 'showMetricsCount' | 'metricsCountName'
+
 export type NewCategory = Omit<CategoryWritableFields, CategoryOptionalFields> &
   Partial<Pick<CategoryWritableFields, CategoryOptionalFields>> & {
     rules?: string[]
   }
+
 export type PatchCategory = Partial<CategoryWritableFields>
-export type CategoryView = Category & { scoreables: Scoreable[] }
 
 const now = () => Date.now()
 
@@ -31,23 +35,23 @@ function normalizeCategoryRules(rules?: string[]): string[] {
   return Array.from(new Set(cleaned))
 }
 
-function normalizeScoreablesCountName(scoreablesCountName?: string): string {
-  return scoreablesCountName?.trim() ?? ''
+function normalizeMetricsCountName(metricsCountName?: string): string {
+  return metricsCountName?.trim() ?? ''
 }
 
 export function createCategory(db: AppDatabase, data: NewCategory): string {
   const id = ulid()
   const t = now()
-  const { rules, showScoreablesCount = false, scoreablesCountName, ...rest } = data
+  const { rules, showMetricsCount = false, metricsCountName, ...rest } = data
   const normalizedRules = normalizeCategoryRules(rules)
-  const normalizedCountName = normalizeScoreablesCountName(scoreablesCountName)
+  const normalizedCountName = normalizeMetricsCountName(metricsCountName)
   db.insert(cat)
     .values({
       id,
       ...rest,
       rules: normalizedRules,
-      showScoreablesCount,
-      scoreablesCountName: showScoreablesCount ? normalizedCountName : '',
+      showMetricsCount,
+      metricsCountName: showMetricsCount ? normalizedCountName : '',
       createdAt: t,
       updatedAt: t
     })
@@ -59,22 +63,22 @@ export function createCategory(db: AppDatabase, data: NewCategory): string {
 export function updateCategory(db: AppDatabase, id: string, patch: PatchCategory) {
   if (!Object.keys(patch).length) return false
 
-  const { rules, showScoreablesCount, scoreablesCountName, ...rest } = patch
+  const { rules, showMetricsCount, metricsCountName, ...rest } = patch
   const updateData: Partial<typeof cat.$inferInsert> = { ...rest }
 
   if (rules !== undefined) {
     updateData.rules = normalizeCategoryRules(rules)
   }
 
-  if (showScoreablesCount !== undefined) {
-    updateData.showScoreablesCount = showScoreablesCount
-    if (!showScoreablesCount) {
-      updateData.scoreablesCountName = ''
-    } else if (scoreablesCountName !== undefined) {
-      updateData.scoreablesCountName = normalizeScoreablesCountName(scoreablesCountName)
+  if (showMetricsCount !== undefined) {
+    updateData.showMetricsCount = showMetricsCount
+    if (!showMetricsCount) {
+      updateData.metricsCountName = ''
+    } else if (metricsCountName !== undefined) {
+      updateData.metricsCountName = normalizeMetricsCountName(metricsCountName)
     }
-  } else if (scoreablesCountName !== undefined) {
-    updateData.scoreablesCountName = normalizeScoreablesCountName(scoreablesCountName)
+  } else if (metricsCountName !== undefined) {
+    updateData.metricsCountName = normalizeMetricsCountName(metricsCountName)
   }
 
   if (!Object.keys(updateData).length) return false
@@ -92,92 +96,82 @@ export function deleteCategory(db: AppDatabase, id: string) {
   return result.changes > 0
 }
 
-export function getCategory(db: AppDatabase, id: string): Category | undefined {
+export function getCategory(db: AppDatabase, id: string): CategoryRecord | undefined {
   return db.select().from(cat).where(eq(cat.id, id)).get()
 }
 
-export function listAllCategories(db: AppDatabase): Category[] {
-  return db.select().from(cat).orderBy(asc(cat.name)).all()
+export function listCategories(db: AppDatabase): Category[] {
+  const categoriesWithRelations = db.query.category
+    .findMany({
+      orderBy: (categories, { asc }) => [asc(categories.name)],
+      with: {
+        categoryMetrics: {
+          with: {
+            metric: true
+          }
+        },
+        divisionCategories: {
+          with: {
+            division: true
+          }
+        }
+      }
+    })
+    .sync()
+
+  // Clean up any invalid entries from the query and sort and shape associations
+  return categoriesWithRelations.map(({ categoryMetrics, divisionCategories, ...category }) => {
+    const metrics = categoryMetrics
+      .map((link) => link.metric)
+      .filter((metric): metric is MetricRecord => Boolean(metric))
+      .sort((a, b) => a.label.localeCompare(b.label))
+
+    const divisions = divisionCategories
+      .map((link) => link.division)
+      .filter(
+        (division): division is NonNullable<(typeof divisionCategories)[number]['division']> =>
+          Boolean(division)
+      )
+      .map(({ id, name }) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+
+    return {
+      ...(category as CategoryRecord),
+      metrics,
+      divisions
+    }
+  })
 }
 
-export function addScoreableToCategory(db: AppDatabase, categoryId: string, scoreableId: string) {
+export function addMetricToCategory(db: AppDatabase, categoryId: string, metricId: string) {
+  const result = db.insert(catMetric).values({ categoryId, metricId }).onConflictDoNothing().run()
+
+  return result.changes > 0
+}
+
+export function removeMetricFromCategory(db: AppDatabase, categoryId: string, metricId: string) {
   const result = db
-    .insert(catScoreable)
-    .values({ categoryId, scoreableId })
-    .onConflictDoNothing()
+    .delete(catMetric)
+    .where(and(eq(catMetric.categoryId, categoryId), eq(catMetric.metricId, metricId)))
     .run()
 
   return result.changes > 0
 }
 
-export function removeScoreableFromCategory(
-  db: AppDatabase,
-  categoryId: string,
-  scoreableId: string
-) {
-  const result = db
-    .delete(catScoreable)
-    .where(and(eq(catScoreable.categoryId, categoryId), eq(catScoreable.scoreableId, scoreableId)))
-    .run()
-
-  return result.changes > 0
-}
-
-export function listScoreableIdsForCategory(db: AppDatabase, categoryId: string) {
+export function listMetricIdsForCategory(db: AppDatabase, categoryId: string) {
   return db
-    .select({ scoreableId: catScoreable.scoreableId })
-    .from(catScoreable)
-    .where(eq(catScoreable.categoryId, categoryId))
+    .select({ metricId: catMetric.metricId })
+    .from(catMetric)
+    .where(eq(catMetric.categoryId, categoryId))
     .all()
-    .map((row) => row.scoreableId)
+    .map((row) => row.metricId)
 }
 
-export function listCategoryIdsForScoreable(db: AppDatabase, scoreableId: string) {
+export function listCategoryIdsForMetric(db: AppDatabase, metricId: string) {
   return db
-    .select({ categoryId: catScoreable.categoryId })
-    .from(catScoreable)
-    .where(eq(catScoreable.scoreableId, scoreableId))
+    .select({ categoryId: catMetric.categoryId })
+    .from(catMetric)
+    .where(eq(catMetric.metricId, metricId))
     .all()
     .map((row) => row.categoryId)
-}
-
-export function listCategoryViews(db: AppDatabase): CategoryView[] {
-  const categories = listAllCategories(db)
-  if (!categories.length) return []
-
-  const scoreablesByCategory = db
-    .select({
-      categoryId: catScoreable.categoryId,
-      scoreableId: sc.id,
-      label: sc.label,
-      unit: sc.unit,
-      createdAt: sc.createdAt,
-      updatedAt: sc.updatedAt
-    })
-    .from(catScoreable)
-    .innerJoin(sc, eq(catScoreable.scoreableId, sc.id))
-    .orderBy(asc(catScoreable.categoryId), asc(sc.label))
-    .all()
-
-  const map = new Map<string, Scoreable[]>()
-  for (const row of scoreablesByCategory) {
-    const scoreable: Scoreable = {
-      id: row.scoreableId,
-      label: row.label ?? '',
-      unit: row.unit ?? '',
-      createdAt: row.createdAt ?? 0,
-      updatedAt: row.updatedAt ?? 0
-    }
-    const list = map.get(row.categoryId)
-    if (list) {
-      list.push(scoreable)
-    } else {
-      map.set(row.categoryId, [scoreable])
-    }
-  }
-
-  return categories.map((category) => ({
-    ...category,
-    scoreables: map.get(category.id) ?? []
-  }))
 }

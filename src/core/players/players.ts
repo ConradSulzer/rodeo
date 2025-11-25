@@ -1,10 +1,18 @@
 import type { AppDatabase } from '@core/db/db'
-import { division as dv, player as pl, playerDivision as pd } from '@core/db/schema'
-import type { Division } from '@core/tournaments/divisions'
-import { eq, asc } from 'drizzle-orm'
+import { player as pl } from '@core/db/schema'
+import type { DivisionRecord } from '@core/tournaments/divisions'
+import { eq } from 'drizzle-orm'
 import { ulid } from 'ulid'
+import type { MetricRecord } from '@core/tournaments/metrics'
+import { loadDivisionMetricDirectory } from '@core/tournaments/divisions'
 
-export type Player = typeof pl.$inferSelect
+export type PlayerRecord = typeof pl.$inferSelect
+export type PlayerMetric = Pick<MetricRecord, 'id' | 'label'>
+
+export type EnrichedPlayer = PlayerRecord & {
+  divisions: DivisionRecord[]
+  metrics: PlayerMetric[]
+}
 
 type PlayerContactFields = {
   cellPhone?: string | null
@@ -19,8 +27,6 @@ export type NewPlayer = {
 } & PlayerContactFields
 
 export type PatchPlayer = Partial<NewPlayer>
-export type PlayerDivisionTuple = [Player, Division[]]
-
 export type PlayerId = string
 
 const now = () => Date.now()
@@ -58,35 +64,60 @@ export function deletePlayer(db: AppDatabase, id: string) {
   return result.changes > 0
 }
 
-export function getPlayer(db: AppDatabase, id: string): Player | undefined {
-  return db.select().from(pl).where(eq(pl.id, id)).get()
-}
+export function listEnrichedPlayers(db: AppDatabase): EnrichedPlayer[] {
+  const players = db.query.player
+    .findMany({
+      orderBy: (player, { asc }) => [asc(player.displayName)],
+      with: {
+        playerDivisions: {
+          with: { division: true }
+        }
+      }
+    })
+    .sync()
 
-export function listAllPlayers(db: AppDatabase): Player[] {
-  return db.select().from(pl).orderBy(asc(pl.displayName)).all()
-}
-
-export function listAllPlayersWithDivisions(db: AppDatabase): PlayerDivisionTuple[] {
-  const players = listAllPlayers(db)
   if (!players.length) return []
 
-  const assignments = db
-    .select({ playerId: pd.playerId, division: dv })
-    .from(pd)
-    .innerJoin(dv, eq(pd.divisionId, dv.id))
-    .orderBy(asc(pd.playerId), asc(dv.name))
-    .all()
+  const cleaned = players.map(({ playerDivisions, ...rest }) => ({
+    ...rest,
+    divisions: cleanPlayerDivisions({ playerDivisions }) // [{ id }]
+  }))
 
-  const divisionMap = new Map<string, Division[]>()
-  for (const { playerId, division } of assignments) {
-    if (!division) continue
-    const list = divisionMap.get(playerId)
-    if (list) {
-      list.push(division)
-    } else {
-      divisionMap.set(playerId, [division])
+  const divisionMetricDirectory = loadDivisionMetricDirectory(db)
+
+  const enrichedPlayers = cleaned.map(({ divisions, ...rest }) => {
+    const uniqueMetrics = new Map<string, PlayerMetric>()
+
+    for (const { id: divisionId } of divisions) {
+      const divisionMetrics = divisionMetricDirectory.get(divisionId) ?? []
+      for (const metric of divisionMetrics) {
+        if (!uniqueMetrics.has(metric.id)) {
+          uniqueMetrics.set(metric.id, metric)
+        }
+      }
     }
-  }
 
-  return players.map((player) => [player, divisionMap.get(player.id) ?? []])
+    const metrics = [...uniqueMetrics.values()].sort((a, b) => a.label.localeCompare(b.label))
+
+    return {
+      ...rest,
+      divisions,
+      metrics
+    }
+  })
+
+  return enrichedPlayers
+}
+
+function cleanPlayerDivisions(row: {
+  playerDivisions: Array<{ division: DivisionRecord | null }>
+}): DivisionRecord[] {
+  return row.playerDivisions
+    .map((link) => link.division)
+    .filter((division): division is DivisionRecord => division !== null)
+    .sort((a, b) => {
+      const orderA = a.order ?? Number.MAX_SAFE_INTEGER
+      const orderB = b.order ?? Number.MAX_SAFE_INTEGER
+      return orderA === orderB ? a.name.localeCompare(b.name) : orderA - orderB
+    })
 }

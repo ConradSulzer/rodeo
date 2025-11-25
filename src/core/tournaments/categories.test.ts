@@ -1,25 +1,26 @@
 import { describe, expect, it } from 'vitest'
 import { withInMemoryDb } from '@core/db/db'
 import {
-  addScoreableToCategory,
+  addMetricToCategory,
   createCategory,
   deleteCategory,
   getCategory,
-  listAllCategories,
-  listCategoryIdsForScoreable,
-  listScoreableIdsForCategory,
-  removeScoreableFromCategory,
+  listCategories,
+  listCategoryIdsForMetric,
+  listMetricIdsForCategory,
+  removeMetricFromCategory,
   updateCategory,
   type NewCategory
 } from './categories'
-import { createScoreable, type NewScoreable } from './scoreables'
+import { createMetric, type NewMetric } from './metrics'
+import { addCategoryToDivision, createDivision } from './divisions'
 
 const baseCategory: NewCategory = {
   name: 'Overall',
   direction: 'asc'
 }
 
-const baseScoreable: NewScoreable = {
+const baseMetric: NewMetric = {
   label: 'Time',
   unit: 'seconds'
 }
@@ -39,31 +40,31 @@ describe('categories data access', () => {
     })
   })
 
-  it('stores scoreable count preferences on create/update', () => {
+  it('stores metric count preferences on create/update', () => {
     withInMemoryDb((db) => {
       const id = createCategory(db, {
         name: 'Tally',
         direction: 'desc',
-        showScoreablesCount: true,
-        scoreablesCountName: 'Fish Count'
+        showMetricsCount: true,
+        metricsCountName: 'Fish Count'
       })
 
       const created = getCategory(db, id)
-      expect(created?.showScoreablesCount).toBe(true)
-      expect(created?.scoreablesCountName).toBe('Fish Count')
+      expect(created?.showMetricsCount).toBe(true)
+      expect(created?.metricsCountName).toBe('Fish Count')
 
       updateCategory(db, id, {
-        scoreablesCountName: ' Total Fish ',
-        showScoreablesCount: true
+        metricsCountName: ' Total Fish ',
+        showMetricsCount: true
       })
 
       const renamed = getCategory(db, id)
-      expect(renamed?.scoreablesCountName).toBe('Total Fish')
+      expect(renamed?.metricsCountName).toBe('Total Fish')
 
-      updateCategory(db, id, { showScoreablesCount: false })
+      updateCategory(db, id, { showMetricsCount: false })
       const hidden = getCategory(db, id)
-      expect(hidden?.showScoreablesCount).toBe(false)
-      expect(hidden?.scoreablesCountName).toBe('')
+      expect(hidden?.showMetricsCount).toBe(false)
+      expect(hidden?.metricsCountName).toBe('')
     })
   })
 
@@ -129,49 +130,66 @@ describe('categories data access', () => {
       createCategory(db, { name: 'Accuracy', direction: 'desc' })
       createCategory(db, { name: 'Strength', direction: 'asc' })
 
-      const categories = listAllCategories(db)
+      const categories = listCategories(db)
       expect(categories.map((c) => c.name)).toEqual(['Accuracy', 'Speed', 'Strength'])
     })
   })
 
-  it('links scoreables to categories without duplicates', () => {
+  it('includes referencing divisions in each category', () => {
     withInMemoryDb((db) => {
       const categoryId = createCategory(db, baseCategory)
-      const scoreableId = createScoreable(db, baseScoreable)
+      const alpha = createDivision(db, { name: 'Alpha' })
+      const beta = createDivision(db, { name: 'Beta' })
 
-      const first = addScoreableToCategory(db, categoryId, scoreableId)
+      addCategoryToDivision(db, alpha, categoryId)
+      addCategoryToDivision(db, beta, categoryId)
+
+      const [category] = listCategories(db)
+      expect(category.divisions).toEqual([
+        { id: alpha, name: 'Alpha' },
+        { id: beta, name: 'Beta' }
+      ])
+    })
+  })
+
+  it('links metrics to categories without duplicates', () => {
+    withInMemoryDb((db) => {
+      const categoryId = createCategory(db, baseCategory)
+      const metricId = createMetric(db, baseMetric)
+
+      const first = addMetricToCategory(db, categoryId, metricId)
       expect(first).toBe(true)
-      const second = addScoreableToCategory(db, categoryId, scoreableId)
+      const second = addMetricToCategory(db, categoryId, metricId)
       expect(second).toBe(false) // onConflictDoNothing
 
-      const scoreableIds = listScoreableIdsForCategory(db, categoryId)
-      expect(scoreableIds).toEqual([scoreableId])
+      const metricIds = listMetricIdsForCategory(db, categoryId)
+      expect(metricIds).toEqual([metricId])
     })
   })
 
-  it('removes scoreable from category', () => {
+  it('removes metric from category', () => {
     withInMemoryDb((db) => {
       const categoryId = createCategory(db, baseCategory)
-      const scoreableId = createScoreable(db, baseScoreable)
+      const metricId = createMetric(db, baseMetric)
 
-      addScoreableToCategory(db, categoryId, scoreableId)
-      const removed = removeScoreableFromCategory(db, categoryId, scoreableId)
+      addMetricToCategory(db, categoryId, metricId)
+      const removed = removeMetricFromCategory(db, categoryId, metricId)
       expect(removed).toBe(true)
 
-      expect(listScoreableIdsForCategory(db, categoryId)).toHaveLength(0)
+      expect(listMetricIdsForCategory(db, categoryId)).toHaveLength(0)
     })
   })
 
-  it('lists categories for a scoreable', () => {
+  it('lists categories for a metric', () => {
     withInMemoryDb((db) => {
-      const scoreableId = createScoreable(db, baseScoreable)
+      const metricId = createMetric(db, baseMetric)
       const categoryA = createCategory(db, { name: 'A', direction: 'asc' })
       const categoryB = createCategory(db, { name: 'B', direction: 'desc' })
 
-      addScoreableToCategory(db, categoryA, scoreableId)
-      addScoreableToCategory(db, categoryB, scoreableId)
+      addMetricToCategory(db, categoryA, metricId)
+      addMetricToCategory(db, categoryB, metricId)
 
-      const categoryIds = listCategoryIdsForScoreable(db, scoreableId)
+      const categoryIds = listCategoryIdsForMetric(db, metricId)
       expect(new Set(categoryIds)).toEqual(new Set([categoryA, categoryB]))
     })
   })

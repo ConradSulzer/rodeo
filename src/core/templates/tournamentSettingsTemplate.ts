@@ -1,6 +1,6 @@
 import Papa from 'papaparse'
 
-export type TemplateScoreableRow = {
+export type TemplateMetricRow = {
   name: string
   unit: string
   description?: string
@@ -10,7 +10,7 @@ export type TemplateCategoryRow = {
   name: string
   direction: 'asc' | 'desc'
   description?: string
-  scoreables: string[]
+  metrics: string[]
 }
 
 export type TemplateDivisionRow = {
@@ -20,13 +20,13 @@ export type TemplateDivisionRow = {
 }
 
 export type TournamentTemplateData = {
-  scoreables: TemplateScoreableRow[]
+  metrics: TemplateMetricRow[]
   categories: TemplateCategoryRow[]
   divisions: TemplateDivisionRow[]
 }
 
 const SECTION_HEADERS = {
-  scoreables: '# Scoreables',
+  metrics: '# Metrics',
   categories: '# Categories',
   divisions: '# Divisions'
 } as const
@@ -81,31 +81,31 @@ function extractSection(
 export function parseTournamentTemplate(csvText: string): TournamentTemplateData {
   const lines = csvText.split(/\r?\n/)
 
-  const scoreableSection = extractSection(lines, SECTION_HEADERS.scoreables)
-  const scoreables = parseTable<TemplateScoreableRow>(scoreableSection.rows, [
+  const metricSection = extractSection(lines, SECTION_HEADERS.metrics)
+  const metrics = parseTable<TemplateMetricRow>(metricSection.rows, [
     'name',
     'unit',
     'description'
   ]).filter((row) => row.name)
 
   const categorySection = extractSection(
-    lines.slice(scoreableSection.nextIndex),
+    lines.slice(metricSection.nextIndex),
     SECTION_HEADERS.categories
   )
   const categoriesRaw = parseTable<{
     name: string
     direction: string
     description?: string
-    scoreables?: string
-  }>(categorySection.rows, ['name', 'direction', 'description', 'scoreables'])
+    metrics?: string
+  }>(categorySection.rows, ['name', 'direction', 'description', 'metrics'])
   const categories: TemplateCategoryRow[] = categoriesRaw
     .filter((row) => row.name)
     .map((row) => ({
       name: row.name,
       direction: row.direction === 'asc' ? 'asc' : 'desc',
       description: row.description,
-      scoreables: row.scoreables
-        ? row.scoreables
+      metrics: row.metrics
+        ? row.metrics
             .split(';')
             .map((value) => value.trim())
             .filter(Boolean)
@@ -113,7 +113,7 @@ export function parseTournamentTemplate(csvText: string): TournamentTemplateData
     }))
 
   const divisionSection = extractSection(
-    lines.slice(scoreableSection.nextIndex + categorySection.nextIndex),
+    lines.slice(metricSection.nextIndex + categorySection.nextIndex),
     SECTION_HEADERS.divisions
   )
   const divisionsRaw = parseTable<{ name: string; description?: string; categories?: string }>(
@@ -133,7 +133,7 @@ export function parseTournamentTemplate(csvText: string): TournamentTemplateData
         : []
     }))
 
-  return { scoreables, categories, divisions }
+  return { metrics, categories, divisions }
 }
 
 function buildSection(
@@ -159,7 +159,7 @@ function buildSection(
 }
 
 export function buildTournamentTemplate(data: TournamentTemplateData): string {
-  const scoreableRows = data.scoreables.map((row) => ({
+  const metricRows = data.metrics.map((row) => ({
     name: row.name,
     unit: row.unit,
     description: row.description ?? ''
@@ -168,7 +168,7 @@ export function buildTournamentTemplate(data: TournamentTemplateData): string {
     name: row.name,
     direction: row.direction,
     description: row.description ?? '',
-    scoreables: row.scoreables.join('; ')
+    metrics: row.metrics.join('; ')
   }))
   const divisionRows = data.divisions.map((row) => ({
     name: row.name,
@@ -177,10 +177,10 @@ export function buildTournamentTemplate(data: TournamentTemplateData): string {
   }))
 
   return [
-    buildSection(SECTION_HEADERS.scoreables, ['name', 'unit', 'description'], scoreableRows),
+    buildSection(SECTION_HEADERS.metrics, ['name', 'unit', 'description'], metricRows),
     buildSection(
       SECTION_HEADERS.categories,
-      ['name', 'direction', 'description', 'scoreables'],
+      ['name', 'direction', 'description', 'metrics'],
       categoryRows
     ),
     buildSection(SECTION_HEADERS.divisions, ['name', 'description', 'categories'], divisionRows)

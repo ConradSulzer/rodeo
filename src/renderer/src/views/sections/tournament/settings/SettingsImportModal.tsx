@@ -10,13 +10,13 @@ import {
 const normalizeName = (value: string) => value.trim()
 
 type ImportSelection = {
-  scoreables: boolean
+  metrics: boolean
   categories: boolean
   divisions: boolean
 }
 
 const defaultSelection: ImportSelection = {
-  scoreables: true,
+  metrics: true,
   categories: true,
   divisions: true
 }
@@ -28,8 +28,8 @@ type ImportSummary = {
 }
 
 const emptySummary: ImportSummary = {
-  created: { scoreables: 0, categories: 0, divisions: 0 },
-  skipped: { scoreables: 0, categories: 0, divisions: 0 },
+  created: { metrics: 0, categories: 0, divisions: 0 },
+  skipped: { metrics: 0, categories: 0, divisions: 0 },
   errors: []
 }
 
@@ -81,9 +81,9 @@ export function SettingsImportModal({
   }, [open, file])
 
   const counts = useMemo(() => {
-    if (!data) return { scoreables: 0, categories: 0, divisions: 0 }
+    if (!data) return { metrics: 0, categories: 0, divisions: 0 }
     return {
-      scoreables: data.scoreables.length,
+      metrics: data.metrics.length,
       categories: data.categories.length,
       divisions: data.divisions.length
     }
@@ -128,11 +128,11 @@ export function SettingsImportModal({
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
-                checked={selection.scoreables}
-                onChange={() => handleToggle('scoreables')}
+                checked={selection.metrics}
+                onChange={() => handleToggle('metrics')}
                 disabled={loading}
               />
-              Import {counts.scoreables} scoreable{counts.scoreables === 1 ? '' : 's'}
+              Import {counts.metrics} metric{counts.metrics === 1 ? '' : 's'}
             </label>
             <label className="flex items-center gap-2 text-sm">
               <input
@@ -157,7 +157,7 @@ export function SettingsImportModal({
             <div className="rounded-md border ro-border-muted p-3 text-xs">
               <p className="font-semibold uppercase tracking-wide">Summary</p>
               <ul className="mt-2 list-disc space-y-1 pl-5">
-                {(['scoreables', 'categories', 'divisions'] as Array<keyof ImportSelection>).map(
+                {(['metrics', 'categories', 'divisions'] as Array<keyof ImportSelection>).map(
                   (key) => (
                     <li key={key}>
                       {key}: {summary.created[key]} created, {summary.skipped[key]} skipped
@@ -188,7 +188,7 @@ export function SettingsImportModal({
               variant="positive"
               onClick={handleImport}
               disabled={
-                disabled || (!selection.scoreables && !selection.categories && !selection.divisions)
+                disabled || (!selection.metrics && !selection.categories && !selection.divisions)
               }
             >
               {loading ? 'Importing...' : 'Import Settings'}
@@ -210,9 +210,9 @@ async function importTemplateData(
 ): Promise<ImportSummary> {
   const summary: ImportSummary = JSON.parse(JSON.stringify(emptySummary))
 
-  const existingScoreables = await window.api.scoreables.list()
-  const scoreableNameToId = new Map(
-    existingScoreables.map((scoreable) => [normalizeName(scoreable.label), scoreable.id])
+  const existingMetrics = await window.api.metrics.list()
+  const metricNameToId = new Map(
+    existingMetrics.map((metric) => [normalizeName(metric.label), metric.id])
   )
 
   const existingCategories = await window.api.categories.list()
@@ -225,24 +225,24 @@ async function importTemplateData(
     existingDivisions.map((division) => [normalizeName(division.name), division.id])
   )
 
-  if (selection.scoreables) {
-    for (const row of data.scoreables) {
+  if (selection.metrics) {
+    for (const row of data.metrics) {
       const name = normalizeName(row.name)
-      if (!name || scoreableNameToId.has(name)) {
-        summary.skipped.scoreables += 1
+      if (!name || metricNameToId.has(name)) {
+        summary.skipped.metrics += 1
         continue
       }
       if (!row.unit) {
-        summary.errors.push(`Scoreable "${row.name}" skipped: missing unit`)
-        summary.skipped.scoreables += 1
+        summary.errors.push(`Metric "${row.name}" skipped: missing unit`)
+        summary.skipped.metrics += 1
         continue
       }
-      const id = await window.api.scoreables.create({ label: name, unit: row.unit })
-      scoreableNameToId.set(name, id)
-      summary.created.scoreables += 1
+      const id = await window.api.metrics.create({ label: name, unit: row.unit })
+      metricNameToId.set(name, id)
+      summary.created.metrics += 1
     }
   } else {
-    summary.skipped.scoreables += data.scoreables.length
+    summary.skipped.metrics += data.metrics.length
   }
 
   if (selection.categories) {
@@ -252,12 +252,12 @@ async function importTemplateData(
         summary.skipped.categories += 1
         continue
       }
-      const missingScoreables = row.scoreables
-        .map((scoreableName) => normalizeName(scoreableName))
-        .filter((scoreableName) => !scoreableNameToId.has(scoreableName))
-      if (missingScoreables.length) {
+      const missingMetrics = row.metrics
+        .map((metricName) => normalizeName(metricName))
+        .filter((metricName) => !metricNameToId.has(metricName))
+      if (missingMetrics.length) {
         summary.errors.push(
-          `Category "${row.name}" skipped: missing scoreables ${missingScoreables.join(', ')}`
+          `Category "${row.name}" skipped: missing metrics ${missingMetrics.join(', ')}`
         )
         summary.skipped.categories += 1
         continue
@@ -267,11 +267,11 @@ async function importTemplateData(
         direction: row.direction
       })
       categoryNameToId.set(name, id)
-      for (const scoreableName of row.scoreables) {
-        const normalized = normalizeName(scoreableName)
-        const scoreableId = scoreableNameToId.get(normalized)
-        if (scoreableId) {
-          await window.api.categories.addScoreable(id, scoreableId)
+      for (const metricName of row.metrics) {
+        const normalized = normalizeName(metricName)
+        const metricId = metricNameToId.get(normalized)
+        if (metricId) {
+          await window.api.categories.addMetric(id, metricId)
         }
       }
       summary.created.categories += 1

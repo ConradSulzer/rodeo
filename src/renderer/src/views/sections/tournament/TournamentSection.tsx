@@ -154,7 +154,7 @@ export function TournamentSection() {
             </h3>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm ro-text-dim">
-                Import scoreables, categories, and divisions from a template.
+                Import metrics, categories, and divisions from a template.
               </p>
               <SettingsImportButton />
             </div>

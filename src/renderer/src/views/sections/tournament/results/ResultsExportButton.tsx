@@ -4,25 +4,25 @@ import { Modal } from '@renderer/components/Modal'
 import { toast } from 'sonner'
 import { buildCsvExportFilename } from '@core/utils/csv'
 import { useResultsData } from '@renderer/hooks/useResultsData'
-import { useDivisionsListQuery } from '@renderer/queries/divisions'
-import { usePlayersWithDivisionsQuery } from '@renderer/queries/players'
+import { useDivisionCatalog } from '@renderer/queries/divisions'
+import { usePlayersQuery } from '@renderer/queries/players'
 import { buildResultsCsv } from '@renderer/utils/reports/resultsCsv'
 
 export function ResultsExportButton() {
   const [open, setOpen] = useState(false)
   const [includeUnscored, setIncludeUnscored] = useState(true)
   const [exporting, setExporting] = useState(false)
-  const { scoreables, rows } = useResultsData()
-  const { data: divisionList = [] } = useDivisionsListQuery()
-  const { data: playerTuples = [] } = usePlayersWithDivisionsQuery()
+  const { metrics, rows } = useResultsData()
+  const { list: divisionList = [] } = useDivisionCatalog()
+  const { data: players = [] } = usePlayersQuery()
 
   const handleExport = async () => {
     setExporting(true)
     try {
       const metadata = await window.api.tournaments.getMetadata()
       const csv = buildResultsCsv({
-        scoreables,
-        playerTuples,
+        metrics,
+        players,
         rows,
         divisions: divisionList,
         includeUnscored
@@ -61,7 +61,7 @@ export function ResultsExportButton() {
             Include players without scores
           </label>
           <p className="text-xs ro-text-muted">
-            CSV columns: player name, email, one column per scoreable, and one column per division.
+            CSV columns: player name, email, one column per metric, and one column per division.
             Score columns show recorded values; division columns show TRUE/FALSE for membership.
           </p>
           <div className="flex justify-end gap-3">

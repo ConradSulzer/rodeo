@@ -1,13 +1,10 @@
 import {
-  addScoreableToCategory,
+  addMetricToCategory,
   createCategory,
   deleteCategory,
   getCategory,
-  listAllCategories,
-  listCategoryIdsForScoreable,
-  listCategoryViews,
-  listScoreableIdsForCategory,
-  removeScoreableFromCategory,
+  listCategories,
+  removeMetricFromCategory,
   updateCategory,
   type NewCategory,
   type PatchCategory
@@ -39,34 +36,19 @@ ipcMain.handle('categories:get', (_evt, id: string) => {
 
 ipcMain.handle('categories:list', () => {
   const db = getTournamentDb()
-  return listAllCategories(db)
-})
-
-ipcMain.handle('categories:listViews', () => {
-  const db = getTournamentDb()
-  return listCategoryViews(db)
+  return listCategories(db)
 })
 
 ipcMain.handle('categories:listRules', () => {
   return listStandingRules()
 })
 
-ipcMain.handle('categories:addScoreable', (_evt, categoryId: string, scoreableId: string) => {
+ipcMain.handle('categories:addMetric', (_evt, categoryId: string, metricId: string) => {
   const db = getTournamentDb()
-  return withStandingsRefresh(db, () => addScoreableToCategory(db, categoryId, scoreableId))
+  return withStandingsRefresh(db, () => addMetricToCategory(db, categoryId, metricId))
 })
 
-ipcMain.handle('categories:removeScoreable', (_evt, categoryId: string, scoreableId: string) => {
+ipcMain.handle('categories:removeMetric', (_evt, categoryId: string, metricId: string) => {
   const db = getTournamentDb()
-  return withStandingsRefresh(db, () => removeScoreableFromCategory(db, categoryId, scoreableId))
-})
-
-ipcMain.handle('categories:listScoreableIds', (_evt, categoryId: string) => {
-  const db = getTournamentDb()
-  return listScoreableIdsForCategory(db, categoryId)
-})
-
-ipcMain.handle('categories:listForScoreable', (_evt, scoreableId: string) => {
-  const db = getTournamentDb()
-  return listCategoryIdsForScoreable(db, scoreableId)
+  return withStandingsRefresh(db, () => removeMetricFromCategory(db, categoryId, metricId))
 })

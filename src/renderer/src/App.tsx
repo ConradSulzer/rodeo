@@ -5,7 +5,7 @@ import { HomeView } from '@renderer/views/HomeView'
 import { MainView } from '@renderer/views/MainView'
 import { TournamentSection } from '@renderer/views/sections/tournament/TournamentSection'
 import { PlayersSection } from '@renderer/views/sections/players/PlayersSection'
-import { ScoreablesSection } from '@renderer/views/sections/scoreables/ScoreablesSection'
+import { MetricsSection } from '@renderer/views/sections/metrics/MetricsSection'
 import { CategoriesSection } from '@renderer/views/sections/categories/CategoriesSection'
 import { DivisionsSection } from '@renderer/views/sections/divisions/DivisionsSection'
 import { ScoringSection } from '@renderer/views/sections/scoring/ScoringSection'
@@ -24,7 +24,7 @@ function App(): JSX.Element {
             <Route index element={<Navigate to="tournament" replace />} />
             <Route path="tournament" element={<TournamentSection />} />
             <Route path="players" element={<PlayersSection />} />
-            <Route path="scoreables" element={<ScoreablesSection />} />
+            <Route path="metrics" element={<MetricsSection />} />
             <Route path="categories" element={<CategoriesSection />} />
             <Route path="divisions" element={<DivisionsSection />} />
             <Route path="scoring" element={<ScoringSection />} />

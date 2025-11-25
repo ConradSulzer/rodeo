@@ -1,10 +1,10 @@
 import type { PlayerStanding } from './standings'
-import type { DivisionCategoryView } from './divisions'
+import type { DivisionCategory } from './divisions'
 import { moreItemsTrumpFewerApply } from './standingRules/moreItemsTrumpFewer'
-import { requireAllScoreablesApply } from './standingRules/requireAllScoreables'
+import { requireAllMetricsApply } from './standingRules/requireAllMetrics'
 
 export type StandingRuleContext = {
-  categoryView: DivisionCategoryView
+  categoryView: DivisionCategory
 }
 
 export type StandingRule = {
@@ -17,13 +17,13 @@ const STANDING_RULES: Record<string, StandingRule> = {
   more_items_trump_fewer: {
     label: 'More Items Trump Fewer',
     description:
-      'Favors players who completed more scoreables by applying a large per-item boost before ranking.',
+      'Favors players who completed more metrics by applying a large per-item boost before ranking.',
     apply: moreItemsTrumpFewerApply
   },
-  require_all_scoreables: {
-    label: 'Require All Scoreables',
-    description: 'Invalidates standings that do not include an entry for every scoreable.',
-    apply: requireAllScoreablesApply
+  require_all_metrics: {
+    label: 'Require All Metrics',
+    description: 'Invalidates standings that do not include an entry for every metric.',
+    apply: requireAllMetricsApply
   }
 }
 

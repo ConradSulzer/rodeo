@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { ulid, type ULID } from 'ulid'
-import { getScoreable } from '@core/tournaments/scoreables'
+import { getMetric } from '@core/tournaments/metrics'
 import { cloneResults, type Results } from '@core/tournaments/results'
 import { reduceEvent } from './eventReducer'
 import { getEvent } from './events'
@@ -14,7 +14,7 @@ const itemInputSchema = z
   .object({
     kind: z.literal('item'),
     playerId: z.string().min(1, 'Player required'),
-    scoreableId: z.string().min(1, 'Scoreable required'),
+    metricId: z.string().min(1, 'Metric required'),
     state: z.union([z.literal('value'), z.literal('empty')]),
     value: z.number().nullable().optional(),
     priorEventId: z.string().min(1).optional(),
@@ -59,7 +59,7 @@ type ValidationResult =
 
 /**
  * Takes in event form inputs, validates them again Zod, verifies their respective
- * scoreables exists where applicable, turns the inputs into RodeoEvents, simulates
+ * metrics exists where applicable, turns the inputs into RodeoEvents, simulates
  * applying them to a clone of current results and if all is successful, returns an
  * object with those events.
  */
@@ -90,12 +90,12 @@ export async function buildEventsFromInputs(
     const data = parsed.data
     const parsedField = data.kind === 'item' ? data.field : undefined
 
-    // Ensure the scoreable this event is for exists.
+    // Ensure the metric this event is for exists.
     if (data.kind === 'item') {
-      const scoreable = getScoreable(db, data.scoreableId)
+      const metric = getMetric(db, data.metricId)
 
-      if (!scoreable) {
-        errors.push(formatFieldMessage(parsedField, `Scoreable not found for ${data.scoreableId}`))
+      if (!metric) {
+        errors.push(formatFieldMessage(parsedField, `Metric not found for ${data.metricId}`))
         continue
       }
     }
@@ -124,7 +124,7 @@ export async function buildEventsFromInputs(
       id: ulid(),
       ts: Date.now(),
       playerId: input.playerId as ULID,
-      scoreableId: input.scoreableId as ULID,
+      metricId: input.metricId as ULID,
       state: input.state,
       value: input.state === 'value' ? (input.value as number) : undefined,
       priorEventId: input.priorEventId as EventId | undefined,

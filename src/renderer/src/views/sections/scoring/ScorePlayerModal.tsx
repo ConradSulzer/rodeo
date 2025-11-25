@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import type { Player } from '@core/players/players'
-import type { Scoreable } from '@core/tournaments/scoreables'
+import type { EnrichedPlayer, PlayerMetric } from '@core/players/players'
 import type { ItemResult } from '@core/tournaments/results'
 import type { ItemScoreEventInput } from '@core/events/events'
 import { Modal } from '@renderer/components/Modal'
@@ -17,8 +16,8 @@ export type SubmissionResult = {
 
 type ScorePlayerModalProps = {
   open: boolean
-  player?: Player
-  scoreables: Scoreable[]
+  player?: EnrichedPlayer
+  metrics: PlayerMetric[]
   existingResults?: Map<string, ItemResult>
   onSubmit: (entries: ItemScoreEventInput[]) => Promise<SubmissionResult>
   onVoidScorecard?: () => Promise<void>
@@ -29,7 +28,7 @@ type ScorePlayerModalProps = {
 export function ScorePlayerModal({
   open,
   player,
-  scoreables,
+  metrics,
   existingResults,
   onSubmit,
   onVoidScorecard,
@@ -41,14 +40,14 @@ export function ScorePlayerModal({
   const [submissionErrors, setSubmissionErrors] = useState<string[]>([])
   const [voiding, setVoiding] = useState(false)
 
-  const hasRequirements = scoreables.length > 0
+  const hasRequirements = metrics.length > 0
   const canVoidScorecard = !!(onVoidScorecard && existingResults && existingResults.size > 0)
 
   useEffect(() => {
     if (!open) return
     setSubmissionErrors([])
 
-    if (!scoreables.length) {
+    if (!metrics.length) {
       setValues({})
       setEmpties(new Set())
       return
@@ -57,40 +56,40 @@ export function ScorePlayerModal({
     const initialValues: Record<string, string> = {}
     const initialEmpties = new Set<string>()
 
-    for (const scoreable of scoreables) {
-      const existing = existingResults?.get(scoreable.id)
+    for (const metric of metrics) {
+      const existing = existingResults?.get(metric.id)
       if (existing?.status === 'value' && typeof existing.value === 'number') {
-        initialValues[scoreable.id] = String(existing.value)
+        initialValues[metric.id] = String(existing.value)
       } else {
-        initialValues[scoreable.id] = ''
+        initialValues[metric.id] = ''
       }
       if (existing?.status === 'empty') {
-        initialEmpties.add(scoreable.id)
+        initialEmpties.add(metric.id)
       }
     }
 
     setValues(initialValues)
     setEmpties(initialEmpties)
-  }, [open, scoreables, existingResults])
+  }, [open, metrics, existingResults])
 
-  const handleValueChange = (scoreableId: string, next: string) => {
+  const handleValueChange = (metricId: string, next: string) => {
     setEmpties((prev) => {
-      if (!prev.has(scoreableId)) return prev
+      if (!prev.has(metricId)) return prev
       const copy = new Set(prev)
-      copy.delete(scoreableId)
+      copy.delete(metricId)
       return copy
     })
-    setValues((prev) => ({ ...prev, [scoreableId]: next }))
+    setValues((prev) => ({ ...prev, [metricId]: next }))
   }
 
-  const toggleEmpty = (scoreableId: string) => {
+  const toggleEmpty = (metricId: string) => {
     setEmpties((prev) => {
       const copy = new Set(prev)
-      if (copy.has(scoreableId)) {
-        copy.delete(scoreableId)
+      if (copy.has(metricId)) {
+        copy.delete(metricId)
       } else {
-        copy.add(scoreableId)
-        setValues((current) => ({ ...current, [scoreableId]: '' }))
+        copy.add(metricId)
+        setValues((current) => ({ ...current, [metricId]: '' }))
       }
       return copy
     })
@@ -105,18 +104,18 @@ export function ScorePlayerModal({
 
     const submissions: ItemScoreEventInput[] = []
 
-    for (const scoreable of scoreables) {
-      const existing = existingResults?.get(scoreable.id)
-      const isEmpty = empties.has(scoreable.id)
-      const raw = values[scoreable.id]?.trim() ?? ''
+    for (const metric of metrics) {
+      const existing = existingResults?.get(metric.id)
+      const isEmpty = empties.has(metric.id)
+      const raw = values[metric.id]?.trim() ?? ''
       const parsed = raw === '' ? undefined : Number(raw)
 
       const base: Omit<ItemScoreEventInput, 'state' | 'value'> = {
         kind: 'item',
         playerId: player.id,
-        scoreableId: scoreable.id,
+        metricId: metric.id,
         priorEventId: existing?.srcEventId,
-        field: scoreable.label
+        field: metric.label
       }
 
       if (isEmpty) {
@@ -143,7 +142,7 @@ export function ScorePlayerModal({
       return
     }
 
-    const allEmpty = scoreables.every((scoreable) => empties.has(scoreable.id))
+    const allEmpty = metrics.every((metric) => empties.has(metric.id))
     if (allEmpty) {
       setSubmissionErrors([
         'Scorecards cannot be completely empty. Please enter at least one score or void the scorecard.'
@@ -165,23 +164,23 @@ export function ScorePlayerModal({
   }
 
   const renderContent = () => {
-    if (!scoreables.length) {
+    if (!metrics.length) {
       return (
         <div className="rounded-md border border-dashed ro-border p-4 text-sm ro-text-muted">
-          This player is not assigned to any scoreables to be scored.
+          This player is not assigned to any metrics to be scored.
         </div>
       )
     }
 
     return (
       <div className="grid gap-x-20 gap-y-8 grid-cols-2">
-        {scoreables.map((scoreable) => {
-          const existing = existingResults?.get(scoreable.id)
-          const isEmpty = empties.has(scoreable.id)
+        {metrics.map((metric) => {
+          const existing = existingResults?.get(metric.id)
+          const isEmpty = empties.has(metric.id)
           return (
             <Field
-              key={scoreable.id}
-              label={<Label htmlFor={`score-${scoreable.id}`}>{scoreable.label}</Label>}
+              key={metric.id}
+              label={<Label htmlFor={`score-${metric.id}`}>{metric.label}</Label>}
               description={
                 existing
                   ? existing.status === 'empty'
@@ -192,17 +191,17 @@ export function ScorePlayerModal({
             >
               <div className="flex items-center gap-3">
                 <Input
-                  id={`score-${scoreable.id}`}
+                  id={`score-${metric.id}`}
                   type="number"
                   step="any"
-                  value={values[scoreable.id] ?? ''}
-                  onChange={(event) => handleValueChange(scoreable.id, event.target.value)}
+                  value={values[metric.id] ?? ''}
+                  onChange={(event) => handleValueChange(metric.id, event.target.value)}
                 />
                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] ro-text-muted">
                   <input
                     type="checkbox"
                     checked={isEmpty}
-                    onChange={() => toggleEmpty(scoreable.id)}
+                    onChange={() => toggleEmpty(metric.id)}
                     className="h-4 w-4"
                   />
                   <label>None</label>

@@ -21,7 +21,7 @@ export interface BaseEvent {
 
 export interface ItemStateChanged extends BaseEvent {
   type: 'ItemStateChanged'
-  scoreableId: ULID
+  metricId: ULID
   state: ItemState
   value?: number
   priorEventId?: EventId
@@ -54,11 +54,11 @@ export function listAllEvents(db: AppDatabase) {
   return db.select().from(ev).orderBy(asc(ev.ts)).all().map(decode)
 }
 
-export function listEventsForPlayerItem(db: AppDatabase, playerId: string, scoreableId: string) {
+export function listEventsForPlayerItem(db: AppDatabase, playerId: string, metricId: string) {
   const rows = db
     .select()
     .from(ev)
-    .where(and(eq(ev.playerId, playerId), eq(ev.scoreableId, scoreableId)))
+    .where(and(eq(ev.playerId, playerId), eq(ev.metricId, metricId)))
     .orderBy(asc(ev.ts))
     .all()
   return rows.map(decode)
@@ -78,7 +78,7 @@ const encode = (e: RodeoEvent) => {
       state: e.state,
       ts: e.ts,
       playerId: e.playerId,
-      scoreableId: e.scoreableId,
+      metricId: e.metricId,
       value: e.state === 'value' ? (e.value ?? null) : null,
       priorEventId: e.priorEventId ?? null,
       note: e.note ?? null
@@ -92,7 +92,7 @@ const encode = (e: RodeoEvent) => {
       state: null,
       ts: e.ts,
       playerId: e.playerId,
-      scoreableId: null,
+      metricId: null,
       value: null,
       priorEventId: null,
       note: e.note ?? null
@@ -109,7 +109,7 @@ const decode = (row: EventRow): RodeoEvent => {
       id: row.id,
       ts: row.ts,
       playerId: row.playerId,
-      scoreableId: row.scoreableId!,
+      metricId: row.metricId!,
       state: row.state as ItemState,
       value: row.value ?? undefined,
       priorEventId: row.priorEventId ?? undefined,

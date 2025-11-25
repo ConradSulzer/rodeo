@@ -12,6 +12,8 @@ import { Table, TableBody, TableCell, TableHeader, TableRow } from '@renderer/co
 import { MdOutlineSubdirectoryArrowRight } from 'react-icons/md'
 import { Button } from '@renderer/components/ui/button'
 import { EventDetailsModal } from './EventDetailsModal'
+import { usePlayerDirectory } from '@renderer/queries/players'
+import { useMetricCatalog } from '@renderer/queries/metrics'
 
 export type EventRow = {
   id: string
@@ -19,8 +21,8 @@ export type EventRow = {
   type: RodeoEvent['type']
   playerId: string
   playerName: string
-  scoreableId?: string
-  scoreableLabel?: string
+  metricId?: string
+  metricLabel?: string
   state?: 'value' | 'empty'
   value?: number
   note?: string
@@ -32,7 +34,7 @@ type EventTypeFilter = 'all' | RodeoEvent['type']
 const columns: ReadonlyArray<CrudTableColumn<EventRow, 'actions'>> = [
   { key: 'ts', label: 'Time', sortable: true, align: 'left' },
   { key: 'playerName', label: 'Player', sortable: true },
-  { key: 'scoreableLabel', label: 'Scoreable', sortable: false },
+  { key: 'metricLabel', label: 'Metric', sortable: false },
   { key: 'value' as keyof EventRow, label: 'Value', sortable: false, align: 'right' },
   { key: 'id', label: 'Event IDs', sortable: false },
   { key: 'actions', label: 'Actions', sortable: false, align: 'right' }
@@ -57,16 +59,13 @@ export function EventsSection() {
   const [events, setEvents] = useState<EventRow[]>([])
   const [typeFilter, setTypeFilter] = useState<EventTypeFilter>('all')
   const [detailsEvent, setDetailsEvent] = useState<EventRow | null>(null)
+  const { map: playerMap } = usePlayerDirectory()
+  const { map: metricMap } = useMetricCatalog()
 
   const fetchEvents = useCallback(async () => {
     try {
-      const [rawEvents, players, scoreables] = await Promise.all([
-        window.api.events.list(),
-        window.api.players.list(),
-        window.api.scoreables.list()
-      ])
-      const playerMap = new Map(players.map((player) => [player.id, player.displayName]))
-      const scoreableMap = new Map(scoreables.map((scoreable) => [scoreable.id, scoreable.label]))
+      const rawEvents = await window.api.events.list()
+      const metrics = metricMap
       const rows: EventRow[] = rawEvents
         .map((event) => ({
           id: event.id,
@@ -74,10 +73,10 @@ export function EventsSection() {
           type: event.type,
           playerId: event.playerId,
           playerName: playerMap.get(event.playerId) ?? event.playerId,
-          scoreableId: 'scoreableId' in event ? event.scoreableId : undefined,
-          scoreableLabel:
-            'scoreableId' in event && event.scoreableId
-              ? (scoreableMap.get(event.scoreableId) ?? event.scoreableId)
+          metricId: 'metricId' in event ? event.metricId : undefined,
+          metricLabel:
+            'metricId' in event && event.metricId
+              ? (metrics.get(event.metricId)?.label ?? event.metricId)
               : undefined,
           state: event.type === 'ItemStateChanged' ? event.state : undefined,
           value:
@@ -93,7 +92,7 @@ export function EventsSection() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [metricMap, playerMap])
 
   useEffect(() => {
     fetchEvents()
@@ -143,9 +142,9 @@ export function EventsSection() {
           </div>
         </TableCell>
         <TableCell>
-          {event.scoreableLabel ? (
+          {event.metricLabel ? (
             <div className="flex flex-col">
-              <span className="font-medium">{event.scoreableLabel}</span>
+              <span className="font-medium">{event.metricLabel}</span>
               <span className="text-xs ro-text-muted">{event.type}</span>
             </div>
           ) : (

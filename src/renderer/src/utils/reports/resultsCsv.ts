@@ -1,20 +1,20 @@
-import type { Division } from '@core/tournaments/divisions'
-import type { PlayerDivisionTuple } from '@core/players/players'
-import type { Scoreable } from '@core/tournaments/scoreables'
+import type { DivisionRecord } from '@core/tournaments/divisions'
+import type { MetricRecord } from '@core/tournaments/metrics'
+import type { EnrichedPlayer } from '@core/players/players'
 import type { ResultRow } from '@renderer/hooks/useResultsData'
 import Papa from 'papaparse'
 
 export function buildResultsCsv({
-  scoreables,
-  playerTuples,
+  metrics,
+  players,
   rows,
   divisions,
   includeUnscored
 }: {
-  scoreables: Scoreable[]
-  playerTuples: PlayerDivisionTuple[]
+  metrics: MetricRecord[]
+  players: EnrichedPlayer[]
   rows: ResultRow[]
-  divisions: Division[]
+  divisions: DivisionRecord[]
   includeUnscored: boolean
 }): string {
   const divisionOrder = [...divisions].sort((a, b) => {
@@ -28,13 +28,13 @@ export function buildResultsCsv({
 
   if (includeUnscored) {
     const scoredIds = new Set(rows.map((row) => row.player.id))
-    playerTuples.forEach(([player, divisions]) => {
+    players.forEach((player) => {
       if (scoredIds.has(player.id)) return
       combinedRows.push({
         player,
         displayName: player.displayName,
         email: player.email ?? '',
-        divisionIds: divisions?.map((division) => division.id) ?? [],
+        divisionIds: player.divisions.map((division) => division.id),
         scores: {}
       })
     })
@@ -43,22 +43,26 @@ export function buildResultsCsv({
   const header = [
     'Player Name',
     'Email',
-    ...scoreables.map((scoreable) => scoreable.label),
+    ...metrics.map((metric) => metric.label),
     ...divisionOrder.map((division) => division.name)
   ]
 
-  const rowsData = combinedRows.map((row) => formatRowForCsv(row, scoreables, divisionOrder))
+  const rowsData = combinedRows.map((row) => formatRowForCsv(row, metrics, divisionOrder))
 
   return Papa.unparse({ fields: header, data: rowsData })
 }
 
-function formatRowForCsv(row: ResultRow, scoreables: Scoreable[], divisions: Division[]): string[] {
+function formatRowForCsv(
+  row: ResultRow,
+  metrics: MetricRecord[],
+  divisions: DivisionRecord[]
+): string[] {
   const membershipSet = new Set(row.divisionIds)
   return [
     row.displayName,
     row.email,
-    ...scoreables.map((scoreable) => {
-      const result = row.scores[scoreable.id]
+    ...metrics.map((metric) => {
+      const result = row.scores[metric.id]
       const value = result?.value
       return Number.isFinite(value ?? NaN) ? String(value) : ''
     }),

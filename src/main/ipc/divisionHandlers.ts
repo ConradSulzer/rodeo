@@ -4,13 +4,7 @@ import {
   createDivision,
   deleteDivision,
   getDivision,
-  getDivisionView,
-  listAllDivisions,
-  listCategoriesForDivision,
-  listDivisionIdsForPlayer,
-  listDivisionViews,
-  listDivisionsForCategory,
-  listPlayerIdsForDivision,
+  listDivisions,
   moveDivision,
   reorderDivisions,
   removeCategoryFromDivision,
@@ -47,7 +41,7 @@ ipcMain.handle('divisions:get', (_evt, id: string) => {
 
 ipcMain.handle('divisions:list', () => {
   const db = getTournamentDb()
-  return listAllDivisions(db)
+  return listDivisions(db)
 })
 
 ipcMain.handle('divisions:move', (_evt, id: string, direction: 'up' | 'down') => {
@@ -75,11 +69,6 @@ ipcMain.handle('divisions:removeCategory', (_evt, divisionId: string, categoryId
   return withStandingsRefresh(db, () => removeCategoryFromDivision(db, divisionId, categoryId))
 })
 
-ipcMain.handle('divisions:listCategories', (_evt, divisionId: string) => {
-  const db = getTournamentDb()
-  return listCategoriesForDivision(db, divisionId)
-})
-
 ipcMain.handle(
   'divisions:updateCategoryLink',
   (_evt, divisionId: string, categoryId: string, patch: DivisionCategoryPatch) => {
@@ -90,20 +79,6 @@ ipcMain.handle(
   }
 )
 
-ipcMain.handle('divisions:listForCategory', (_evt, categoryId: string) => {
-  const db = getTournamentDb()
-  return listDivisionsForCategory(db, categoryId)
-})
-
-ipcMain.handle('divisions:getView', (_evt, id: string) => {
-  const db = getTournamentDb()
-  return getDivisionView(db, id)
-})
-
-ipcMain.handle('divisions:listViews', () => {
-  const db = getTournamentDb()
-  return listDivisionViews(db)
-})
 
 ipcMain.handle('divisions:addPlayer', (_evt, divisionId: string, playerId: string) => {
   const db = getTournamentDb()
@@ -113,14 +88,4 @@ ipcMain.handle('divisions:addPlayer', (_evt, divisionId: string, playerId: strin
 ipcMain.handle('divisions:removePlayer', (_evt, divisionId: string, playerId: string) => {
   const db = getTournamentDb()
   return withStandingsRefresh(db, () => removePlayerFromDivision(db, divisionId, playerId))
-})
-
-ipcMain.handle('divisions:listPlayers', (_evt, divisionId: string) => {
-  const db = getTournamentDb()
-  return listPlayerIdsForDivision(db, divisionId)
-})
-
-ipcMain.handle('divisions:listForPlayer', (_evt, playerId: string) => {
-  const db = getTournamentDb()
-  return listDivisionIdsForPlayer(db, playerId)
 })

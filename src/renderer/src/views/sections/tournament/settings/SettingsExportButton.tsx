@@ -4,7 +4,7 @@ import { buildTournamentTemplate } from '@core/templates/tournamentSettingsTempl
 import type {
   TemplateCategoryRow,
   TemplateDivisionRow,
-  TemplateScoreableRow
+  TemplateMetricRow
 } from '@core/templates/tournamentSettingsTemplate'
 import { toast } from 'sonner'
 import { buildCsvExportFilename } from '@core/utils/csv'
@@ -17,18 +17,18 @@ export function SettingsExportButton() {
   const handleExport = async () => {
     setExporting(true)
     try {
-      const [scoreables, categories, divisions, metadata] = await Promise.all([
-        window.api.scoreables.list(),
-        window.api.categories.listViews(),
+      const [metrics, categories, divisions, metadata] = await Promise.all([
+        window.api.metrics.list(),
+        window.api.categories.list(),
         window.api.divisions.list(),
         window.api.tournaments.getMetadata()
       ])
 
       const categoryMap = new Map(categories.map((category) => [category.id, category]))
 
-      const scoreableRows: TemplateScoreableRow[] = scoreables.map((scoreable) => ({
-        name: sanitizeName(scoreable.label),
-        unit: scoreable.unit,
+      const metricRows: TemplateMetricRow[] = metrics.map((metric) => ({
+        name: sanitizeName(metric.label),
+        unit: metric.unit,
         description: ''
       }))
 
@@ -36,29 +36,28 @@ export function SettingsExportButton() {
         name: sanitizeName(category.name),
         direction: category.direction === 'asc' ? 'asc' : 'desc',
         description: '',
-        scoreables: category.scoreables.map((scoreable) => sanitizeName(scoreable.label))
+        metrics: category.metrics.map((metric) => sanitizeName(metric.label))
       }))
 
-      const divisionRows: TemplateDivisionRow[] = []
-      for (const division of divisions) {
-        const links = await window.api.divisions.listCategories(division.id)
-        const sorted = [...links].sort((a, b) => {
+      const divisionRows: TemplateDivisionRow[] = divisions.map((division) => {
+        const sortedCategories = [...division.categories].sort((a, b) => {
           const orderA = a.order ?? 0
           const orderB = b.order ?? 0
           if (orderA !== orderB) return orderA - orderB
-          return a.categoryId.localeCompare(b.categoryId)
+          return a.category.id.localeCompare(b.category.id)
         })
-        divisionRows.push({
+
+        return {
           name: sanitizeName(division.name),
           description: '',
-          categories: sorted
-            .map((link) => sanitizeName(categoryMap.get(link.categoryId)?.name ?? ''))
+          categories: sortedCategories
+            .map((entry) => sanitizeName(categoryMap.get(entry.category.id)?.name ?? ''))
             .filter(Boolean)
-        })
-      }
+        }
+      })
 
       const csv = buildTournamentTemplate({
-        scoreables: scoreableRows,
+        metrics: metricRows,
         categories: categoryRows,
         divisions: divisionRows
       })

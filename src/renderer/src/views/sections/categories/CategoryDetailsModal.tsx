@@ -1,4 +1,4 @@
-import type { CategoryView } from '@core/tournaments/categories'
+import type { Category } from '@core/tournaments/categories'
 import { Modal } from '@renderer/components/Modal'
 import { Field } from '@renderer/components/ui/field'
 import { Label } from '@renderer/components/ui/label'
@@ -8,15 +8,16 @@ import { Pill } from '@renderer/components/ui/pill'
 
 type CategoryDetailsModalProps = {
   open: boolean
-  category?: CategoryView
+  category?: Category
   onClose: () => void
 }
 
 export function CategoryDetailsModal({ open, category, onClose }: CategoryDetailsModalProps) {
   if (!open || !category) return null
 
-  const hasScoreables = category.scoreables.length > 0
+  const hasMetrics = category.metrics.length > 0
   const hasRules = category.rules.length > 0
+  const hasDivisions = category.divisions.length > 0
 
   return (
     <Modal open={open} onClose={onClose} title="Category Details">
@@ -31,28 +32,42 @@ export function CategoryDetailsModal({ open, category, onClose }: CategoryDetail
               readOnly
             />
           </Field>
-          <Field label={<Label>Scoreable Count Display</Label>}>
-            <Input value={category.showScoreablesCount ? 'Shown' : 'Hidden'} readOnly />
+          <Field label={<Label>Metric Count Display</Label>}>
+            <Input value={category.showMetricsCount ? 'Shown' : 'Hidden'} readOnly />
           </Field>
-          {category.showScoreablesCount ? (
+          {category.showMetricsCount ? (
             <Field label={<Label>Count Column Name</Label>}>
-              <Input value={category.scoreablesCountName || ''} readOnly />
+              <Input value={category.metricsCountName || ''} readOnly />
             </Field>
           ) : null}
         </div>
 
         <div className="flex flex-col gap-2">
-          <Label>Scoreables</Label>
-          {hasScoreables ? (
+          <Label>Metrics</Label>
+          {hasMetrics ? (
             <div className="flex flex-wrap gap-2">
-              {category.scoreables.map((scoreable) => (
-                <Pill key={scoreable.id} size="md">
-                  {scoreable.label}
+              {category.metrics.map((metric) => (
+                <Pill key={metric.id} size="md">
+                  {metric.label}
                 </Pill>
               ))}
             </div>
           ) : (
-            <p className="text-sm ro-text-muted">No scoreables assigned.</p>
+            <p className="text-sm ro-text-muted">No metrics assigned.</p>
+          )}
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label>Divisions</Label>
+          {hasDivisions ? (
+            <div className="flex flex-wrap gap-2">
+              {category.divisions.map((division) => (
+                <Pill key={division.id} size="sm">
+                  {division.name}
+                </Pill>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm ro-text-muted">No divisions reference this category.</p>
           )}
         </div>
 

@@ -11,7 +11,7 @@ const makeItemEvent = (overrides: Partial<ItemStateChanged> = {}): ItemStateChan
   id: ulid(),
   ts: baseTs,
   playerId: ulid(),
-  scoreableId: ulid(),
+  metricId: ulid(),
   state: 'value',
   value: 10,
   note: 'initial',
@@ -30,7 +30,7 @@ describe('eventReducer', () => {
     expect(errors).toHaveLength(0)
     const items = results.get(scored.playerId)
     expect(items).toBeDefined()
-    expect(items?.get(scored.scoreableId)).toMatchObject({
+    expect(items?.get(scored.metricId)).toMatchObject({
       status: 'value',
       value: scored.value,
       srcEventId: scored.id,
@@ -51,7 +51,7 @@ describe('eventReducer', () => {
 
     expect(errors).toHaveLength(1)
     expect(errors[0].message).toContain('already exists')
-    const item = results.get(scored.playerId)?.get(scored.scoreableId)
+    const item = results.get(scored.playerId)?.get(scored.metricId)
     expect(item?.value).toBe(scored.value)
     expect(item?.srcEventId).toBe(scored.id)
   })
@@ -69,7 +69,7 @@ describe('eventReducer', () => {
       id: ulid(),
       ts: scored.ts + 10,
       playerId: scored.playerId,
-      scoreableId: scored.scoreableId,
+      metricId: scored.metricId,
       state: 'value',
       priorEventId: scored.id,
       value: 8,
@@ -80,7 +80,7 @@ describe('eventReducer', () => {
     const correctionErrors = reduceEvent(results, corrected, (id) => lookup.get(id))
     expect(correctionErrors).toHaveLength(0)
 
-    const itemAfterCorrection = results.get(scored.playerId)?.get(scored.scoreableId)
+    const itemAfterCorrection = results.get(scored.playerId)?.get(scored.metricId)
     expect(itemAfterCorrection).toMatchObject({
       value: corrected.value,
       srcEventId: corrected.id,
@@ -92,7 +92,7 @@ describe('eventReducer', () => {
       id: ulid(),
       ts: corrected.ts + 10,
       playerId: scored.playerId,
-      scoreableId: scored.scoreableId,
+      metricId: scored.metricId,
       state: 'empty',
       priorEventId: corrected.id,
       note: 'bad data'
@@ -100,7 +100,7 @@ describe('eventReducer', () => {
 
     const voidErrors = reduceEvent(results, voided, (id) => lookup.get(id))
     expect(voidErrors).toHaveLength(0)
-    expect(results.get(scored.playerId)?.get(scored.scoreableId)?.status).toBe('empty')
+    expect(results.get(scored.playerId)?.get(scored.metricId)?.status).toBe('empty')
   })
 
   it('rejects stale corrections and missing prior references', () => {
@@ -115,7 +115,7 @@ describe('eventReducer', () => {
       id: ulid(),
       ts: scored.ts - 1,
       playerId: scored.playerId,
-      scoreableId: scored.scoreableId,
+      metricId: scored.metricId,
       state: 'value',
       priorEventId: scored.id,
       value: 5
@@ -145,7 +145,7 @@ describe('eventReducer', () => {
       id: ulid(),
       ts: baseTs + 60,
       playerId: scored.playerId,
-      scoreableId: scored.scoreableId,
+      metricId: scored.metricId,
       state: 'value',
       priorEventId: scored.id,
       value: 9
@@ -155,7 +155,7 @@ describe('eventReducer', () => {
       id: ulid(),
       ts: baseTs + 70,
       playerId: scored.playerId,
-      scoreableId: scored.scoreableId,
+      metricId: scored.metricId,
       state: 'empty',
       priorEventId: corrected.id
     }
@@ -166,7 +166,7 @@ describe('eventReducer', () => {
 
     const { errors } = reduceBatch(results, [voided, scored, corrected], (id) => lookup.get(id))
     expect(errors.filter(Boolean)).toHaveLength(0)
-    expect(results.get(scored.playerId)?.get(scored.scoreableId)?.status).toBe('empty')
+    expect(results.get(scored.playerId)?.get(scored.metricId)?.status).toBe('empty')
   })
 
   it('voids entire scorecard', () => {
@@ -179,7 +179,7 @@ describe('eventReducer', () => {
 
     const second = makeItemEvent({
       playerId: first.playerId,
-      scoreableId: ulid()
+      metricId: ulid()
     })
     lookup.set(second.id, second)
     reduceEvent(results, second, (id) => lookup.get(id))

@@ -13,3 +13,4 @@
 - We have react-icons, feel free to use it.
 - Always run typecheck, lint and test to make sure you didn't break shit.
 - Always prefer to use the "@" reference over relative paths when importing. ex. @renderer/...
+- Never just jump into coding when I ask a question. Always address the question first so that we are sure we are moving on a mutually agreeable path.

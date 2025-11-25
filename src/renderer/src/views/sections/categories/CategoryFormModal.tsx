@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import type { Category } from '@core/tournaments/categories'
-import type { Scoreable } from '@core/tournaments/scoreables'
+import type { MetricRecord } from '@core/tournaments/metrics'
 import type { StandingRuleSummary } from '@core/tournaments/standingRules'
 import { Modal } from '@renderer/components/Modal'
 import { Field } from '@renderer/components/ui/field'
@@ -12,25 +12,25 @@ export type CategoryFormValues = {
   name: string
   direction: 'asc' | 'desc'
   rules: string[]
-  scoreableIds: string[]
-  showScoreablesCount: boolean
-  scoreablesCountName: string
+  metricIds: string[]
+  showMetricsCount: boolean
+  metricsCountName: string
 }
 
 const defaultValues: CategoryFormValues = {
   name: '',
   direction: 'asc',
   rules: [],
-  scoreableIds: [],
-  showScoreablesCount: false,
-  scoreablesCountName: ''
+  metricIds: [],
+  showMetricsCount: false,
+  metricsCountName: ''
 }
 
 type CategoryFormModalProps = {
   open: boolean
   mode: 'create' | 'edit'
-  category?: Category & { scoreableIds?: string[] }
-  scoreables: Scoreable[]
+  category?: Category & { metricIds?: string[] }
+  metrics: MetricRecord[]
   standingRules: StandingRuleSummary[]
   submitting?: boolean
   onSubmit: (values: CategoryFormValues) => Promise<void>
@@ -41,14 +41,14 @@ export function CategoryFormModal({
   open,
   mode,
   category,
-  scoreables,
+  metrics,
   standingRules,
   submitting = false,
   onSubmit,
   onClose
 }: CategoryFormModalProps) {
   const [values, setValues] = useState<CategoryFormValues>(defaultValues)
-  const [errors, setErrors] = useState<{ name?: string; scoreablesCountName?: string }>()
+  const [errors, setErrors] = useState<{ name?: string; metricsCountName?: string }>()
 
   useEffect(() => {
     if (!open) return
@@ -60,9 +60,9 @@ export function CategoryFormModal({
         name: category.name,
         direction: category.direction as 'asc' | 'desc',
         rules: category.rules ?? [],
-        scoreableIds: category.scoreableIds ?? [],
-        showScoreablesCount: Boolean(category.showScoreablesCount),
-        scoreablesCountName: category.scoreablesCountName ?? ''
+        metricIds: category.metricIds ?? [],
+        showMetricsCount: Boolean(category.showMetricsCount),
+        metricsCountName: category.metricsCountName ?? ''
       })
     } else {
       setValues(defaultValues)
@@ -76,7 +76,7 @@ export function CategoryFormModal({
     event.preventDefault()
     if (submitting) return
 
-    const nextErrors: { name?: string; scoreablesCountName?: string } = {}
+    const nextErrors: { name?: string; metricsCountName?: string } = {}
 
     const trimmedName = values.name.trim()
 
@@ -84,10 +84,10 @@ export function CategoryFormModal({
       nextErrors.name = 'Name is required'
     }
 
-    const trimmedCountName = values.scoreablesCountName.trim()
+    const trimmedCountName = values.metricsCountName.trim()
 
-    if (values.showScoreablesCount && !trimmedCountName) {
-      nextErrors.scoreablesCountName = 'Column name is required'
+    if (values.showMetricsCount && !trimmedCountName) {
+      nextErrors.metricsCountName = 'Column name is required'
     }
 
     if (Object.keys(nextErrors).length) {
@@ -99,19 +99,19 @@ export function CategoryFormModal({
       ...values,
       name: trimmedName,
       rules: values.rules.filter((rule) => rule.trim().length),
-      scoreablesCountName: values.showScoreablesCount ? trimmedCountName : ''
+      metricsCountName: values.showMetricsCount ? trimmedCountName : ''
     })
   }
 
-  const toggleScoreable = (id: string) => {
+  const toggleMetric = (id: string) => {
     setValues((prev) => {
-      const set = new Set(prev.scoreableIds)
+      const set = new Set(prev.metricIds)
       if (set.has(id)) {
         set.delete(id)
       } else {
         set.add(id)
       }
-      return { ...prev, scoreableIds: Array.from(set) }
+      return { ...prev, metricIds: Array.from(set) }
     })
   }
 
@@ -149,23 +149,23 @@ export function CategoryFormModal({
           </Field>
         </div>
         <div className="flex flex-col gap-2">
-          <Label className="border-b">Pick Scoreables To Include</Label>
-          {scoreables.length ? (
+          <Label className="border-b">Pick Metrics To Include</Label>
+          {metrics.length ? (
             <div className="grid gap-2 md:grid-cols-2 px-3">
-              {scoreables.map((scoreable) => (
-                <label key={scoreable.id} className="flex items-center gap-2 text-sm">
+              {metrics.map((metric) => (
+                <label key={metric.id} className="flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"
                     className="h-4 w-4"
-                    checked={values.scoreableIds.includes(scoreable.id)}
-                    onChange={() => toggleScoreable(scoreable.id)}
+                    checked={values.metricIds.includes(metric.id)}
+                    onChange={() => toggleMetric(metric.id)}
                   />
-                  <span>{scoreable.label}</span>
+                  <span>{metric.label}</span>
                 </label>
               ))}
             </div>
           ) : (
-            <p className="text-xs ro-text-muted">No scoreables available.</p>
+            <p className="text-xs ro-text-muted">No metrics available.</p>
           )}
         </div>
         <div className="flex flex-col gap-2">
@@ -205,33 +205,33 @@ export function CategoryFormModal({
               <input
                 type="checkbox"
                 className="h-4 w-4"
-                checked={values.showScoreablesCount}
+                checked={values.showMetricsCount}
                 onChange={(event) =>
                   setValues((prev) => ({
                     ...prev,
-                    showScoreablesCount: event.target.checked
+                    showMetricsCount: event.target.checked
                   }))
                 }
               />
-              Display Scoreable Count Column
+              Display Metric Count Column
             </label>
             <p className="text-xs ro-text-muted">
-              Adds a column in standings to show how many scoreables a player obtained from this
+              Adds a column in standings to show how many metrics a player obtained from this
               category.
             </p>
             <Field
               className="mt-3"
-              label={<Label htmlFor="category-scoreables-count-name">Count Column Name</Label>}
-              error={errors?.scoreablesCountName}
+              label={<Label htmlFor="category-metrics-count-name">Count Column Name</Label>}
+              error={errors?.metricsCountName}
             >
               <Input
-                id="category-scoreables-count-name"
+                id="category-metrics-count-name"
                 placeholder="e.g. Total Fish"
-                value={values.scoreablesCountName}
+                value={values.metricsCountName}
                 onChange={(event) =>
                   setValues((prev) => ({
                     ...prev,
-                    scoreablesCountName: event.target.value
+                    metricsCountName: event.target.value
                   }))
                 }
               />

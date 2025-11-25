@@ -3,23 +3,33 @@ import type { AppDatabase } from '@core/db/db'
 import {
   division as dv,
   divisionCategory as dvCategory,
-  playerDivision as pd
+  playerDivision as pd,
+  categoryMetric as cm,
+  metric as mt
 } from '@core/db/schema'
-import { and, asc, eq } from 'drizzle-orm'
-import {
-  getCategory,
-  listScoreableIdsForCategory,
-  type Category
-} from '@core/tournaments/categories'
-import { getScoreable, type Scoreable } from '@core/tournaments/scoreables'
+import { and, eq, asc } from 'drizzle-orm'
+import type { CategoryRecord } from '@core/tournaments/categories'
+import type { MetricRecord } from '@core/tournaments/metrics'
 
-export type Division = typeof dv.$inferSelect
-export type NewDivision = Omit<Division, 'id' | 'createdAt' | 'updatedAt' | 'order'> & {
+export type DivisionRecord = typeof dv.$inferSelect
+export type NewDivision = Omit<DivisionRecord, 'id' | 'createdAt' | 'updatedAt' | 'order'> & {
   order?: number
 }
 export type PatchDivision = Partial<NewDivision>
 export type DivisionCategoryLink = typeof dvCategory.$inferSelect
 export type DivisionCategoryPatch = Partial<Pick<DivisionCategoryLink, 'depth' | 'order'>>
+
+export type DivisionCategory = {
+  category: CategoryRecord
+  depth: number
+  order: number
+  metrics: MetricRecord[]
+}
+
+export type Division = DivisionRecord & {
+  categories: DivisionCategory[]
+  eligiblePlayerIds: string[]
+}
 
 const now = () => Date.now()
 
@@ -74,12 +84,71 @@ export function deleteDivision(db: AppDatabase, id: string) {
   return result.changes > 0
 }
 
-export function getDivision(db: AppDatabase, id: string): Division | undefined {
+export function getDivision(db: AppDatabase, id: string): DivisionRecord | undefined {
   return db.select().from(dv).where(eq(dv.id, id)).get()
 }
 
-export function listAllDivisions(db: AppDatabase): Division[] {
-  return db.select().from(dv).orderBy(asc(dv.order), asc(dv.name)).all()
+export function listDivisions(db: AppDatabase): Division[] {
+  const divisionsWithRelations = db.query.division
+    .findMany({
+      orderBy: (divisions, { asc }) => [asc(divisions.order), asc(divisions.name)],
+      with: {
+        divisionCategories: {
+          with: {
+            category: {
+              with: {
+                categoryMetrics: {
+                  with: {
+                    metric: true
+                  }
+                }
+              }
+            }
+          }
+        },
+        playerDivisions: true
+      }
+    })
+    .sync()
+
+  return divisionsWithRelations.map(({ divisionCategories, playerDivisions, ...division }) => {
+    const categories = divisionCategories
+      .map((link) => {
+        const category = link.category
+        if (!category) return null
+
+        const { categoryMetrics: categoryMetricLinks = [], ...categoryData } = category
+
+        const metrics = categoryMetricLinks
+          .map((metricLink) => metricLink.metric)
+          .filter((metric): metric is MetricRecord => Boolean(metric))
+          .sort((a, b) => a.label.localeCompare(b.label))
+
+        return {
+          category: categoryData,
+          depth: link.depth,
+          order: link.order,
+          metrics
+        }
+      })
+      .filter((entry): entry is DivisionCategory => entry !== null)
+      .sort((a, b) => {
+        const orderA = a.order ?? 0
+        const orderB = b.order ?? 0
+        return orderA === orderB ? a.category.id.localeCompare(b.category.id) : orderA - orderB
+      })
+
+    const eligiblePlayerIds = playerDivisions
+      .map((link) => link.playerId)
+      .filter((playerId): playerId is string => Boolean(playerId))
+      .sort((a, b) => a.localeCompare(b))
+
+    return {
+      ...(division as DivisionRecord),
+      categories,
+      eligiblePlayerIds
+    }
+  })
 }
 
 export function addCategoryToDivision(
@@ -132,6 +201,36 @@ export function removeCategoryFromDivision(
   return result.changes > 0
 }
 
+type DivisionMetric = Pick<MetricRecord, 'id' | 'label'>
+
+export function loadDivisionMetricDirectory(db: AppDatabase): Map<string, DivisionMetric[]> {
+  const rows = db
+    .select({
+      divisionId: dvCategory.divisionId,
+      metricId: mt.id,
+      metricLabel: mt.label
+    })
+    .from(dvCategory)
+    .innerJoin(cm, eq(cm.categoryId, dvCategory.categoryId))
+    .innerJoin(mt, eq(mt.id, cm.metricId))
+    .groupBy(dvCategory.divisionId, mt.id, mt.label)
+    .orderBy(asc(dvCategory.divisionId), asc(mt.label))
+    .all() as Array<{ divisionId: string; metricId: string; metricLabel: string }>
+
+  const directory = new Map<string, DivisionMetric[]>()
+
+  for (const { divisionId, metricId, metricLabel } of rows) {
+    let metrics = directory.get(divisionId)
+    if (!metrics) {
+      metrics = []
+      directory.set(divisionId, metrics)
+    }
+    metrics.push({ id: metricId, label: metricLabel })
+  }
+
+  return directory
+}
+
 export function updateDivisionCategoryLink(
   db: AppDatabase,
   divisionId: string,
@@ -158,96 +257,6 @@ export function updateDivisionCategoryLink(
   return result.changes > 0
 }
 
-export function listCategoriesForDivision(
-  db: AppDatabase,
-  divisionId: string
-): DivisionCategoryLink[] {
-  return db
-    .select({
-      divisionId: dvCategory.divisionId,
-      categoryId: dvCategory.categoryId,
-      depth: dvCategory.depth,
-      order: dvCategory.order
-    })
-    .from(dvCategory)
-    .where(eq(dvCategory.divisionId, divisionId))
-    .orderBy(asc(dvCategory.order), asc(dvCategory.categoryId))
-    .all()
-}
-
-export function listDivisionsForCategory(
-  db: AppDatabase,
-  categoryId: string
-): DivisionCategoryLink[] {
-  return db
-    .select({
-      divisionId: dvCategory.divisionId,
-      categoryId: dvCategory.categoryId,
-      depth: dvCategory.depth,
-      order: dvCategory.order
-    })
-    .from(dvCategory)
-    .where(eq(dvCategory.categoryId, categoryId))
-    .orderBy(asc(dvCategory.order), asc(dvCategory.divisionId))
-    .all()
-}
-
-export type DivisionCategoryView = {
-  category: Category
-  depth: number
-  order: number
-  scoreables: Scoreable[]
-}
-
-export type DivisionView = Division & {
-  categories: DivisionCategoryView[]
-  eligiblePlayerIds: string[]
-}
-
-export function getDivisionView(db: AppDatabase, divisionId: string): DivisionView | undefined {
-  const division = getDivision(db, divisionId)
-  if (!division) return undefined
-
-  const categories = buildDivisionCategories(db, divisionId)
-  const eligiblePlayerIds = listPlayerIdsForDivision(db, divisionId)
-
-  return {
-    ...division,
-    categories,
-    eligiblePlayerIds
-  }
-}
-
-export function listDivisionViews(db: AppDatabase): DivisionView[] {
-  return listAllDivisions(db).map((division) => ({
-    ...division,
-    categories: buildDivisionCategories(db, division.id),
-    eligiblePlayerIds: listPlayerIdsForDivision(db, division.id)
-  }))
-}
-
-function buildDivisionCategories(db: AppDatabase, divisionId: string): DivisionCategoryView[] {
-  const links = listCategoriesForDivision(db, divisionId)
-
-  return links
-    .map((link) => {
-      const category = getCategory(db, link.categoryId)
-      if (!category) return null
-
-      const scoreables = listScoreableIdsForCategory(db, link.categoryId)
-        .map((scoreableId) => getScoreable(db, scoreableId))
-        .filter((scoreable): scoreable is Scoreable => Boolean(scoreable))
-
-      return {
-        category,
-        depth: link.depth,
-        order: link.order,
-        scoreables
-      }
-    })
-    .filter((entry): entry is DivisionCategoryView => entry !== null)
-}
-
 export function addPlayerToDivision(
   db: AppDatabase,
   divisionId: string,
@@ -271,28 +280,8 @@ export function removePlayerFromDivision(
   return result.changes > 0
 }
 
-export function listPlayerIdsForDivision(db: AppDatabase, divisionId: string): string[] {
-  return db
-    .select({ playerId: pd.playerId })
-    .from(pd)
-    .where(eq(pd.divisionId, divisionId))
-    .orderBy(asc(pd.playerId))
-    .all()
-    .map((row) => row.playerId)
-}
-
-export function listDivisionIdsForPlayer(db: AppDatabase, playerId: string): string[] {
-  return db
-    .select({ divisionId: pd.divisionId })
-    .from(pd)
-    .where(eq(pd.playerId, playerId))
-    .orderBy(asc(pd.divisionId))
-    .all()
-    .map((row) => row.divisionId)
-}
-
 export function moveDivision(db: AppDatabase, id: string, direction: 'up' | 'down') {
-  const divisions = listAllDivisions(db)
+  const divisions = listDivisions(db)
   const index = divisions.findIndex((division) => division.id === id)
   if (index === -1) return false
 
@@ -320,7 +309,7 @@ export function moveDivision(db: AppDatabase, id: string, direction: 'up' | 'dow
 
 export function reorderDivisions(db: AppDatabase, orderedIds: string[]) {
   if (!orderedIds.length) return false
-  const existingIds = new Set(listAllDivisions(db).map((division) => division.id))
+  const existingIds = new Set(listDivisions(db).map((division) => division.id))
   const filtered = orderedIds.filter((id) => existingIds.has(id))
   if (!filtered.length) return false
 

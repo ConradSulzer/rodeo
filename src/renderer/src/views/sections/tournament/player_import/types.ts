@@ -1,4 +1,4 @@
-import type { Division } from '@core/tournaments/divisions'
+import type { DivisionRecord } from '@core/tournaments/divisions'
 import type { PlayerFormData } from '@core/players/playerFormSchema'
 
 export const PLAYER_FIELD_KEYS = [
@@ -45,7 +45,7 @@ export type MappingFormProps = {
   columns: string[]
   fieldMapping: PlayerFieldMapping
   onFieldChange: (field: PlayerFieldKey, column: string) => void
-  divisions: Division[]
+  divisions: DivisionRecord[]
   divisionMappings: DivisionMappingsMap
   onDivisionMappingChange: (divisionId: string, patch: Partial<DivisionMapping>) => void
   loadingDivisions: boolean

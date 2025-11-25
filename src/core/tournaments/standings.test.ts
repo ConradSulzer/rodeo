@@ -1,13 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { withInMemoryDb } from '@core/db/db'
-import {
-  createDivision,
-  addCategoryToDivision,
-  getDivisionView,
-  addPlayerToDivision
-} from './divisions'
-import { addScoreableToCategory, createCategory, updateCategory } from './categories'
-import { createScoreable } from './scoreables'
+import { createDivision, addCategoryToDivision, addPlayerToDivision, listDivisions } from './divisions'
+import { addMetricToCategory, createCategory, updateCategory } from './categories'
+import { createMetric } from './metrics'
 import { createPlayer } from '@core/players/players'
 import { computeDivisionStanding } from './standings'
 import { appendEvent, getEvent, type ItemStateChanged } from '@core/events/events'
@@ -33,11 +28,11 @@ describe('standings computation', () => {
     withInMemoryDb((db) => {
       const divisionId = createDivision(db, { name: 'Pro' })
       const categoryId = createCategory(db, { name: 'Mixed Bag', direction: 'desc' })
-      const weightId = createScoreable(db, { label: 'Weight', unit: 'lbs' })
-      const lengthId = createScoreable(db, { label: 'Length', unit: 'in' })
+      const weightId = createMetric(db, { label: 'Weight', unit: 'lbs' })
+      const lengthId = createMetric(db, { label: 'Length', unit: 'in' })
 
-      addScoreableToCategory(db, categoryId, weightId)
-      addScoreableToCategory(db, categoryId, lengthId)
+      addMetricToCategory(db, categoryId, weightId)
+      addMetricToCategory(db, categoryId, lengthId)
       addCategoryToDivision(db, divisionId, categoryId, 5)
 
       const playerFull = createPlayer(db, basePlayer('Full'))
@@ -51,7 +46,7 @@ describe('standings computation', () => {
       const results: Results = new Map()
       const baseTs = Date.now()
       const makeEvent = (
-        scoreableId: string,
+        metricId: string,
         playerId: string,
         value: number,
         offset = 0
@@ -60,7 +55,7 @@ describe('standings computation', () => {
         id: ulid(),
         ts: baseTs + offset,
         playerId,
-        scoreableId,
+        metricId,
         state: 'value',
         value
       })
@@ -69,7 +64,7 @@ describe('standings computation', () => {
       persistEvent(db, results, makeEvent(lengthId, playerFull, 5, 2))
       persistEvent(db, results, makeEvent(weightId, playerPartial, 12, 3))
 
-      const divisionView = getDivisionView(db, divisionId)!
+      const divisionView = listDivisions(db).find((division) => division.id === divisionId)!
       const standing = computeDivisionStanding(results, divisionView)
       const [categoryStanding] = standing.categories
 
@@ -96,11 +91,11 @@ describe('standings computation', () => {
     withInMemoryDb((db) => {
       const divisionId = createDivision(db, { name: 'Masters' })
       const categoryId = createCategory(db, { name: 'Low Total Wins', direction: 'asc' })
-      const scoreableA = createScoreable(db, { label: 'Attempt 1', unit: 'pts' })
-      const scoreableB = createScoreable(db, { label: 'Attempt 2', unit: 'pts' })
+      const metricA = createMetric(db, { label: 'Attempt 1', unit: 'pts' })
+      const metricB = createMetric(db, { label: 'Attempt 2', unit: 'pts' })
 
-      addScoreableToCategory(db, categoryId, scoreableA)
-      addScoreableToCategory(db, categoryId, scoreableB)
+      addMetricToCategory(db, categoryId, metricA)
+      addMetricToCategory(db, categoryId, metricB)
       addCategoryToDivision(db, divisionId, categoryId, 5)
 
       const playerA = createPlayer(db, basePlayer('A'))
@@ -112,7 +107,7 @@ describe('standings computation', () => {
       const results: Results = new Map()
       const baseTs = Date.now()
       const makeEvent = (
-        scoreableId: string,
+        metricId: string,
         playerId: string,
         value: number,
         offset = 0
@@ -121,17 +116,17 @@ describe('standings computation', () => {
         id: ulid(),
         ts: baseTs + offset,
         playerId,
-        scoreableId,
+        metricId,
         state: 'value',
         value
       })
 
-      persistEvent(db, results, makeEvent(scoreableA, playerA, 4, 1))
-      persistEvent(db, results, makeEvent(scoreableB, playerA, 4, 2))
-      persistEvent(db, results, makeEvent(scoreableA, playerB, 3, 1))
-      persistEvent(db, results, makeEvent(scoreableB, playerB, 3, 2))
+      persistEvent(db, results, makeEvent(metricA, playerA, 4, 1))
+      persistEvent(db, results, makeEvent(metricB, playerA, 4, 2))
+      persistEvent(db, results, makeEvent(metricA, playerB, 3, 1))
+      persistEvent(db, results, makeEvent(metricB, playerB, 3, 2))
 
-      const divisionView = getDivisionView(db, divisionId)!
+      const divisionView = listDivisions(db).find((division) => division.id === divisionId)!
       const standing = computeDivisionStanding(results, divisionView)
       const entries = standing.categories[0].entries
 
@@ -147,13 +142,13 @@ describe('standings computation', () => {
     withInMemoryDb((db) => {
       const divisionId = createDivision(db, { name: 'Rule Division' })
       const categoryId = createCategory(db, { name: 'Full Cards Win', direction: 'desc' })
-      const scoreableA = createScoreable(db, { label: 'Fish A', unit: 'lbs' })
-      const scoreableB = createScoreable(db, { label: 'Fish B', unit: 'lbs' })
-      const scoreableC = createScoreable(db, { label: 'Fish C', unit: 'lbs' })
+      const metricA = createMetric(db, { label: 'Fish A', unit: 'lbs' })
+      const metricB = createMetric(db, { label: 'Fish B', unit: 'lbs' })
+      const metricC = createMetric(db, { label: 'Fish C', unit: 'lbs' })
 
-      addScoreableToCategory(db, categoryId, scoreableA)
-      addScoreableToCategory(db, categoryId, scoreableB)
-      addScoreableToCategory(db, categoryId, scoreableC)
+      addMetricToCategory(db, categoryId, metricA)
+      addMetricToCategory(db, categoryId, metricB)
+      addMetricToCategory(db, categoryId, metricC)
       updateCategory(db, categoryId, { rules: ['more_items_trump_fewer'] })
       addCategoryToDivision(db, divisionId, categoryId, 5)
 
@@ -166,7 +161,7 @@ describe('standings computation', () => {
       const results: Results = new Map()
       const baseTs = Date.now()
       const makeEvent = (
-        scoreableId: string,
+        metricId: string,
         playerId: string,
         value: number,
         offset = 0
@@ -175,20 +170,23 @@ describe('standings computation', () => {
         id: ulid(),
         ts: baseTs + offset,
         playerId,
-        scoreableId,
+        metricId,
         state: 'value',
         value
       })
 
       // Player with a full card has a lower raw total but more items
-      persistEvent(db, results, makeEvent(scoreableA, playerFull, 5, 1))
-      persistEvent(db, results, makeEvent(scoreableB, playerFull, 5, 2))
-      persistEvent(db, results, makeEvent(scoreableC, playerFull, 5, 3))
+      persistEvent(db, results, makeEvent(metricA, playerFull, 5, 1))
+      persistEvent(db, results, makeEvent(metricB, playerFull, 5, 2))
+      persistEvent(db, results, makeEvent(metricC, playerFull, 5, 3))
 
       // Partial player posts a higher raw total but fewer items
-      persistEvent(db, results, makeEvent(scoreableA, playerPartial, 20, 1))
+      persistEvent(db, results, makeEvent(metricA, playerPartial, 20, 1))
 
-      const standing = computeDivisionStanding(results, getDivisionView(db, divisionId)!)
+      const standing = computeDivisionStanding(
+        results,
+        listDivisions(db).find((division) => division.id === divisionId)!
+      )
       const [categoryStanding] = standing.categories
 
       expect(categoryStanding.entries.map((entry) => entry.playerId)).toEqual([
@@ -205,18 +203,18 @@ describe('standings computation', () => {
     })
   })
 
-  it('applies the "Require All Scoreables" rule to drop incomplete cards', () => {
+  it('applies the "Require All Metrics" rule to drop incomplete cards', () => {
     withInMemoryDb((db) => {
       const divisionId = createDivision(db, { name: 'Require Division' })
       const categoryId = createCategory(db, { name: 'Complete Cards Only', direction: 'desc' })
-      const scoreableA = createScoreable(db, { label: 'Fish A', unit: 'lbs' })
-      const scoreableB = createScoreable(db, { label: 'Fish B', unit: 'lbs' })
-      const scoreableC = createScoreable(db, { label: 'Fish C', unit: 'lbs' })
+      const metricA = createMetric(db, { label: 'Fish A', unit: 'lbs' })
+      const metricB = createMetric(db, { label: 'Fish B', unit: 'lbs' })
+      const metricC = createMetric(db, { label: 'Fish C', unit: 'lbs' })
 
-      addScoreableToCategory(db, categoryId, scoreableA)
-      addScoreableToCategory(db, categoryId, scoreableB)
-      addScoreableToCategory(db, categoryId, scoreableC)
-      updateCategory(db, categoryId, { rules: ['require_all_scoreables'] })
+      addMetricToCategory(db, categoryId, metricA)
+      addMetricToCategory(db, categoryId, metricB)
+      addMetricToCategory(db, categoryId, metricC)
+      updateCategory(db, categoryId, { rules: ['require_all_metrics'] })
       addCategoryToDivision(db, divisionId, categoryId, 5)
 
       const playerComplete = createPlayer(db, basePlayer('Complete'))
@@ -228,7 +226,7 @@ describe('standings computation', () => {
       const results: Results = new Map()
       const baseTs = Date.now()
       const makeEvent = (
-        scoreableId: string,
+        metricId: string,
         playerId: string,
         value: number,
         offset = 0
@@ -237,19 +235,22 @@ describe('standings computation', () => {
         id: ulid(),
         ts: baseTs + offset,
         playerId,
-        scoreableId,
+        metricId,
         state: 'value',
         value
       })
 
-      persistEvent(db, results, makeEvent(scoreableA, playerComplete, 10, 1))
-      persistEvent(db, results, makeEvent(scoreableB, playerComplete, 8, 2))
-      persistEvent(db, results, makeEvent(scoreableC, playerComplete, 6, 3))
+      persistEvent(db, results, makeEvent(metricA, playerComplete, 10, 1))
+      persistEvent(db, results, makeEvent(metricB, playerComplete, 8, 2))
+      persistEvent(db, results, makeEvent(metricC, playerComplete, 6, 3))
 
-      persistEvent(db, results, makeEvent(scoreableA, playerMissing, 12, 1))
-      persistEvent(db, results, makeEvent(scoreableB, playerMissing, 9, 2))
+      persistEvent(db, results, makeEvent(metricA, playerMissing, 12, 1))
+      persistEvent(db, results, makeEvent(metricB, playerMissing, 9, 2))
 
-      const standing = computeDivisionStanding(results, getDivisionView(db, divisionId)!)
+      const standing = computeDivisionStanding(
+        results,
+        listDivisions(db).find((division) => division.id === divisionId)!
+      )
       const [categoryStanding] = standing.categories
 
       expect(categoryStanding.entries.map((entry) => entry.playerId)).toEqual([playerComplete])
@@ -261,9 +262,9 @@ describe('standings computation', () => {
     withInMemoryDb((db) => {
       const divisionId = createDivision(db, { name: 'TieBreak' })
       const categoryId = createCategory(db, { name: 'Heaviest Fish', direction: 'desc' })
-      const scoreableId = createScoreable(db, { label: 'Fish', unit: 'lbs' })
+      const metricId = createMetric(db, { label: 'Fish', unit: 'lbs' })
 
-      addScoreableToCategory(db, categoryId, scoreableId)
+      addMetricToCategory(db, categoryId, metricId)
       addCategoryToDivision(db, divisionId, categoryId, 5)
 
       const playerEarly = createPlayer(db, basePlayer('Early'))
@@ -279,7 +280,7 @@ describe('standings computation', () => {
         id: ulid(),
         ts: baseTs + tsOffset,
         playerId,
-        scoreableId,
+        metricId,
         state: 'value',
         value
       })
@@ -288,7 +289,10 @@ describe('standings computation', () => {
       persistEvent(db, results, makeEvent(playerEarly, 15, 1))
       persistEvent(db, results, makeEvent(playerLate, 15, 10))
 
-      const standing = computeDivisionStanding(results, getDivisionView(db, divisionId)!)
+      const standing = computeDivisionStanding(
+        results,
+        listDivisions(db).find((division) => division.id === divisionId)!
+      )
       const [categoryStanding] = standing.categories
       const [first, second] = categoryStanding.entries
 

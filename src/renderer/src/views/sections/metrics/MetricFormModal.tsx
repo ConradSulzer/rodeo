@@ -1,72 +1,72 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import type { Scoreable } from '@core/tournaments/scoreables'
+import type { MetricRecord } from '@core/tournaments/metrics'
 import {
-  scoreableFormSchema,
-  type ScoreableFormData,
-  type ScoreableFormInput
-} from '@core/scoreables/scoreableFormSchema'
+  metricFormSchema,
+  type MetricFormData,
+  type MetricFormInput
+} from '@core/metrics/metricFormSchema'
 import { Modal } from '../../../components/Modal'
 import { Field } from '../../../components/ui/field'
 import { Label } from '../../../components/ui/label'
 import { Input } from '../../../components/ui/input'
 import { Button } from '../../../components/ui/button'
 
-type ScoreableFormModalProps = {
+type MetricFormModalProps = {
   open: boolean
   mode: 'create' | 'edit'
-  scoreable?: Scoreable
+  metric?: MetricRecord
   submitting?: boolean
-  onSubmit: (values: ScoreableFormData) => Promise<void>
+  onSubmit: (values: MetricFormData) => Promise<void>
   onClose: () => void
 }
 
-type ValidationErrors = Partial<Record<keyof ScoreableFormData, string>>
+type ValidationErrors = Partial<Record<keyof MetricFormData, string>>
 
-const emptyForm: ScoreableFormInput = {
+const emptyForm: MetricFormInput = {
   label: '',
   unit: ''
 }
 
-function toInitialValues(scoreable?: Scoreable): ScoreableFormInput {
-  if (!scoreable) return emptyForm
+function toInitialValues(metric?: MetricRecord): MetricFormInput {
+  if (!metric) return emptyForm
   return {
-    label: scoreable.label ?? '',
-    unit: scoreable.unit ?? ''
+    label: metric.label ?? '',
+    unit: metric.unit ?? ''
   }
 }
 
-export function ScoreableFormModal({
+export function MetricFormModal({
   open,
   mode,
-  scoreable,
+  metric,
   submitting = false,
   onSubmit,
   onClose
-}: ScoreableFormModalProps) {
-  const [values, setValues] = useState<ScoreableFormInput>(emptyForm)
+}: MetricFormModalProps) {
+  const [values, setValues] = useState<MetricFormInput>(emptyForm)
   const [errors, setErrors] = useState<ValidationErrors>({})
 
   useEffect(() => {
     if (!open) return
-    const next = toInitialValues(scoreable)
+    const next = toInitialValues(metric)
     setValues(next)
     setErrors({})
-  }, [open, scoreable])
+  }, [open, metric])
 
-  const title = mode === 'create' ? 'Add Scoreable' : 'Edit Scoreable'
-  const submitLabel = mode === 'create' ? 'Add Scoreable' : 'Save Changes'
+  const title = mode === 'create' ? 'Add Metric' : 'Edit Metric'
+  const submitLabel = mode === 'create' ? 'Add Metric' : 'Save Changes'
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (submitting) return
 
-    const parsed = scoreableFormSchema.safeParse(values)
+    const parsed = metricFormSchema.safeParse(values)
     if (!parsed.success) {
       const fieldErrors: ValidationErrors = {}
       for (const issue of parsed.error.issues) {
         const path = issue.path[0]
         if (typeof path === 'string') {
-          fieldErrors[path as keyof ScoreableFormData] = issue.message
+          fieldErrors[path as keyof MetricFormData] = issue.message
         }
       }
       setErrors(fieldErrors)
@@ -80,17 +80,17 @@ export function ScoreableFormModal({
   return (
     <Modal open={open} onClose={onClose} title={title}>
       <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
-        <Field label={<Label htmlFor="scoreable-label">Label</Label>} error={errors.label}>
+        <Field label={<Label htmlFor="metric-label">Label</Label>} error={errors.label}>
           <Input
-            id="scoreable-label"
+            id="metric-label"
             value={values.label}
             onChange={(event) => setValues((prev) => ({ ...prev, label: event.target.value }))}
             autoFocus
           />
         </Field>
-        <Field label={<Label htmlFor="scoreable-unit">Unit</Label>} error={errors.unit}>
+        <Field label={<Label htmlFor="metric-unit">Unit</Label>} error={errors.unit}>
           <Input
-            id="scoreable-unit"
+            id="metric-unit"
             value={values.unit}
             onChange={(event) => setValues((prev) => ({ ...prev, unit: event.target.value }))}
             placeholder="e.g. seconds, points"

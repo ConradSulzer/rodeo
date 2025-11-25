@@ -13,7 +13,7 @@ import {
   type ScorecardVoided
 } from './events'
 import { createPlayer, type NewPlayer } from '@core/players/players'
-import { createScoreable, type NewScoreable } from '@core/tournaments/scoreables'
+import { createMetric, type NewMetric } from '@core/tournaments/metrics'
 
 const baseTs = Date.now()
 
@@ -24,15 +24,15 @@ const makePlayerData = (suffix: string): NewPlayer => ({
   email: `player${suffix}@example.com`
 })
 
-const makeScoreableData = (suffix: string): NewScoreable => ({
-  label: `Scoreable ${suffix}`,
+const makeMetricData = (suffix: string): NewMetric => ({
+  label: `Metric ${suffix}`,
   unit: `unit-${suffix}`
 })
 
 const makeItemEvent = (
   base: {
     playerId: ULID
-    scoreableId: ULID
+    metricId: ULID
   },
   overrides: Partial<Omit<ItemStateChanged, 'type'>> = {}
 ): ItemStateChanged => ({
@@ -40,7 +40,7 @@ const makeItemEvent = (
   id: ulid(),
   ts: baseTs,
   playerId: base.playerId,
-  scoreableId: base.scoreableId,
+  metricId: base.metricId,
   state: 'value',
   value: 42,
   note: 'initial',
@@ -51,8 +51,8 @@ describe('events data access', () => {
   it('persists and retrieves a scored event', () => {
     withInMemoryDb((db) => {
       const playerId = createPlayer(db, makePlayerData('A'))
-      const scoreableId = createScoreable(db, makeScoreableData('A'))
-      const event = makeItemEvent({ playerId, scoreableId })
+      const metricId = createMetric(db, makeMetricData('A'))
+      const event = makeItemEvent({ playerId, metricId })
 
       appendEvent(db, event)
 
@@ -63,14 +63,14 @@ describe('events data access', () => {
   it('persists multiple event types and lists them chronologically', () => {
     withInMemoryDb((db) => {
       const playerId = createPlayer(db, makePlayerData('A'))
-      const scoreableId = createScoreable(db, makeScoreableData('A'))
-      const scored = makeItemEvent({ playerId, scoreableId }, { ts: baseTs + 10 })
+      const metricId = createMetric(db, makeMetricData('A'))
+      const scored = makeItemEvent({ playerId, metricId }, { ts: baseTs + 10 })
       const corrected: ItemStateChanged = {
         type: 'ItemStateChanged',
         id: ulid(),
         ts: baseTs + 20,
         playerId,
-        scoreableId,
+        metricId,
         state: 'value',
         priorEventId: scored.id,
         value: 30
@@ -80,7 +80,7 @@ describe('events data access', () => {
         id: ulid(),
         ts: baseTs + 30,
         playerId,
-        scoreableId,
+        metricId,
         state: 'empty',
         priorEventId: corrected.id,
         note: 'duplicate entry'
@@ -96,52 +96,49 @@ describe('events data access', () => {
     withInMemoryDb((db) => {
       const playerA = createPlayer(db, makePlayerData('A'))
       const playerB = createPlayer(db, makePlayerData('B'))
-      const scoreableA = createScoreable(db, makeScoreableData('A'))
-      const scoreableB = createScoreable(db, makeScoreableData('B'))
+      const metricA = createMetric(db, makeMetricData('A'))
+      const metricB = createMetric(db, makeMetricData('B'))
 
-      const scoredA = makeItemEvent(
-        { playerId: playerA, scoreableId: scoreableA },
-        { ts: baseTs + 1 }
-      )
+      const scoredA = makeItemEvent({ playerId: playerA, metricId: metricA }, { ts: baseTs + 1 })
       const correctedA: ItemStateChanged = {
         type: 'ItemStateChanged',
         id: ulid(),
         ts: baseTs + 2,
         playerId: playerA,
-        scoreableId: scoreableA,
+        metricId: metricA,
         state: 'value',
         priorEventId: scoredA.id,
         value: 25
       }
       const scoredOtherItem = makeItemEvent(
-        { playerId: playerA, scoreableId: scoreableB },
+        { playerId: playerA, metricId: metricB },
         { ts: baseTs + 3, value: 90 }
       )
       const scoredOtherPlayer = makeItemEvent(
-        { playerId: playerB, scoreableId: scoreableA },
+        { playerId: playerB, metricId: metricA },
         { ts: baseTs + 4, note: undefined }
       )
 
       appendEvents(db, [scoredA, correctedA, scoredOtherItem, scoredOtherPlayer])
 
-      expect(listEventsForPlayerItem(db, playerA, scoreableA)).toEqual([scoredA, correctedA])
+      expect(listEventsForPlayerItem(db, playerA, metricA)).toEqual([scoredA, correctedA])
       expect(listEventsForPlayer(db, playerA)).toEqual([scoredA, correctedA, scoredOtherItem])
     })
   })
 
   it('sorts events by timestamp then id', () => {
     const playerId = ulid()
-    const scoreableId = ulid()
+    const metricId = ulid()
     const e1 = makeItemEvent(
-      { playerId, scoreableId },
+      { playerId, metricId },
       { id: '00000000000000000000000001' as ULID, ts: 100 }
     )
     const e2 = makeItemEvent(
-      { playerId, scoreableId },
+      { playerId, metricId },
       { id: '00000000000000000000000002' as ULID, ts: 90 }
     )
     const e3 = makeItemEvent(
-      { playerId, scoreableId },
+      { playerId, metricId },
       { id: '00000000000000000000000003' as ULID, ts: 100 }
     )
 
@@ -155,8 +152,8 @@ describe('events data access', () => {
   it('records scorecard void events', () => {
     withInMemoryDb((db) => {
       const playerId = createPlayer(db, makePlayerData('A'))
-      const scoreableId = createScoreable(db, makeScoreableData('A'))
-      const scored = makeItemEvent({ playerId, scoreableId })
+      const metricId = createMetric(db, makeMetricData('A'))
+      const scored = makeItemEvent({ playerId, metricId })
       appendEvent(db, scored)
 
       const voidEvent: ScorecardVoided = {

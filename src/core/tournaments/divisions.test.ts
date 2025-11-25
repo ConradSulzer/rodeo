@@ -6,21 +6,15 @@ import {
   createDivision,
   deleteDivision,
   getDivision,
-  getDivisionView,
-  listAllDivisions,
-  listCategoriesForDivision,
-  listDivisionIdsForPlayer,
-  listDivisionViews,
-  listDivisionsForCategory,
-  listPlayerIdsForDivision,
+  listDivisions,
   removeCategoryFromDivision,
   removePlayerFromDivision,
   updateDivision,
   updateDivisionCategoryLink,
   type NewDivision
 } from './divisions'
-import { addScoreableToCategory, createCategory, type NewCategory } from './categories'
-import { createScoreable, type NewScoreable } from './scoreables'
+import { addMetricToCategory, createCategory, type NewCategory } from './categories'
+import { createMetric, type NewMetric } from './metrics'
 import { createPlayer } from '@core/players/players'
 
 const baseDivision: NewDivision = {
@@ -32,7 +26,7 @@ const baseCategory: NewCategory = {
   direction: 'asc'
 }
 
-const baseScoreable: NewScoreable = {
+const baseMetric: NewMetric = {
   label: 'Weight',
   unit: 'lbs'
 }
@@ -102,9 +96,39 @@ describe('divisions data access', () => {
       createDivision(db, { name: 'Amateur', order: 1 })
       createDivision(db, { name: 'Pro', order: 1 })
 
-      const divisions = listAllDivisions(db)
+      const divisions = listDivisions(db)
       expect(divisions.map((d) => d.name)).toEqual(['Amateur', 'Pro', 'Masters'])
       expect(divisions.map((d) => d.order)).toEqual([1, 1, 2])
+    })
+  })
+
+  it('lists divisions with categories and eligible players', () => {
+    withInMemoryDb((db) => {
+      const divisionId = createDivision(db, { name: 'Pro', order: 1 })
+      const categoryId = createCategory(db, baseCategory)
+      const metricId = createMetric(db, baseMetric)
+      const playerOne = createPlayer(db, basePlayer('One'))
+      const playerTwo = createPlayer(db, basePlayer('Two'))
+
+      addMetricToCategory(db, categoryId, metricId)
+      addCategoryToDivision(db, divisionId, categoryId, 2, 3)
+      addPlayerToDivision(db, divisionId, playerOne)
+      addPlayerToDivision(db, divisionId, playerTwo)
+
+      const divisions = listDivisions(db)
+      expect(divisions).toHaveLength(1)
+
+      const [division] = divisions
+      expect(division.id).toBe(divisionId)
+      expect(division.categories).toHaveLength(1)
+
+      const [categoryView] = division.categories
+      expect(categoryView.category.id).toBe(categoryId)
+      expect(categoryView.depth).toBe(2)
+      expect(categoryView.order).toBe(3)
+      expect(categoryView.metrics.map((metric) => metric.id)).toEqual([metricId])
+
+      expect(division.eligiblePlayerIds).toEqual([playerOne, playerTwo].sort())
     })
   })
 
@@ -116,8 +140,16 @@ describe('divisions data access', () => {
       const created = addCategoryToDivision(db, divisionId, categoryId, -2)
       expect(created).toBe(true)
 
-      const links = listCategoriesForDivision(db, divisionId)
-      expect(links).toEqual([{ divisionId, categoryId, depth: 1, order: 0 }])
+      const divisions = listDivisions(db)
+      const division = divisions.find((entry) => entry.id === divisionId)
+      expect(division?.categories).toEqual([
+        {
+          category: expect.objectContaining({ id: categoryId }),
+          depth: 1,
+          order: 0,
+          metrics: []
+        }
+      ])
     })
   })
 
@@ -129,9 +161,9 @@ describe('divisions data access', () => {
       addCategoryToDivision(db, divisionId, categoryId, 5, 4)
       addCategoryToDivision(db, divisionId, categoryId, 2)
 
-      const link = listCategoriesForDivision(db, divisionId)[0]
-      expect(link.depth).toBe(2)
-      expect(link.order).toBe(4)
+      const division = listDivisions(db).find((entry) => entry.id === divisionId)!
+      expect(division.categories[0].depth).toBe(2)
+      expect(division.categories[0].order).toBe(4)
     })
   })
 
@@ -148,9 +180,9 @@ describe('divisions data access', () => {
       })
       expect(updated).toBe(true)
 
-      const link = listCategoriesForDivision(db, divisionId)[0]
-      expect(link.depth).toBe(4) // floor applied
-      expect(link.order).toBe(7)
+      const division = listDivisions(db).find((entry) => entry.id === divisionId)!
+      expect(division.categories[0].depth).toBe(4)
+      expect(division.categories[0].order).toBe(7)
     })
   })
 
@@ -163,41 +195,25 @@ describe('divisions data access', () => {
       const removed = removeCategoryFromDivision(db, divisionId, categoryId)
       expect(removed).toBe(true)
 
-      expect(listCategoriesForDivision(db, divisionId)).toHaveLength(0)
+      const division = listDivisions(db).find((entry) => entry.id === divisionId)!
+      expect(division.categories).toHaveLength(0)
     })
   })
 
-  it('lists divisions for a category', () => {
-    withInMemoryDb((db) => {
-      const categoryId = createCategory(db, baseCategory)
-      const divisionA = createDivision(db, { name: 'A' })
-      const divisionB = createDivision(db, { name: 'B' })
-
-      addCategoryToDivision(db, divisionA, categoryId, 3)
-      addCategoryToDivision(db, divisionB, categoryId, 1)
-
-      const divisions = listDivisionsForCategory(db, categoryId)
-      expect(divisions).toHaveLength(2)
-      const byId = Object.fromEntries(divisions.map((entry) => [entry.divisionId, entry]))
-      expect(byId[divisionA]).toEqual({ divisionId: divisionA, categoryId, depth: 3, order: 0 })
-      expect(byId[divisionB]).toEqual({ divisionId: divisionB, categoryId, depth: 1, order: 0 })
-    })
-  })
-
-  it('builds division view with categories and scoreables', () => {
+  it('builds division view with categories and metrics', () => {
     withInMemoryDb((db) => {
       const divisionId = createDivision(db, baseDivision)
       const categoryId = createCategory(db, baseCategory)
-      const scoreableId = createScoreable(db, baseScoreable)
+      const metricId = createMetric(db, baseMetric)
       const playerA = createPlayer(db, basePlayer('A'))
       const playerB = createPlayer(db, basePlayer('B'))
 
-      addScoreableToCategory(db, categoryId, scoreableId)
+      addMetricToCategory(db, categoryId, metricId)
       addCategoryToDivision(db, divisionId, categoryId, 4, 5)
       addPlayerToDivision(db, divisionId, playerA)
       addPlayerToDivision(db, divisionId, playerB)
 
-      const view = getDivisionView(db, divisionId)
+      const view = listDivisions(db).find((division) => division.id === divisionId)
       expect(view).toBeDefined()
       expect(view?.categories).toHaveLength(1)
       expect(new Set(view?.eligiblePlayerIds)).toEqual(new Set([playerA, playerB]))
@@ -206,15 +222,15 @@ describe('divisions data access', () => {
       expect(categoryView.depth).toBe(4)
       expect(categoryView.order).toBe(5)
       expect(categoryView.category.id).toBe(categoryId)
-      expect(categoryView.scoreables).toHaveLength(1)
-      expect(categoryView.scoreables[0]).toMatchObject({
-        id: scoreableId,
-        label: baseScoreable.label
+      expect(categoryView.metrics).toHaveLength(1)
+      expect(categoryView.metrics[0]).toMatchObject({
+        id: metricId,
+        label: baseMetric.label
       })
 
-      const all = listDivisionViews(db)
+      const all = listDivisions(db)
       expect(all).toHaveLength(1)
-      expect(all[0].categories[0].scoreables[0].unit).toBe(baseScoreable.unit)
+      expect(all[0].categories[0].metrics[0].unit).toBe(baseMetric.unit)
       expect(new Set(all[0].eligiblePlayerIds)).toEqual(new Set([playerA, playerB]))
     })
   })
@@ -225,20 +241,11 @@ describe('divisions data access', () => {
       const playerA = createPlayer(db, basePlayer('A'))
       const playerB = createPlayer(db, basePlayer('B'))
 
-      expect(listPlayerIdsForDivision(db, divisionId)).toHaveLength(0)
-
       addPlayerToDivision(db, divisionId, playerA)
       addPlayerToDivision(db, divisionId, playerB)
 
-      const players = listPlayerIdsForDivision(db, divisionId)
-      expect(new Set(players)).toEqual(new Set([playerA, playerB]))
-
-      const divisionsForPlayer = listDivisionIdsForPlayer(db, playerA)
-      expect(divisionsForPlayer).toEqual([divisionId])
-
       const removed = removePlayerFromDivision(db, divisionId, playerA)
       expect(removed).toBe(true)
-      expect(listPlayerIdsForDivision(db, divisionId)).toEqual([playerB])
     })
   })
 })

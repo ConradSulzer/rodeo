@@ -6,11 +6,13 @@ import { Card, CardContent } from '../components/ui/card'
 import logo from '../assets/rodeo_logo.png'
 import { usePreferences } from '../context/preferences'
 import { Modal } from '../components/Modal'
+import { useQueryClient } from '@tanstack/react-query'
 
 export function HomeView(): JSX.Element {
   const navigate = useNavigate()
   const { recents, addRecent } = usePreferences()
   const [showRecents, setShowRecents] = useState(false)
+  const queryClient = useQueryClient()
 
   const handleCreate = async () => {
     try {
@@ -21,6 +23,7 @@ export function HomeView(): JSX.Element {
       if (!success) return
 
       addRecent(filePath)
+      queryClient.clear()
       toast.success('Tournament created')
       navigate('/app/tournament', { replace: true })
     } catch (error) {
@@ -38,6 +41,7 @@ export function HomeView(): JSX.Element {
       if (!success) return
 
       addRecent(filePath)
+      queryClient.clear()
       toast.success('Tournament opened')
       navigate('/app/tournament', { replace: true })
     } catch (error) {
@@ -54,6 +58,7 @@ export function HomeView(): JSX.Element {
       if (!success) return
 
       addRecent(filePath)
+      queryClient.clear()
       toast.success('Tournament opened')
       navigate('/app/tournament', { replace: true })
       setShowRecents(false)

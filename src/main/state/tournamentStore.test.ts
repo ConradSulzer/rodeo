@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
 import type { AppDatabase } from '@core/db/db'
 import type { ItemResult, Results } from '@core/tournaments/results'
-import type { DivisionView } from '@core/tournaments/divisions'
+import type { Division } from '@core/tournaments/divisions'
 import type { DivisionStanding } from '@core/tournaments/standings'
 import type { ItemStateChanged } from '@core/events/events'
 import * as eventsModule from '@core/events/events'
@@ -30,9 +30,9 @@ const sampleItem: ItemResult = {
   updatedAt: 1
 }
 
-const sampleResults = (): Results => new Map([['player-1', new Map([['scoreable-1', sampleItem]])]])
+const sampleResults = (): Results => new Map([['player-1', new Map([['metric-1', sampleItem]])]])
 
-const sampleDivisionViews = (): DivisionView[] => [
+const sampleDivisionViews = (): Division[] => [
   {
     id: 'division-1',
     name: 'Division 1',
@@ -111,13 +111,13 @@ describe('withStandingsRefresh helper', () => {
 describe('hydrate', () => {
   it('stores results, computes standings and notifies listeners', () => {
     const results = sampleResults()
-    const divisionViews = sampleDivisionViews()
+    const divisions = sampleDivisionViews()
     const standings = sampleStandings()
     const buildSpy = vi.spyOn(resultsModule, 'buildResults').mockReturnValue({
       results,
       errors: []
     })
-    const listSpy = vi.spyOn(divisionsModule, 'listDivisionViews').mockReturnValue(divisionViews)
+    const listSpy = vi.spyOn(divisionsModule, 'listDivisions').mockReturnValue(divisions)
     const standingsSpy = vi
       .spyOn(standingsModule, 'computeAllDivisionStandings')
       .mockReturnValue(standings)
@@ -130,7 +130,7 @@ describe('hydrate', () => {
 
     expect(buildSpy).toHaveBeenCalledWith(db)
     expect(listSpy).toHaveBeenCalledWith(db)
-    expect(standingsSpy).toHaveBeenCalledWith(results, divisionViews)
+    expect(standingsSpy).toHaveBeenCalledWith(results, divisions)
     expect(snapshot).toEqual({
       standings,
       results: [
@@ -138,7 +138,7 @@ describe('hydrate', () => {
           playerId: 'player-1',
           items: [
             {
-              scoreableId: 'scoreable-1',
+              metricId: 'metric-1',
               result: sampleItem
             }
           ]
@@ -158,7 +158,7 @@ describe('clear', () => {
       results: sampleResults(),
       errors: []
     })
-    vi.spyOn(divisionsModule, 'listDivisionViews').mockReturnValue(sampleDivisionViews())
+    vi.spyOn(divisionsModule, 'listDivisions').mockReturnValue(sampleDivisionViews())
     vi.spyOn(standingsModule, 'computeAllDivisionStandings').mockReturnValue(sampleStandings())
 
     const listener = vi.fn()
@@ -187,7 +187,7 @@ describe('refreshStandings', () => {
       results,
       errors: []
     })
-    const listSpy = vi.spyOn(divisionsModule, 'listDivisionViews').mockReturnValue(initialViews)
+    const listSpy = vi.spyOn(divisionsModule, 'listDivisions').mockReturnValue(initialViews)
     const standingsSpy = vi
       .spyOn(standingsModule, 'computeAllDivisionStandings')
       .mockReturnValue(initialStandings)
@@ -198,7 +198,7 @@ describe('refreshStandings', () => {
 
     hydrate(db)
 
-    const updatedViews: DivisionView[] = [
+    const updatedViews: Division[] = [
       {
         id: 'division-2',
         name: 'Division 2',
@@ -241,28 +241,28 @@ describe('applyEvent', () => {
     id: 'event-1',
     ts: Date.now(),
     playerId: 'player-1',
-    scoreableId: 'scoreable-1',
+    metricId: 'metric-1',
     state: 'value',
     value: 12
   }
 
   const setup = () => {
     const results = sampleResults()
-    const divisionViews = sampleDivisionViews()
+    const divisions = sampleDivisionViews()
     const standings = sampleStandings()
 
     const buildSpy = vi.spyOn(resultsModule, 'buildResults').mockReturnValue({
       results,
       errors: []
     })
-    const listSpy = vi.spyOn(divisionsModule, 'listDivisionViews').mockReturnValue(divisionViews)
+    const listSpy = vi.spyOn(divisionsModule, 'listDivisions').mockReturnValue(divisions)
     const standingsSpy = vi
       .spyOn(standingsModule, 'computeAllDivisionStandings')
       .mockReturnValue(standings)
 
     hydrate(db)
 
-    return { results, divisionViews, standings, buildSpy, listSpy, standingsSpy }
+    return { results, divisions, standings, buildSpy, listSpy, standingsSpy }
   }
 
   it('records event, refreshes standings, and returns empty errors array on success', () => {

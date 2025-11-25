@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { DivisionCategoryView } from '@core/tournaments/divisions'
+import type { DivisionCategory } from '@core/tournaments/divisions'
 import type { CategoryStanding } from '@core/tournaments/standings'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 import {
@@ -13,7 +13,7 @@ import {
 import { cn } from '@renderer/lib/utils'
 import { useStandingsData } from '@renderer/hooks/useStandingsData'
 
-const sortCategories = (categories: DivisionCategoryView[]): DivisionCategoryView[] => {
+const sortCategories = (categories: DivisionCategory[]): DivisionCategory[] => {
   return [...categories].sort((a, b) => {
     const orderDiff = (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER)
     if (orderDiff !== 0) return orderDiff
@@ -22,25 +22,25 @@ const sortCategories = (categories: DivisionCategoryView[]): DivisionCategoryVie
 }
 
 export function StandingsSection() {
-  const { divisionViews, standings, players, isLoading: loading } = useStandingsData()
+  const { divisions, standings, players, isLoading: loading } = useStandingsData()
   const [selectedDivisionId, setSelectedDivisionId] = useState<string | null>(null)
   const [categorySelections, setCategorySelections] = useState<Record<string, string>>({})
   const [query, setQuery] = useState('')
 
   useEffect(() => {
     setSelectedDivisionId((prev) => {
-      if (prev && divisionViews.some((division) => division.id === prev)) {
+      if (prev && divisions.some((division) => division.id === prev)) {
         return prev
       }
-      return divisionViews[0]?.id ?? null
+      return divisions[0]?.id ?? null
     })
-  }, [divisionViews])
+  }, [divisions])
 
   useEffect(() => {
     setCategorySelections((prev) => {
       const next = { ...prev }
       let changed = false
-      const divisionMap = new Map(divisionViews.map((division) => [division.id, division]))
+      const divisionMap = new Map(divisions.map((division) => [division.id, division]))
       for (const [divisionId, categoryId] of Object.entries(prev)) {
         const division = divisionMap.get(divisionId)
         if (!division) {
@@ -58,7 +58,7 @@ export function StandingsSection() {
       }
       return changed ? next : prev
     })
-  }, [divisionViews])
+  }, [divisions])
 
   const handleSelectDivision = (divisionId: string) => {
     setSelectedDivisionId(divisionId)
@@ -69,11 +69,11 @@ export function StandingsSection() {
   }
 
   const activeDivision = useMemo(() => {
-    if (!divisionViews.length) return null
-    const fallback = divisionViews[0]
+    if (!divisions.length) return null
+    const fallback = divisions[0]
     if (!selectedDivisionId) return fallback
-    return divisionViews.find((division) => division.id === selectedDivisionId) ?? fallback
-  }, [divisionViews, selectedDivisionId])
+    return divisions.find((division) => division.id === selectedDivisionId) ?? fallback
+  }, [divisions, selectedDivisionId])
 
   const divisionStanding = useMemo(() => {
     if (!activeDivision) return null
@@ -115,9 +115,9 @@ export function StandingsSection() {
     })
   }, [activeCategoryStanding, players, query])
 
-  const showCountColumn = Boolean(activeCategoryView?.category.showScoreablesCount)
+  const showCountColumn = Boolean(activeCategoryView?.category.showMetricsCount)
   const countColumnLabel =
-    activeCategoryView?.category.scoreablesCountName?.trim() || 'Entries Submitted'
+    activeCategoryView?.category.metricsCountName?.trim() || 'Entries Submitted'
 
   const renderTable = () => {
     if (!activeCategoryView) {
@@ -189,14 +189,14 @@ export function StandingsSection() {
         <div className="flex flex-1 items-center justify-center ro-text-muted">
           Loading standings...
         </div>
-      ) : !divisionViews.length ? (
+      ) : !divisions.length ? (
         <div className="flex flex-1 items-center justify-center text-sm ro-text-muted">
           Create a division to begin tracking standings.
         </div>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
           <div className="flex flex-wrap gap-2">
-            {divisionViews.map((division) => {
+            {divisions.map((division) => {
               const active = activeDivision?.id === division.id
               return (
                 <button
