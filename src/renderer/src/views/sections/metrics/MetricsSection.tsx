@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi'
 import type { MetricFormData } from '@core/metrics/metricFormSchema'
-import type { Metric, NewMetric, PatchMetric } from '@core/tournaments/metrics'
+import type { MetricRecord, NewMetric, PatchMetric } from '@core/tournaments/metrics'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 import { CrudTableActions } from '@renderer/components/crud/CrudTableActions'
 import {
@@ -16,9 +16,12 @@ import { MetricDetailsModal } from './MetricDetailsModal'
 import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
 import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
 import { Pill } from '@renderer/components/ui/pill'
-import { useDataStore } from '@renderer/store/useDataStore'
+import { useMetricsListQuery } from '@renderer/queries/metrics'
+import { useCategoriesQuery } from '@renderer/queries/categories'
+import { useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@renderer/queries/queryKeys'
 
-type MetricRow = Metric & { categoryNames: string[] }
+type MetricRow = MetricRecord & { categoryNames: string[] }
 
 type FormState =
   | { open: false; mode: null; metric?: undefined }
@@ -46,10 +49,11 @@ const columns: ReadonlyArray<CrudTableColumn<MetricRow, 'actions' | 'categoryNam
 const METRIC_FUZZY_FIELDS: Array<keyof MetricRow & string> = ['label', 'id']
 
 export function MetricsSection() {
-  const metrics = useDataStore((state) => state.metrics)
-  const categories = useDataStore((state) => state.categories)
-  const fetchMetrics = useDataStore((state) => state.fetchMetrics)
-  const fetchCategories = useDataStore((state) => state.fetchCategories)
+  const queryClient = useQueryClient()
+  const { data: metrics = [], isLoading: metricsLoading, isFetching: metricsFetching } =
+    useMetricsListQuery()
+  const { data: categories = [], isLoading: categoriesLoading, isFetching: categoriesFetching } =
+    useCategoriesQuery()
   const [formState, setFormState] = useState<FormState>({ open: false, mode: null })
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [detailsState, setDetailsState] = useState<DetailsState>({ open: false })
@@ -57,35 +61,6 @@ export function MetricsSection() {
     open: false,
     deleting: false
   })
-  const [initialLoading, setInitialLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-    const load = async () => {
-      setInitialLoading(true)
-      try {
-        await Promise.all([fetchMetrics(), fetchCategories()])
-      } finally {
-        if (!cancelled) setInitialLoading(false)
-      }
-    }
-    load().catch(() => {
-      if (!cancelled) setInitialLoading(false)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [fetchMetrics, fetchCategories])
-
-  const refreshMetricsData = async () => {
-    setRefreshing(true)
-    try {
-      await Promise.all([fetchMetrics(), fetchCategories()])
-    } finally {
-      setRefreshing(false)
-    }
-  }
 
   const categoryLookup = useMemo(
     () => new Map(categories.map((category) => [category.id, category.name])),
@@ -174,7 +149,7 @@ export function MetricsSection() {
         toast.success('Metric updated')
       }
 
-      await refreshMetricsData()
+      await queryClient.invalidateQueries({ queryKey: queryKeys.metrics.list() })
       setFormState({ open: false, mode: null })
     } catch (error) {
       console.error('Failed to submit metric form', error)
@@ -195,7 +170,7 @@ export function MetricsSection() {
       }
       toast.success(`Deleted ${deleteState.metric.label}`)
       setDeleteState({ open: false, metric: undefined, deleting: false })
-      await refreshMetricsData()
+      await queryClient.invalidateQueries({ queryKey: queryKeys.metrics.list() })
     } catch (error) {
       console.error('Failed to delete metric', error)
       toast.error('Could not delete metric')
@@ -203,9 +178,11 @@ export function MetricsSection() {
     }
   }
 
-  const isEmpty = !initialLoading && metricsWithCategories.length === 0
+  const loading = metricsLoading || categoriesLoading
+  const refreshing = (!loading && (metricsFetching || categoriesFetching)) || false
+  const isEmpty = !loading && metricsWithCategories.length === 0
   const metricCount = metricsWithCategories.length
-  const metricCountLabel = initialLoading ? '—' : metricCount.toLocaleString()
+  const metricCountLabel = loading ? '—' : metricCount.toLocaleString()
 
   return (
     <>
@@ -220,7 +197,7 @@ export function MetricsSection() {
         searchValue={query}
         onSearchChange={setQuery}
       >
-        {initialLoading ? (
+        {loading ? (
           <div className="flex flex-1 items-center justify-center ro-text-muted">
             Loading metrics...
           </div>
