@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { FiCheck } from 'react-icons/fi'
 import type { EnrichedPlayer, PlayerMetric } from '@core/players/players'
@@ -16,15 +16,20 @@ import { Pill } from '@renderer/components/ui/pill'
 import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
 import { ScorePlayerModal, type SubmissionResult } from './ScorePlayerModal'
 import { cn } from '@renderer/lib/utils'
+import { usePlayersQuery } from '@renderer/queries/players'
+import { useTournamentStateQuery } from '@renderer/queries/tournament'
+import { useMetricCatalog } from '@renderer/queries/metrics'
+import { useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@renderer/queries/queryKeys'
 
 type PlayerRow = EnrichedPlayer
 
 type PlayerResultsMap = Map<string, Map<string, ItemResult>>
 
 type ScoreModalState =
-  | { open: false }
+  | { status: 'closed' }
   | {
-      open: true
+      status: 'open'
       player: PlayerRow
       metrics: PlayerMetric[]
       existingResults?: Map<string, ItemResult>
@@ -39,41 +44,29 @@ const columns: ReadonlyArray<CrudTableColumn<PlayerRow, 'actions' | 'divisions'>
 const PLAYER_FUZZY_FIELDS: Array<keyof PlayerRow & string> = ['displayName', 'email', 'id']
 
 export function ScoringSection() {
-  const [loading, setLoading] = useState(true)
-  const [players, setPlayers] = useState<PlayerRow[]>([])
-  const [results, setResults] = useState<PlayerResultsMap>(new Map())
-  const [modalState, setModalState] = useState<ScoreModalState>({ open: false })
+  const queryClient = useQueryClient()
+  const [modalState, setModalState] = useState<ScoreModalState>({ status: 'closed' })
   const [modalSubmitting, setModalSubmitting] = useState(false)
 
-  const fetchPlayers = useCallback(async () => {
-    const list = await window.api.players.list()
-    setPlayers(list)
-  }, [])
+  const {
+    data: players = [],
+    isLoading: playersLoading,
+    isFetching: playersFetching
+  } = usePlayersQuery()
+  const {
+    data: tournamentState,
+    isLoading: stateLoading,
+    isFetching: stateFetching
+  } = useTournamentStateQuery()
+  useMetricCatalog()
 
-  const fetchResults = useCallback(async () => {
-    const state = await window.api.tournaments.getState()
-    setResults(buildResultsMap(state))
-  }, [])
+  const loading = playersLoading || stateLoading
+  const refreshing = (!loading && (playersFetching || stateFetching)) || false
 
-  useEffect(() => {
-    let mounted = true
-    const load = async () => {
-      try {
-        await Promise.all([fetchPlayers(), fetchResults()])
-      } catch (error) {
-        console.error('Failed to load scoring data', error)
-        toast.error('Failed to load scoring data')
-      } finally {
-        if (mounted) {
-          setLoading(false)
-        }
-      }
-    }
-    load()
-    return () => {
-      mounted = false
-    }
-  }, [fetchPlayers, fetchResults])
+  const results = useMemo<PlayerResultsMap>(() => {
+    if (!tournamentState) return new Map()
+    return buildResultsMap(tournamentState)
+  }, [tournamentState])
 
   const {
     results: filteredPlayers,
@@ -90,7 +83,7 @@ export function ScoringSection() {
   const handleOpenModal = (player: PlayerRow, metrics: PlayerMetric[]) => {
     if (!metrics.length) return
     setModalState({
-      open: true,
+      status: 'open',
       player,
       metrics,
       existingResults: results.get(player.id)
@@ -98,12 +91,12 @@ export function ScoringSection() {
   }
 
   const closeModal = () => {
-    setModalState({ open: false })
+    setModalState({ status: 'closed' })
     setModalSubmitting(false)
   }
 
   const handleSaveScores = async (entries: ItemScoreEventInput[]): Promise<SubmissionResult> => {
-    if (!modalState.open) {
+    if (modalState.status !== 'open') {
       return { success: false, errors: ['Score modal is not open'] }
     }
     setModalSubmitting(true)
@@ -119,7 +112,7 @@ export function ScoringSection() {
       }
       toast.success('Scores saved')
       closeModal()
-      await fetchResults()
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tournament.state() })
       return result
     } catch (error) {
       console.error('Failed to record scores', error)
@@ -131,7 +124,7 @@ export function ScoringSection() {
   }
 
   const handleVoidScorecard = async () => {
-    if (!modalState.open) return
+    if (modalState.status !== 'open') return
     setModalSubmitting(true)
     try {
       const payload = [
@@ -152,7 +145,7 @@ export function ScoringSection() {
       }
       toast.success('Scorecard voided')
       closeModal()
-      await fetchResults()
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tournament.state() })
     } catch (error) {
       console.error('Failed to void scorecard', error)
       toast.error('Unable to void scorecard')
@@ -191,6 +184,11 @@ export function ScoringSection() {
     )
   }
 
+  const modalOpen = modalState.status === 'open'
+  const modalPlayer = modalOpen ? modalState.player : undefined
+  const modalMetrics = modalOpen ? modalState.metrics : []
+  const modalResults = modalOpen ? modalState.existingResults : undefined
+
   return (
     <>
       <ManageSectionShell
@@ -199,6 +197,7 @@ export function ScoringSection() {
         searchPlaceholder="Search players"
         searchValue={query}
         onSearchChange={setQuery}
+        refreshing={refreshing}
       >
         {loading ? (
           <div className="flex flex-1 items-center justify-center ro-text-muted">
@@ -264,13 +263,13 @@ export function ScoringSection() {
       </ManageSectionShell>
 
       <ScorePlayerModal
-        open={modalState.open}
-        player={modalState.open ? modalState.player : undefined}
-        metrics={modalState.open ? modalState.metrics : []}
-        existingResults={modalState.open ? modalState.existingResults : undefined}
+        open={modalOpen}
+        player={modalPlayer}
+        metrics={modalMetrics}
+        existingResults={modalResults}
         submitting={modalSubmitting}
         onSubmit={handleSaveScores}
-        onVoidScorecard={modalState.open ? handleVoidScorecard : undefined}
+        onVoidScorecard={modalOpen ? handleVoidScorecard : undefined}
         onClose={closeModal}
       />
     </>

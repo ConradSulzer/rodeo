@@ -59,7 +59,7 @@ export function EventsSection() {
   const [events, setEvents] = useState<EventRow[]>([])
   const [typeFilter, setTypeFilter] = useState<EventTypeFilter>('all')
   const [detailsEvent, setDetailsEvent] = useState<EventRow | null>(null)
-  const { data: playerMap } = usePlayerDirectory()
+  const { map: playerMap } = usePlayerDirectory()
   const { map: metricMap } = useMetricCatalog()
 
   const fetchEvents = useCallback(async () => {

@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { EnrichedPlayer } from '@core/players/players'
 import { queryKeys } from './queryKeys'
@@ -14,20 +15,16 @@ export function usePlayersQuery() {
 }
 
 export function usePlayerDirectory() {
-  const query = useQuery({
-    queryKey: queryKeys.players.list(),
-    queryFn: fetchPlayers,
-    select: (players) => {
-      const map = new Map<string, string>()
-      players.forEach((player) => {
-        map.set(player.id, player.displayName)
-      })
-      return map
-    }
-  })
+  const { data, ...rest } = usePlayersQuery()
+
+  const map = useMemo(() => {
+    const players = data ?? []
+    const directory = new Map(players.map((player) => [player.id, player.displayName]))
+    return directory
+  }, [data])
 
   return {
-    ...query,
-    data: query.data ?? new Map<string, string>()
+    ...rest,
+    map
   }
 }
