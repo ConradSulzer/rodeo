@@ -4,9 +4,7 @@ import { Category, CategoryRecord, NewCategory, PatchCategory } from '@core/tour
 import { StandingRuleSummary } from '@core/tournaments/standingRules'
 import {
   Division,
-  DivisionCategoryLink,
   DivisionCategoryPatch,
-  DivisionRecord,
   NewDivision,
   PatchDivision
 } from '@core/tournaments/divisions'

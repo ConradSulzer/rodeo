@@ -125,7 +125,9 @@ describe('players data access', () => {
       expect(
         target?.divisions.map((division) => ({ id: division.id, name: division.name }))
       ).toEqual([{ id: divisionId, name: 'Pro' }])
-      expect((target?.metrics ?? []).slice().sort()).toEqual([lengthId, weightId].sort())
+      expect((target?.metrics ?? []).map((metric) => metric.id).sort()).toEqual(
+        [lengthId, weightId].sort()
+      )
 
       const solo = players.find((player) => player.id === soloId)
       expect(solo).toBeDefined()

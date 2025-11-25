@@ -3,9 +3,11 @@ import type { AppDatabase } from '@core/db/db'
 import {
   division as dv,
   divisionCategory as dvCategory,
-  playerDivision as pd
+  playerDivision as pd,
+  categoryMetric as cm,
+  metric as mt
 } from '@core/db/schema'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, asc } from 'drizzle-orm'
 import type { CategoryRecord } from '@core/tournaments/categories'
 import type { MetricRecord } from '@core/tournaments/metrics'
 
@@ -197,6 +199,36 @@ export function removeCategoryFromDivision(
     .run()
 
   return result.changes > 0
+}
+
+type DivisionMetric = Pick<MetricRecord, 'id' | 'label'>
+
+export function loadDivisionMetricDirectory(db: AppDatabase): Map<string, DivisionMetric[]> {
+  const rows = db
+    .select({
+      divisionId: dvCategory.divisionId,
+      metricId: mt.id,
+      metricLabel: mt.label
+    })
+    .from(dvCategory)
+    .innerJoin(cm, eq(cm.categoryId, dvCategory.categoryId))
+    .innerJoin(mt, eq(mt.id, cm.metricId))
+    .groupBy(dvCategory.divisionId, mt.id, mt.label)
+    .orderBy(asc(dvCategory.divisionId), asc(mt.label))
+    .all() as Array<{ divisionId: string; metricId: string; metricLabel: string }>
+
+  const directory = new Map<string, DivisionMetric[]>()
+
+  for (const { divisionId, metricId, metricLabel } of rows) {
+    let metrics = directory.get(divisionId)
+    if (!metrics) {
+      metrics = []
+      directory.set(divisionId, metrics)
+    }
+    metrics.push({ id: metricId, label: metricLabel })
+  }
+
+  return directory
 }
 
 export function updateDivisionCategoryLink(

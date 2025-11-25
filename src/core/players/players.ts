@@ -1,16 +1,17 @@
 import type { AppDatabase } from '@core/db/db'
-import { player as pl, divisionCategory as dc, categoryMetric as cm } from '@core/db/schema'
+import { player as pl } from '@core/db/schema'
 import type { DivisionRecord } from '@core/tournaments/divisions'
-import { sql, asc, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { ulid } from 'ulid'
 import type { MetricRecord } from '@core/tournaments/metrics'
+import { loadDivisionMetricDirectory } from '@core/tournaments/divisions'
 
 export type PlayerRecord = typeof pl.$inferSelect
 export type PlayerMetric = Pick<MetricRecord, 'id' | 'label'>
 
 export type EnrichedPlayer = PlayerRecord & {
   divisions: DivisionRecord[]
-  metrics: string[]
+  metrics: PlayerMetric[]
 }
 
 type PlayerContactFields = {
@@ -85,17 +86,23 @@ export function listEnrichedPlayers(db: AppDatabase): EnrichedPlayer[] {
   const divisionMetricDirectory = loadDivisionMetricDirectory(db)
 
   const enrichedPlayers = cleaned.map(({ divisions, ...rest }) => {
-    const uniqueMetricIds = new Set<string>()
+    const uniqueMetrics = new Map<string, PlayerMetric>()
 
     for (const { id: divisionId } of divisions) {
-      const metricIds = divisionMetricDirectory.get(divisionId) ?? []
-      for (const metricId of metricIds) uniqueMetricIds.add(metricId)
+      const divisionMetrics = divisionMetricDirectory.get(divisionId) ?? []
+      for (const metric of divisionMetrics) {
+        if (!uniqueMetrics.has(metric.id)) {
+          uniqueMetrics.set(metric.id, metric)
+        }
+      }
     }
+
+    const metrics = [...uniqueMetrics.values()].sort((a, b) => a.label.localeCompare(b.label))
 
     return {
       ...rest,
       divisions,
-      metrics: [...uniqueMetricIds]
+      metrics
     }
   })
 
@@ -113,21 +120,4 @@ function cleanPlayerDivisions(row: {
       const orderB = b.order ?? Number.MAX_SAFE_INTEGER
       return orderA === orderB ? a.name.localeCompare(b.name) : orderA - orderB
     })
-}
-
-export function loadDivisionMetricDirectory(db: AppDatabase): Map<string, string[]> {
-  const rows = db
-    .select({
-      divisionId: dc.divisionId,
-      metricIdsJson: sql<string>`
-        json_group_array(DISTINCT ${cm.metricId})
-      `
-    })
-    .from(dc)
-    .innerJoin(cm, eq(cm.categoryId, dc.categoryId))
-    .groupBy(dc.divisionId)
-    .orderBy(asc(dc.divisionId))
-    .all() as { divisionId: string; metricIdsJson: string }[]
-
-  return new Map(rows.map((row) => [row.divisionId, JSON.parse(row.metricIdsJson) as string[]]))
 }
