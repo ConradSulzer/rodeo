@@ -48,6 +48,14 @@
     color: var(--ro-warning-dark);
   }
 
+  .ro-text-warn {
+    color: var(--ro-warning);
+  }
+
+  .ro-text-warn-dark {
+    color: var(--ro-warning-dark);
+  }
+
   .ro-text-info-dark {
     color: var(--ro-info-dark);
   }

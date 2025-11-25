@@ -184,6 +184,11 @@ export function ScoringSection() {
     <>
       <ManageSectionShell
         title="Scoring"
+        titleAdornment={
+          <Pill>
+            {results.size.toLocaleString()} / {players.length.toLocaleString()}
+          </Pill>
+        }
         description="Enter or update scores for each angler."
         searchPlaceholder="Search players"
         searchValue={query}
@@ -212,6 +217,8 @@ export function ScoringSection() {
                     const metrics = player.metrics
                     const hasRequirements = metrics.length > 0
                     const scored = isPlayerScored(player.id, metrics)
+                    const hasScorecard = results.has(player.id)
+                    const partial = hasScorecard && !scored
                     return (
                       <TableRow key={player.id} className="ro-row-hover">
                         <TableCell>
@@ -228,7 +235,8 @@ export function ScoringSection() {
                             variant={scored ? 'default' : 'outline'}
                             className={cn(
                               'min-w-[120px]',
-                              scored ? 'ro-bg-success ro-text-success-dark border-transparent' : ''
+                              scored ? 'ro-bg-success ro-text-success-dark border-transparent' : '',
+                              partial ? 'ro-bg-warn ro-text-warn-dark border-transparent' : ''
                             )}
                             disabled={!hasRequirements}
                             onClick={() => handleOpenModal(player, metrics)}
@@ -238,6 +246,8 @@ export function ScoringSection() {
                                 <FiCheck />
                                 Scored
                               </span>
+                            ) : partial ? (
+                              'Partial'
                             ) : (
                               'Score'
                             )}

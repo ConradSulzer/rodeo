@@ -44,6 +44,9 @@
   .ro-bg-warning {
     background-color: var(--ro-warning);
   }
+  .ro-bg-warn {
+    background-color: var(--ro-warning);
+  }
 
   .ro-bg-info {
     background-color: var(--ro-info);
