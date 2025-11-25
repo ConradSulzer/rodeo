@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { SerializableTournamentState } from '@core/tournaments/state'
+import type { ItemResult } from '@core/tournaments/results'
 import { queryKeys } from './queryKeys'
 
 export function useTournamentStateQuery() {
@@ -26,4 +27,26 @@ export function useTournamentStateQuery() {
   }, [queryClient])
 
   return query
+}
+
+type PlayerResultsMap = Map<string, Map<string, ItemResult>>
+
+const buildResultsMap = (state?: SerializableTournamentState): PlayerResultsMap => {
+  const map: PlayerResultsMap = new Map()
+  if (!state) return map
+  for (const entry of state.results) {
+    map.set(entry.playerId, new Map(entry.items.map(({ metricId, result }) => [metricId, result])))
+  }
+  return map
+}
+
+export function useTournamentResultsMap() {
+  const query = useTournamentStateQuery()
+
+  const map = useMemo(() => buildResultsMap(query.data), [query.data])
+
+  return {
+    ...query,
+    map
+  }
 }

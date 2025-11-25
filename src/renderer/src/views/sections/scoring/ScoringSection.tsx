@@ -1,8 +1,7 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { FiCheck } from 'react-icons/fi'
 import type { EnrichedPlayer, PlayerMetric } from '@core/players/players'
-import type { SerializableTournamentState } from '@core/tournaments/state'
 import type { ItemResult } from '@core/tournaments/results'
 import type { ItemScoreEventInput } from '@core/events/events'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
@@ -17,14 +16,12 @@ import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
 import { ScorePlayerModal, type SubmissionResult } from './ScorePlayerModal'
 import { cn } from '@renderer/lib/utils'
 import { usePlayersQuery } from '@renderer/queries/players'
-import { useTournamentStateQuery } from '@renderer/queries/tournament'
+import { useTournamentResultsMap } from '@renderer/queries/tournament'
 import { useMetricCatalog } from '@renderer/queries/metrics'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@renderer/queries/queryKeys'
 
 type PlayerRow = EnrichedPlayer
-
-type PlayerResultsMap = Map<string, Map<string, ItemResult>>
 
 type ScoreModalState =
   | { status: 'closed' }
@@ -54,19 +51,14 @@ export function ScoringSection() {
     isFetching: playersFetching
   } = usePlayersQuery()
   const {
-    data: tournamentState,
-    isLoading: stateLoading,
-    isFetching: stateFetching
-  } = useTournamentStateQuery()
+    map: results,
+    isLoading: resultsLoading,
+    isFetching: resultsFetching
+  } = useTournamentResultsMap()
   useMetricCatalog()
 
-  const loading = playersLoading || stateLoading
-  const refreshing = (!loading && (playersFetching || stateFetching)) || false
-
-  const results = useMemo<PlayerResultsMap>(() => {
-    if (!tournamentState) return new Map()
-    return buildResultsMap(tournamentState)
-  }, [tournamentState])
+  const loading = playersLoading || resultsLoading
+  const refreshing = (!loading && (playersFetching || resultsFetching)) || false
 
   const {
     results: filteredPlayers,
@@ -274,12 +266,4 @@ export function ScoringSection() {
       />
     </>
   )
-}
-
-function buildResultsMap(state: SerializableTournamentState): PlayerResultsMap {
-  const map: PlayerResultsMap = new Map()
-  for (const entry of state.results) {
-    map.set(entry.playerId, new Map(entry.items.map(({ metricId, result }) => [metricId, result])))
-  }
-  return map
 }
