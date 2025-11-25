@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { FiCheck } from 'react-icons/fi'
-import type { Player, PlayerMetric } from '@core/players/players'
+import type { EnrichedPlayer, PlayerMetric } from '@core/players/players'
 import type { SerializableTournamentState } from '@core/tournaments/state'
 import type { ItemResult } from '@core/tournaments/results'
 import type { ItemScoreEventInput } from '@core/events/events'
@@ -17,7 +17,7 @@ import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
 import { ScorePlayerModal, type SubmissionResult } from './ScorePlayerModal'
 import { cn } from '@renderer/lib/utils'
 
-type PlayerRow = Player
+type PlayerRow = EnrichedPlayer
 
 type PlayerResultsMap = Map<string, Map<string, ItemResult>>
 

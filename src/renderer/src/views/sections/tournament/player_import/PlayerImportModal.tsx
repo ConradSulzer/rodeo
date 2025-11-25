@@ -7,7 +7,7 @@ import {
   type PlayerFormInput,
   type PlayerFormData
 } from '@core/players/playerFormSchema'
-import type { Player } from '@core/players/players'
+import type { EnrichedPlayer } from '@core/players/players'
 import type { ParsedCsvFile } from '@core/utils/csv'
 import { parseCsvFile } from '@core/utils/csv'
 import { Modal } from '@renderer/components/Modal'
@@ -102,7 +102,7 @@ export function PlayerImportModal({ open, file, onClose, onComplete }: PlayerImp
   const [importing, setImporting] = useState(false)
   const [divisions, setDivisions] = useState<DivisionRecord[]>([])
   const [loadingDivisions, setLoadingDivisions] = useState(false)
-  const [existingPlayers, setExistingPlayers] = useState<Player[]>([])
+  const [existingPlayers, setExistingPlayers] = useState<EnrichedPlayer[]>([])
   const [loadingPlayers, setLoadingPlayers] = useState(false)
   const [step, setStep] = useState<ImportStep>('mapping')
   const [reviewRows, setReviewRows] = useState<PreparedImportRow[]>([])

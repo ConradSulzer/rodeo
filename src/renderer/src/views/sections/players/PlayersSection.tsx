@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { FiEdit2, FiTrash2, FiEye } from 'react-icons/fi'
-import type { Player, PatchPlayer, NewPlayer } from '@core/players/players'
+import type { EnrichedPlayer, PatchPlayer, NewPlayer } from '@core/players/players'
 import { Button } from '@renderer/components/ui/button'
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@renderer/components/ui/table'
 import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
@@ -17,7 +17,7 @@ import { useDivisionsListQuery } from '@renderer/queries/divisions'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@renderer/queries/queryKeys'
 
-type PlayerRow = Player
+type PlayerRow = EnrichedPlayer
 
 type FormState =
   | { open: false; mode: null; player?: undefined }
@@ -50,7 +50,7 @@ const FUZZY_FIELDS: Array<keyof PlayerRow & string> = [
   'id'
 ]
 
-function buildPatch(values: PlayerFormValues, current: Player): PatchPlayer | null {
+function buildPatch(values: PlayerFormValues, current: EnrichedPlayer): PatchPlayer | null {
   const patch: PatchPlayer = {}
 
   if (values.firstName !== current.firstName) patch.firstName = values.firstName

@@ -1,6 +1,6 @@
 import type { DivisionRecord } from '@core/tournaments/divisions'
 import type { MetricRecord } from '@core/tournaments/metrics'
-import type { Player } from '@core/players/players'
+import type { EnrichedPlayer } from '@core/players/players'
 import type { ResultRow } from '@renderer/hooks/useResultsData'
 import Papa from 'papaparse'
 
@@ -12,7 +12,7 @@ export function buildResultsCsv({
   includeUnscored
 }: {
   metrics: MetricRecord[]
-  players: Player[]
+  players: EnrichedPlayer[]
   rows: ResultRow[]
   divisions: DivisionRecord[]
   includeUnscored: boolean

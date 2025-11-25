@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import type { Player } from '@core/players/players'
+import type { EnrichedPlayer } from '@core/players/players'
 import type { ItemResult } from '@core/tournaments/results'
 import type { MetricRecord } from '@core/tournaments/metrics'
 import { useMetricCatalog } from '@renderer/queries/metrics'
@@ -7,7 +7,7 @@ import { usePlayersQuery } from '@renderer/queries/players'
 import { useTournamentStateQuery } from '@renderer/queries/tournament'
 
 export type ResultRow = {
-  player: Player
+  player: EnrichedPlayer
   displayName: string
   email: string
   divisionIds: string[]

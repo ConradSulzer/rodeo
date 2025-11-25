@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import type { Player } from '@core/players/players'
+import type { EnrichedPlayer } from '@core/players/players'
 import { queryKeys } from './queryKeys'
 
-const fetchPlayers = async (): Promise<Player[]> => {
+const fetchPlayers = async (): Promise<EnrichedPlayer[]> => {
   return window.api.players.list()
 }
 
@@ -27,7 +27,7 @@ export function usePlayerDirectory() {
   })
 
   return {
-    map: query.data ?? new Map<string, string>(),
-    ...query
+    ...query,
+    data: query.data ?? new Map<string, string>()
   }
 }

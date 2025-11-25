@@ -1,4 +1,4 @@
-import type { Player } from '@core/players/players'
+import type { EnrichedPlayer } from '@core/players/players'
 import { Modal } from '../../../components/Modal'
 import { Field } from '../../../components/ui/field'
 import { Label } from '../../../components/ui/label'
@@ -7,7 +7,7 @@ import { Button } from '../../../components/ui/button'
 
 type PlayerDetailsModalProps = {
   open: boolean
-  player?: Player
+  player?: EnrichedPlayer
   onClose: () => void
 }
 

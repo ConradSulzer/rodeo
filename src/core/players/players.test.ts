@@ -4,7 +4,7 @@ import type { AppDatabase } from '@core/db/db'
 import {
   createPlayer,
   deletePlayer,
-  listPlayers,
+  listEnrichedPlayers,
   updatePlayer,
   type NewPlayer
 } from './players'
@@ -24,7 +24,7 @@ const basePlayer: NewPlayer = {
 }
 
 function getPlayerById(db: AppDatabase, id: string) {
-  return listPlayers(db).find((player) => player.id === id)
+  return listEnrichedPlayers(db).find((player) => player.id === id)
 }
 
 describe('players data access', () => {
@@ -92,7 +92,7 @@ describe('players data access', () => {
         createPlayer(db, { ...basePlayer, displayName: 'Bob', email: 'b@example.com' })
       ]
 
-      const players = listPlayers(db)
+      const players = listEnrichedPlayers(db)
       expect(players.map((p) => p.displayName)).toEqual(['Alice', 'Bob', 'Charlie'])
       expect(players).toHaveLength(ids.length)
     })
@@ -118,7 +118,7 @@ describe('players data access', () => {
       addCategoryToDivision(db, divisionId, categoryId, 1, 1)
       addPlayerToDivision(db, divisionId, playerId)
 
-      const players = listPlayers(db)
+      const players = listEnrichedPlayers(db)
 
       const target = players.find((player) => player.id === playerId)
       expect(target).toBeDefined()

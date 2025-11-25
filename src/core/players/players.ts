@@ -8,7 +8,7 @@ import type { MetricRecord } from '@core/tournaments/metrics'
 export type PlayerRecord = typeof pl.$inferSelect
 export type PlayerMetric = Pick<MetricRecord, 'id' | 'label'>
 
-export type Player = PlayerRecord & {
+export type EnrichedPlayer = PlayerRecord & {
   divisions: DivisionRecord[]
   metrics: string[]
 }
@@ -63,7 +63,7 @@ export function deletePlayer(db: AppDatabase, id: string) {
   return result.changes > 0
 }
 
-export function listPlayers(db: AppDatabase): Player[] {
+export function listEnrichedPlayers(db: AppDatabase): EnrichedPlayer[] {
   const players = db.query.player
     .findMany({
       orderBy: (player, { asc }) => [asc(player.displayName)],

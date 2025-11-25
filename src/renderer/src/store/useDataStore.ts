@@ -1,14 +1,14 @@
 import { create } from 'zustand'
-import type { Player } from '@core/players/players'
+import type { EnrichedPlayer } from '@core/players/players'
 import type { Division } from '@core/tournaments/divisions'
 import type { Metric } from '@core/tournaments/metrics'
 import type { SerializableTournamentState } from '@core/tournaments/state'
 import type { Category } from '@core/tournaments/categories'
 
-export type PlayerDirectory = Map<string, Player>
+export type PlayerDirectory = Map<string, EnrichedPlayer>
 
 type StoreData = {
-  players: Player[]
+  players: EnrichedPlayer[]
   divisions: Division[]
   metrics: Metric[]
   categories: Category[]
