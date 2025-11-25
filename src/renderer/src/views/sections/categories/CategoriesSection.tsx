@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi'
 import type { Category, NewCategory, PatchCategory } from '@core/tournaments/categories'
@@ -15,25 +15,23 @@ import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
 import { CategoryFormModal, type CategoryFormValues } from './CategoryFormModal'
 import { CategoryDetailsModal } from './CategoryDetailsModal'
 import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
-import { useStandingRulesQuery } from '@renderer/queries/categories'
+import { useCategoriesQuery, useStandingRulesQuery } from '@renderer/queries/categories'
 import { useMetricsListQuery } from '@renderer/queries/metrics'
-import { useDataStore } from '@renderer/store/useDataStore'
+import { useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@renderer/queries/queryKeys'
 
 type FormState =
-  | { open: false; mode: null; category?: undefined }
-  | { open: true; mode: 'create'; category?: undefined }
-  | { open: true; mode: 'edit'; category: Category }
+  | { status: 'closed' }
+  | { status: 'creating' }
+  | { status: 'editing'; category: Category }
 
-type DetailsState = {
-  open: boolean
-  category?: Category
-}
+type DetailsState =
+  | { status: 'closed' }
+  | { status: 'open'; category: Category }
 
-type DeleteState = {
-  open: boolean
-  category?: Category
-  deleting: boolean
-}
+type DeleteState =
+  | { status: 'closed'; deleting: false }
+  | { status: 'confirming'; category: Category; deleting: boolean }
 
 const columns: ReadonlyArray<CrudTableColumn<Category, 'actions'>> = [
   { key: 'name', label: 'Category', sortable: true },
@@ -44,24 +42,18 @@ const columns: ReadonlyArray<CrudTableColumn<Category, 'actions'>> = [
 const CATEGORY_FUZZY_FIELDS: Array<keyof Category & string> = ['name', 'id']
 
 export function CategoriesSection() {
-  const categories = useDataStore((state) => state.categories)
-  const refreshCategories = useDataStore((state) => state.fetchCategories)
-  const [formState, setFormState] = useState<FormState>({ open: false, mode: null })
+  const queryClient = useQueryClient()
+  const {
+    data: categories = [],
+    isLoading: categoriesLoading,
+    isFetching: categoriesFetching
+  } = useCategoriesQuery()
+  const [formState, setFormState] = useState<FormState>({ status: 'closed' })
   const [formSubmitting, setFormSubmitting] = useState(false)
-  const [detailsState, setDetailsState] = useState<DetailsState>({ open: false })
-  const [deleteState, setDeleteState] = useState<DeleteState>({ open: false, deleting: false })
-  const [refreshing, setRefreshing] = useState(false)
+  const [detailsState, setDetailsState] = useState<DetailsState>({ status: 'closed' })
+  const [deleteState, setDeleteState] = useState<DeleteState>({ status: 'closed', deleting: false })
   const { data: metrics = [] } = useMetricsListQuery()
   const { data: standingRules = [] } = useStandingRulesQuery()
-
-  const handleRefreshCategories = async () => {
-    setRefreshing(true)
-    try {
-      await handleRefreshCategories()
-    } finally {
-      setRefreshing(false)
-    }
-  }
 
   const {
     results: filteredCategories,
@@ -75,33 +67,53 @@ export function CategoriesSection() {
     initialSort: { key: 'name', direction: 'asc' }
   })
 
-  const openCreateModal = () => setFormState({ open: true, mode: 'create' })
+  const refreshCategories = useCallback(() => {
+    return queryClient.invalidateQueries({ queryKey: queryKeys.categories.all() })
+  }, [queryClient])
 
-  const openEditModal = (category: Category) =>
-    setFormState({ open: true, mode: 'edit', category })
+  const runCategoryMutation = useCallback(
+    async (action: () => Promise<unknown>, successMessage: string, errorMessage: string) => {
+      try {
+        const result = await action()
+        if (result === false) throw new Error('Mutation returned false')
+        toast.success(successMessage)
+        await refreshCategories()
+        return true
+      } catch (error) {
+        console.error(errorMessage, error)
+        toast.error(errorMessage)
+        return false
+      }
+    },
+    [refreshCategories]
+  )
+
+  const openCreateModal = () => setFormState({ status: 'creating' })
+
+  const openEditModal = (category: Category) => setFormState({ status: 'editing', category })
 
   const closeFormModal = () => {
     if (formSubmitting) return
-    setFormState({ open: false, mode: null })
+    setFormState({ status: 'closed' })
   }
 
-  const openDetails = (category: Category) => setDetailsState({ open: true, category })
-  const closeDetails = () => setDetailsState({ open: false })
+  const openDetails = (category: Category) => setDetailsState({ status: 'open', category })
+  const closeDetails = () => setDetailsState({ status: 'closed' })
 
   const requestDelete = (category: Category) =>
-    setDeleteState({ open: true, deleting: false, category })
+    setDeleteState({ status: 'confirming', deleting: false, category })
 
   const cancelDelete = () => {
-    if (deleteState.deleting) return
-    setDeleteState({ open: false, deleting: false, category: undefined })
+    if (deleteState.status === 'confirming' && deleteState.deleting) return
+    setDeleteState({ status: 'closed', deleting: false })
   }
 
   const handleFormSubmit = async (values: CategoryFormValues) => {
-    if (!formState.open) return
+    if (formState.status === 'closed') return
     setFormSubmitting(true)
     try {
       const trimmedCountName = values.metricsCountName.trim()
-      if (formState.mode === 'create') {
+      if (formState.status === 'creating') {
         const payload: NewCategory = {
           name: values.name,
           direction: values.direction,
@@ -117,8 +129,25 @@ export function CategoriesSection() {
             )
           )
         }
-        toast.success('Category added')
-      } else if (formState.mode === 'edit' && formState.category) {
+        const success = await runCategoryMutation(
+          async () => {
+            const categoryId: string = await window.api.categories.create(payload)
+            if (values.metricIds.length) {
+              await Promise.all(
+                values.metricIds.map((metricId) =>
+                  window.api.categories.addMetric(categoryId, metricId)
+                )
+              )
+            }
+            return true
+          },
+          'Category added',
+          'Unable to add category'
+        )
+        if (!success) {
+          return
+        }
+      } else if (formState.status === 'editing') {
         const category = formState.category
         const patch: PatchCategory = {}
         if (values.name !== category.name) patch.name = values.name
@@ -137,39 +166,43 @@ export function CategoriesSection() {
           patch.metricsCountName = trimmedCountName
         }
 
-        let changed = false
-
-        if (Object.keys(patch).length) {
-          const success = await window.api.categories.update(category.id, patch)
-          if (!success) throw new Error('Update returned false')
-          changed = true
-        }
-
         const prevIds = new Set(category.metrics.map((metric) => metric.id))
         const nextIds = new Set(values.metricIds)
 
         const toAdd = [...nextIds].filter((id) => !prevIds.has(id))
         const toRemove = [...prevIds].filter((id) => !nextIds.has(id))
 
-        if (toAdd.length || toRemove.length) {
-          await Promise.all([
-            ...toAdd.map((id) => window.api.categories.addMetric(category.id, id)),
-            ...toRemove.map((id) => window.api.categories.removeMetric(category.id, id))
-          ])
-          changed = true
-        }
-
-        if (!changed) {
+        if (!Object.keys(patch).length && toAdd.length === 0 && toRemove.length === 0) {
           toast.info('No changes to save')
-          setFormState({ open: false, mode: null })
+          setFormState({ status: 'closed' })
           return
         }
 
-        toast.success('Category updated')
+        const success = await runCategoryMutation(
+          async () => {
+            if (Object.keys(patch).length) {
+              const updated = await window.api.categories.update(category.id, patch)
+              if (!updated) throw new Error('Update returned false')
+            }
+
+            if (toAdd.length || toRemove.length) {
+              await Promise.all([
+                ...toAdd.map((id) => window.api.categories.addMetric(category.id, id)),
+                ...toRemove.map((id) => window.api.categories.removeMetric(category.id, id))
+              ])
+            }
+            return true
+          },
+          'Category updated',
+          'Unable to update category'
+        )
+
+        if (!success) {
+          return
+        }
       }
 
-      await handleRefreshCategories()
-      setFormState({ open: false, mode: null })
+      setFormState({ status: 'closed' })
     } catch (error) {
       console.error('Failed to submit category form', error)
       toast.error('Unable to save category')
@@ -179,29 +212,32 @@ export function CategoriesSection() {
   }
 
   const confirmDelete = async () => {
-    if (!deleteState.category) return
-    setDeleteState((prev) => ({ ...prev, deleting: true }))
-    try {
-      const success = await window.api.categories.delete(deleteState.category.id)
-      if (!success) {
-        throw new Error('Delete returned false')
-      }
-      toast.success(`Deleted ${deleteState.category.name}`)
-      setDeleteState({ open: false, deleting: false, category: undefined })
-      await refreshCategories()
-    } catch (error) {
-      console.error('Failed to delete category', error)
-      toast.error('Could not delete category')
-      setDeleteState((prev) => ({ ...prev, deleting: false }))
+    if (deleteState.status !== 'confirming') return
+    setDeleteState({ ...deleteState, deleting: true })
+
+    const success = await runCategoryMutation(
+      () => window.api.categories.delete(deleteState.category.id),
+      `Deleted ${deleteState.category.name}`,
+      'Could not delete category'
+    )
+
+    if (success) {
+      setDeleteState({ status: 'closed', deleting: false })
+    } else {
+      setDeleteState((prev) =>
+        prev.status === 'confirming' ? { ...prev, deleting: false } : prev
+      )
     }
   }
 
-  const isEmpty = categories.length === 0
+  const loading = categoriesLoading
+  const refreshing = (!loading && categoriesFetching) || false
+  const isEmpty = !loading && categories.length === 0
   const categoryCount = categories.length
-  const categoryCountLabel = categoryCount.toLocaleString()
+  const categoryCountLabel = loading ? '—' : categoryCount.toLocaleString()
 
   const editModalCategory = useMemo(() => {
-    if (!formState.open || formState.mode !== 'edit' || !formState.category) return undefined
+    if (formState.status !== 'editing') return undefined
     return {
       ...formState.category,
       metricIds: formState.category.metrics.map((metric) => metric.id)
@@ -221,7 +257,11 @@ export function CategoriesSection() {
         searchValue={query}
         onSearchChange={setQuery}
       >
-        {isEmpty ? (
+        {loading ? (
+          <div className="flex flex-1 items-center justify-center ro-text-muted">
+            Loading categories...
+          </div>
+        ) : isEmpty ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center ro-text-muted">
             <p className="text-sm">No categories yet. Start by adding one.</p>
             <Button type="button" variant="outline" size="sm" onClick={openCreateModal}>
@@ -297,8 +337,8 @@ export function CategoriesSection() {
       </ManageSectionShell>
 
       <CategoryFormModal
-        open={formState.open}
-        mode={formState.open ? (formState.mode ?? 'create') : 'create'}
+        open={formState.status !== 'closed'}
+        mode={formState.status === 'creating' ? 'create' : 'edit'}
         category={editModalCategory}
         metrics={metrics}
         standingRules={standingRules}
@@ -308,23 +348,23 @@ export function CategoriesSection() {
       />
 
       <CategoryDetailsModal
-        open={detailsState.open}
-        category={detailsState.category}
+        open={detailsState.status === 'open'}
+        category={detailsState.status === 'open' ? detailsState.category : undefined}
         onClose={closeDetails}
       />
 
       <ConfirmDialog
-        open={deleteState.open}
+        open={deleteState.status === 'confirming'}
         title="Delete Category"
-        confirming={deleteState.deleting}
+        confirming={deleteState.status === 'confirming' ? deleteState.deleting : false}
         confirmLabel="Delete Category"
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
         description={
-          deleteState.category ? (
+          deleteState.status === 'confirming' ? (
             <p>
-              This will permanently remove <strong>{deleteState.category.name}</strong> and unlink
-              it from all divisions and metrics. This action cannot be undone.
+              This will permanently remove <strong>{deleteState.category.name}</strong> and unlink it
+              from all divisions and metrics. This action cannot be undone.
             </p>
           ) : (
             'Are you sure you want to delete this category?'
