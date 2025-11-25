@@ -13,8 +13,7 @@ export const queryKeys = {
   },
   divisions: {
     all: () => ['divisions'] as const,
-    list: () => ['divisions', 'list'] as const,
-    views: () => ['divisions', 'views'] as const
+    list: () => ['divisions', 'list'] as const
   },
   tournament: {
     state: () => ['tournament', 'state'] as const

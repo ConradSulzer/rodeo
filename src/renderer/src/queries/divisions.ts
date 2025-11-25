@@ -7,14 +7,7 @@ const fetchDivisions = async (): Promise<Division[]> => {
   return window.api.divisions.list()
 }
 
-export function useDivisionViewsQuery() {
-  return useQuery({
-    queryKey: queryKeys.divisions.views(),
-    queryFn: fetchDivisions
-  })
-}
-
-export function useDivisionsListQuery() {
+export function useDivisionsQuery() {
   return useQuery({
     queryKey: queryKeys.divisions.list(),
     queryFn: fetchDivisions
@@ -22,7 +15,7 @@ export function useDivisionsListQuery() {
 }
 
 export function useDivisionCatalog() {
-  const { data: views = [], ...rest } = useDivisionViewsQuery()
+  const { data: views = [], ...rest } = useDivisionsQuery()
 
   const { list, map } = useMemo(() => {
     const sorted = [...views].sort((a, b) => {

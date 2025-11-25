@@ -13,7 +13,7 @@ import { CrudTableColumn, renderCrudTableHeader } from '@renderer/components/cru
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 import { Pill } from '@renderer/components/ui/pill'
 import { usePlayersQuery } from '@renderer/queries/players'
-import { useDivisionsListQuery } from '@renderer/queries/divisions'
+import { useDivisionsQuery } from '@renderer/queries/divisions'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@renderer/queries/queryKeys'
 
@@ -83,7 +83,7 @@ export function PlayersSection() {
   })
 
   const { data: players = [], isLoading, isFetching } = usePlayersQuery()
-  const { data: divisionOptions = [] } = useDivisionsListQuery()
+  const { data: divisionOptions = [] } = useDivisionsQuery()
 
   const invalidatePlayers = useCallback(() => {
     return queryClient.invalidateQueries({
