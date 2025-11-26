@@ -196,4 +196,45 @@ describe('eventReducer', () => {
     expect(errors).toHaveLength(0)
     expect(results.get(first.playerId)).toBeUndefined()
   })
+
+  it('tracks scoredAt across scoring, corrections, voids, and re-scoring', () => {
+    const results: Results = new Map()
+    const lookup = new Map<string, RodeoEvent>()
+
+    const first = makeItemEvent({ ts: baseTs + 10 })
+    lookup.set(first.id, first)
+    reduceEvent(results, first, (id) => lookup.get(id))
+    expect(results.get(first.playerId)?.scoredAt).toBe(first.ts)
+
+    const correction: ItemStateChanged = {
+      ...first,
+      id: ulid(),
+      ts: first.ts + 5,
+      priorEventId: first.id,
+      value: (first.value ?? 0) + 1
+    }
+    lookup.set(correction.id, correction)
+    const correctionErrors = reduceEvent(results, correction, (id) => lookup.get(id))
+    expect(correctionErrors).toHaveLength(0)
+    expect(results.get(first.playerId)?.scoredAt).toBe(first.ts)
+
+    const voidEvent: ScorecardVoided = {
+      type: 'ScorecardVoided',
+      id: ulid(),
+      ts: correction.ts + 10,
+      playerId: first.playerId
+    }
+    const voidErrors = reduceEvent(results, voidEvent, (id) => lookup.get(id))
+    expect(voidErrors).toHaveLength(0)
+    expect(results.get(first.playerId)).toBeUndefined()
+
+    const rescore = makeItemEvent({
+      playerId: first.playerId,
+      ts: voidEvent.ts + 5
+    })
+    lookup.set(rescore.id, rescore)
+    const rescoreErrors = reduceEvent(results, rescore, (id) => lookup.get(id))
+    expect(rescoreErrors).toHaveLength(0)
+    expect(results.get(first.playerId)?.scoredAt).toBe(rescore.ts)
+  })
 })
