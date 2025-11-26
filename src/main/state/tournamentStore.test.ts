@@ -145,6 +145,7 @@ describe('hydrate', () => {
       results: [
         {
           playerId: 'player-1',
+          scoredAt: null,
           items: [
             {
               metricId: 'metric-1',
