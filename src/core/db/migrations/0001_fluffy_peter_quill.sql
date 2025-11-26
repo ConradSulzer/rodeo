@@ -1,0 +1,1 @@
+ALTER TABLE `category` ADD `mode` text DEFAULT 'aggregate' NOT NULL;

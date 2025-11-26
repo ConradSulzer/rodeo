@@ -17,7 +17,9 @@ import { addCategoryToDivision, createDivision } from './divisions'
 
 const baseCategory: NewCategory = {
   name: 'Overall',
-  direction: 'asc'
+  direction: 'asc',
+  mode: 'aggregate',
+  showMetricsCount: false
 }
 
 const baseMetric: NewMetric = {
@@ -34,6 +36,7 @@ describe('categories data access', () => {
       expect(category).toBeDefined()
       expect(category?.id).toBe(id)
       expect(category).toMatchObject(baseCategory)
+      expect(category?.mode).toBe('aggregate')
       expect(category?.rules).toEqual([])
       expect(category?.createdAt).toBeTypeOf('number')
       expect(category?.updatedAt).toBeTypeOf('number')
@@ -45,6 +48,7 @@ describe('categories data access', () => {
       const id = createCategory(db, {
         name: 'Tally',
         direction: 'desc',
+        mode: 'aggregate',
         showMetricsCount: true,
         metricsCountName: 'Fish Count'
       })
@@ -73,11 +77,12 @@ describe('categories data access', () => {
       const id = createCategory(db, baseCategory)
       const before = getCategory(db, id)
 
-      const changed = updateCategory(db, id, { name: 'Speed' })
+      const changed = updateCategory(db, id, { name: 'Speed', mode: 'pick_one' })
       expect(changed).toBe(true)
 
       const after = getCategory(db, id)
       expect(after?.name).toBe('Speed')
+      expect(after?.mode).toBe('pick_one')
       expect(after?.updatedAt).toBeGreaterThanOrEqual(before!.updatedAt)
     })
   })
@@ -87,6 +92,8 @@ describe('categories data access', () => {
       const id = createCategory(db, {
         name: 'Technique',
         direction: 'asc',
+        mode: 'aggregate',
+        showMetricsCount: false,
         rules: ['  rule-a', 'rule-b', 'rule-a', '', '  ']
       })
 
@@ -126,9 +133,9 @@ describe('categories data access', () => {
 
   it('lists categories ordered by name', () => {
     withInMemoryDb((db) => {
-      createCategory(db, { name: 'Speed', direction: 'asc' })
-      createCategory(db, { name: 'Accuracy', direction: 'desc' })
-      createCategory(db, { name: 'Strength', direction: 'asc' })
+      createCategory(db, { name: 'Speed', direction: 'asc', mode: 'aggregate', showMetricsCount: false })
+      createCategory(db, { name: 'Accuracy', direction: 'desc', mode: 'aggregate', showMetricsCount: false })
+      createCategory(db, { name: 'Strength', direction: 'asc', mode: 'aggregate', showMetricsCount: false })
 
       const categories = listCategories(db)
       expect(categories.map((c) => c.name)).toEqual(['Accuracy', 'Speed', 'Strength'])
@@ -183,8 +190,8 @@ describe('categories data access', () => {
   it('lists categories for a metric', () => {
     withInMemoryDb((db) => {
       const metricId = createMetric(db, baseMetric)
-      const categoryA = createCategory(db, { name: 'A', direction: 'asc' })
-      const categoryB = createCategory(db, { name: 'B', direction: 'desc' })
+      const categoryA = createCategory(db, { name: 'A', direction: 'asc', mode: 'aggregate', showMetricsCount: false })
+      const categoryB = createCategory(db, { name: 'B', direction: 'desc', mode: 'aggregate', showMetricsCount: false })
 
       addMetricToCategory(db, categoryA, metricId)
       addMetricToCategory(db, categoryB, metricId)

@@ -81,7 +81,12 @@ describe('metrics data access', () => {
   it('returns metrics with categories', () => {
     withInMemoryDb((db) => {
       const metricId = createMetric(db, baseMetric)
-      const categoryId = createCategory(db, { name: 'Cat', direction: 'desc' })
+      const categoryId = createCategory(db, {
+        name: 'Cat',
+        direction: 'desc',
+        mode: 'aggregate',
+        showMetricsCount: false
+      })
       addMetricToCategory(db, categoryId, metricId)
 
       const metrics = listMetrics(db)

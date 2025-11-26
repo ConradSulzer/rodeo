@@ -23,7 +23,9 @@ const baseDivision: NewDivision = {
 
 const baseCategory: NewCategory = {
   name: 'Overall',
-  direction: 'asc'
+  direction: 'asc',
+  mode: 'aggregate',
+  showMetricsCount: false
 }
 
 const baseMetric: NewMetric = {

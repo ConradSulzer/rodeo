@@ -26,6 +26,12 @@ export function CategoryDetailsModal({ open, category, onClose }: CategoryDetail
           <Field label={<Label>Name</Label>}>
             <Input value={category.name} readOnly />
           </Field>
+          <Field label={<Label>Mode</Label>}>
+            <Input
+              value={category.mode === 'pick_one' ? 'Pick One (best single metric)' : 'Aggregate'}
+              readOnly
+            />
+          </Field>
           <Field label={<Label>Direction</Label>}>
             <Input
               value={category.direction === 'asc' ? 'Lower Is Better' : 'Higher Is Better'}

@@ -33,6 +33,7 @@ type DeleteState =
 
 const columns: ReadonlyArray<CrudTableColumn<Category, 'actions'>> = [
   { key: 'name', label: 'Category', sortable: true },
+  { key: 'mode', label: 'Mode', sortable: false },
   { key: 'metrics', label: 'Metrics', sortable: false },
   { key: 'actions', label: 'Actions', sortable: false, align: 'right' }
 ]
@@ -114,6 +115,7 @@ export function CategoriesSection() {
       if (formState.status === 'creating') {
         const payload: NewCategory = {
           name: values.name,
+          mode: values.mode,
           direction: values.direction,
           rules: values.rules,
           showMetricsCount: values.showMetricsCount,
@@ -141,6 +143,9 @@ export function CategoriesSection() {
         const category = formState.category
         const patch: PatchCategory = {}
         if (values.name !== category.name) patch.name = values.name
+        if ((values.mode ?? 'aggregate') !== (category.mode ?? 'aggregate')) {
+          patch.mode = values.mode
+        }
         if (values.direction !== category.direction) patch.direction = values.direction
         if (!areStringArraysEqual(values.rules, category.rules)) {
           patch.rules = values.rules
@@ -279,6 +284,11 @@ export function CategoriesSection() {
                             {category.direction === 'asc' ? 'Lower is better' : 'Higher is better'}
                           </span>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm ro-text-main">
+                          {category.mode === 'pick_one' ? 'Pick One' : 'Aggregate'}
+                        </span>
                       </TableCell>
                       <TableCell>
                         {category.metrics.length ? (
