@@ -121,14 +121,6 @@ export function CategoriesSection() {
           showMetricsCount: values.showMetricsCount,
           metricsCountName: values.showMetricsCount ? trimmedCountName : ''
         }
-        const categoryId: string = await window.api.categories.create(payload)
-        if (values.metricIds.length) {
-          await Promise.all(
-            values.metricIds.map((metricId) =>
-              window.api.categories.addMetric(categoryId, metricId)
-            )
-          )
-        }
         const success = await runCategoryMutation(
           async () => {
             const categoryId: string = await window.api.categories.create(payload)

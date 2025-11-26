@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
+import { toastShortSuccess } from '@renderer/lib/toast'
 import { FiEdit2, FiTrash2, FiEye } from 'react-icons/fi'
 import type { EnrichedPlayer, PatchPlayer, NewPlayer } from '@core/players/players'
 import { Button } from '@renderer/components/ui/button'
@@ -141,7 +142,7 @@ export function PlayersSection() {
             window.api.divisions.addPlayer(divisionId, playerId)
           )
         )
-        toast.success('Player added')
+        toastShortSuccess('Player added')
         shouldRefresh = true
       } else if (formState.mode === 'edit') {
         const player = formState.player
