@@ -3,7 +3,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Modal } from '@renderer/components/Modal'
 import { toast } from 'sonner'
 import { buildCsvExportFilename } from '@core/utils/csv'
-import { useResultsData } from '@renderer/hooks/useResultsData'
+import { useResultsTableData } from '@renderer/hooks/useResultsData'
 import { useDivisionCatalog } from '@renderer/queries/divisions'
 import { usePlayersQuery } from '@renderer/queries/players'
 import { buildResultsCsv } from '@renderer/utils/reports/resultsCsv'
@@ -12,7 +12,7 @@ export function ResultsExportButton() {
   const [open, setOpen] = useState(false)
   const [includeUnscored, setIncludeUnscored] = useState(true)
   const [exporting, setExporting] = useState(false)
-  const { metrics, rows } = useResultsData()
+  const { metrics, rows } = useResultsTableData()
   const { list: divisionList = [] } = useDivisionCatalog()
   const { data: players = [] } = usePlayersQuery()
 

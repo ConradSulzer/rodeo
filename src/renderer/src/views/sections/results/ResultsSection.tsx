@@ -6,16 +6,16 @@ import {
 } from '@renderer/components/crud/CrudTableHeader'
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@renderer/components/ui/table'
 import { useUniversalSearchSort } from '@renderer/hooks/useUniversalSearchSort'
-import { useResultsData } from '@renderer/hooks/useResultsData'
+import { useResultsTableData } from '@renderer/hooks/useResultsData'
 
 type ScoreColumnKey = `score-${string}`
-type SortableRow = ReturnType<typeof useResultsData>['rows'][number] &
+type SortableRow = ReturnType<typeof useResultsTableData>['rows'][number] &
   Partial<Record<ScoreColumnKey, number | undefined>> & {
     scoredAtSort: number
   }
 
 export function ResultsSection() {
-  const { metrics, rows, isLoading } = useResultsData()
+  const { metrics, rows, isLoading } = useResultsTableData()
 
   const columns: ReadonlyArray<CrudTableColumn<SortableRow, ScoreColumnKey>> = [
     { key: 'displayName', label: 'Player', sortable: false },

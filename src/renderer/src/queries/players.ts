@@ -28,3 +28,17 @@ export function usePlayerDirectory() {
     map
   }
 }
+
+export function usePlayersMap() {
+  const { data, ...rest } = usePlayersQuery()
+
+  const map = useMemo(() => {
+    const players = data ?? []
+    return new Map(players.map((player) => [player.id, player]))
+  }, [data])
+
+  return {
+    ...rest,
+    map
+  }
+}
