@@ -194,6 +194,6 @@ describe('eventReducer', () => {
 
     const errors = reduceEvent(results, voidEvent, (id) => lookup.get(id))
     expect(errors).toHaveLength(0)
-    expect(results.get(first.playerId)?.items.size).toBe(0)
+    expect(results.get(first.playerId)).toBeUndefined()
   })
 })

@@ -15,7 +15,7 @@ export function reduceEvent(results: Results, e: RodeoEvent, resolve: ResolveFn)
   // Void clears the player's scorecard
   // TODO: Come back and think about this behavior some more, can either fix here or down stream handle empties
   if (isVoidEvent(e)) {
-    results.set(e.playerId, { items: new Map(), scoredAt: null })
+    results.delete(e.playerId)
     return errors
   }
 
