@@ -27,10 +27,7 @@ export type DivisionStanding = {
   categories: CategoryStanding[]
 }
 
-export function computeDivisionStanding(
-  results: Results,
-  division: Division
-): DivisionStanding {
+export function computeDivisionStanding(results: Results, division: Division): DivisionStanding {
   const eligible = division.eligiblePlayerIds.length
     ? new Set<ULID>(division.eligiblePlayerIds)
     : null

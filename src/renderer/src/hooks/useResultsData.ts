@@ -1,9 +1,6 @@
 import type { MetricRecord } from '@core/tournaments/metrics'
 import { useMetricCatalog } from '@renderer/queries/metrics'
-import {
-  useTournamentResultsRows,
-  type TournamentResultRow
-} from '@renderer/queries/tournament'
+import { useTournamentResultsRows, type TournamentResultRow } from '@renderer/queries/tournament'
 
 export type ResultRow = TournamentResultRow
 

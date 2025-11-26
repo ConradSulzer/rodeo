@@ -26,9 +26,7 @@ type FormState =
   | { status: 'creating' }
   | { status: 'editing'; division: Division }
 
-type DetailsState =
-  | { status: 'closed' }
-  | { status: 'open'; division: Division }
+type DetailsState = { status: 'closed' } | { status: 'open'; division: Division }
 
 type DeleteState =
   | { status: 'closed'; deleting: false }
@@ -132,7 +130,12 @@ export function DivisionsSection() {
           return desired !== undefined && desired !== entry.order
         })
 
-        if (!Object.keys(patch).length && !toAdd.length && !toRemove.length && !orderChanges.length) {
+        if (
+          !Object.keys(patch).length &&
+          !toAdd.length &&
+          !toRemove.length &&
+          !orderChanges.length
+        ) {
           toast.info('No changes to save')
           setFormState({ status: 'closed' })
           return
@@ -194,9 +197,7 @@ export function DivisionsSection() {
     if (success) {
       setDeleteState({ status: 'closed', deleting: false })
     } else {
-      setDeleteState((prev) =>
-        prev.status === 'confirming' ? { ...prev, deleting: false } : prev
-      )
+      setDeleteState((prev) => (prev.status === 'confirming' ? { ...prev, deleting: false } : prev))
     }
   }
   const handleReorder = async (ordered: Division[]) => {
@@ -367,8 +368,8 @@ export function DivisionsSection() {
         description={
           deleteState.status === 'confirming' ? (
             <p>
-              This will permanently remove <strong>{deleteState.division.name}</strong> and unlink it
-              from players and categories. This action cannot be undone.
+              This will permanently remove <strong>{deleteState.division.name}</strong> and unlink
+              it from players and categories. This action cannot be undone.
             </p>
           ) : (
             'Are you sure you want to delete this division?'

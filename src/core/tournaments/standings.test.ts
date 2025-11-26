@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { withInMemoryDb } from '@core/db/db'
-import { createDivision, addCategoryToDivision, addPlayerToDivision, listDivisions } from './divisions'
+import {
+  createDivision,
+  addCategoryToDivision,
+  addPlayerToDivision,
+  listDivisions
+} from './divisions'
 import { addMetricToCategory, createCategory, updateCategory } from './categories'
 import { createMetric } from './metrics'
 import { createPlayer } from '@core/players/players'

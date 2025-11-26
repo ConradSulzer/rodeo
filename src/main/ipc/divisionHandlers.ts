@@ -79,7 +79,6 @@ ipcMain.handle(
   }
 )
 
-
 ipcMain.handle('divisions:addPlayer', (_evt, divisionId: string, playerId: string) => {
   const db = getTournamentDb()
   return withStandingsRefresh(db, () => addPlayerToDivision(db, divisionId, playerId))
