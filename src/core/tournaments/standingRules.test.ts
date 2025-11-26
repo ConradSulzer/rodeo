@@ -32,6 +32,7 @@ const baseCategoryContext = (direction: 'asc' | 'desc', metricCount = 0): Standi
       id: '01CATEGORY',
       name: 'Test Category',
       direction,
+      mode: 'aggregate',
       rules: [],
       createdAt: 0,
       updatedAt: 0,

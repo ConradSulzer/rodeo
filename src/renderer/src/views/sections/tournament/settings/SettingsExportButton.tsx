@@ -34,6 +34,7 @@ export function SettingsExportButton() {
 
       const categoryRows: TemplateCategoryRow[] = categories.map((category) => ({
         name: sanitizeName(category.name),
+        mode: category.mode ?? 'aggregate',
         direction: category.direction === 'asc' ? 'asc' : 'desc',
         description: '',
         metrics: category.metrics.map((metric) => sanitizeName(metric.label))

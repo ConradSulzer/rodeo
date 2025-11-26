@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { toastShortSuccess } from '@renderer/lib/toast'
 import { FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi'
 import type { Category, NewCategory, PatchCategory } from '@core/tournaments/categories'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
@@ -75,7 +76,7 @@ export function CategoriesSection() {
       try {
         const result = await action()
         if (result === false) throw new Error('Mutation returned false')
-        toast.success(successMessage)
+        toastShortSuccess(successMessage)
         await refreshCategories()
         return true
       } catch (error) {
