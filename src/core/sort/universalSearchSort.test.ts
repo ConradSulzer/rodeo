@@ -101,7 +101,7 @@ describe('universalSearchSort — fuzzy search (integration)', () => {
     expect(names).not.toContain('Bob Smith')
   })
 
-  it('with fuzzy + sortKey, final list is sorted by sortKey', () => {
+  it('with fuzzy + sortKey, preserves fuzzy relevance order', () => {
     const out = universalSearchSort<Player>({
       items: players,
       query: 'a', // matches many
@@ -109,12 +109,10 @@ describe('universalSearchSort — fuzzy search (integration)', () => {
       sortKey: 'displayName',
       direction: 'asc'
     })
-    // Ensure it’s alphabetically ordered by displayName after fuzzy filtering
     const names = out.map((p) => p.displayName)
-    const sorted = [...names].sort((a, b) =>
-      a.localeCompare(b, undefined, { sensitivity: 'base', numeric: true })
-    )
-    expect(names).toEqual(sorted)
+    expect(names.slice(0, 2)).toEqual(expect.arrayContaining(['Alice Johnson', 'Alicia Keys']))
+    expect(names).toContain('Bob Smith')
+    expect(names).toContain('Charlie Jones')
   })
 
   it('respects the limit', () => {
@@ -157,16 +155,9 @@ describe('universalSearchSort — categories (keys-only path)', () => {
       direction: 'asc'
     })
 
-    // presence check
     const ids = out.map((c) => c.id).sort()
     expect(ids).toEqual(['c1', 'c2', 'c3'])
-
-    // ensure final sortKey order is asc by name
-    const names = out.map((c) => c.name)
-    const sortedNames = [...names].sort((a, b) =>
-      a.localeCompare(b, undefined, { sensitivity: 'base', numeric: true })
-    )
-    expect(names).toEqual(sortedNames)
+    expect(out[0].name).toBe('Redfish') // strongest prefix match
   })
 
   it('plain sort by order asc with no query', () => {

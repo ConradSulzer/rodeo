@@ -1,7 +1,7 @@
 import fuzzysort from 'fuzzysort'
 
 type SortablePrimitive = string | number | Date | null | undefined
-const DEFAULT_THRESHOLD = -100
+const DEFAULT_THRESHOLD = -200
 const DEFAULT_LIMIT = 6
 
 export type UniversalSortOptions<T> = {
