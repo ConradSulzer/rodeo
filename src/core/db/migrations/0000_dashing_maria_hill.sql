@@ -1,6 +1,7 @@
 CREATE TABLE `category` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
+	`mode` text DEFAULT 'aggregate' NOT NULL,
 	`direction` text NOT NULL,
 	`show_metrics_count` integer DEFAULT false NOT NULL,
 	`metrics_count_name` text DEFAULT '' NOT NULL,
