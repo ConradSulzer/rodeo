@@ -51,6 +51,7 @@ export function ManageSectionShell({
               placeholder={searchPlaceholder}
               value={searchValue}
               onChange={(event) => onSearchChange(event.target.value)}
+              onClear={() => onSearchChange('')}
               aria-label={searchPlaceholder ?? 'Search'}
               className="w-full md:w-96"
             />
@@ -70,6 +71,7 @@ export function ManageSectionShell({
           placeholder={searchPlaceholder}
           value={searchValue}
           onChange={(event) => onSearchChange(event.target.value)}
+          onClear={() => onSearchChange('')}
           aria-label={searchPlaceholder ?? 'Search'}
         />
       ) : null}

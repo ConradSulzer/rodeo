@@ -55,8 +55,8 @@ export function getMetric(db: AppDatabase, id: string): MetricRecord | undefined
 }
 
 export function listMetrics(db: AppDatabase): Metric[] {
-  const metricsWithRelations = db
-    .query.metric.findMany({
+  const metricsWithRelations = db.query.metric
+    .findMany({
       orderBy: (metrics, { asc }) => [asc(metrics.label)],
       with: {
         categoryMetrics: true

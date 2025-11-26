@@ -25,9 +25,7 @@ type FormState =
   | { status: 'creating' }
   | { status: 'editing'; category: Category }
 
-type DetailsState =
-  | { status: 'closed' }
-  | { status: 'open'; category: Category }
+type DetailsState = { status: 'closed' } | { status: 'open'; category: Category }
 
 type DeleteState =
   | { status: 'closed'; deleting: false }
@@ -120,14 +118,6 @@ export function CategoriesSection() {
           rules: values.rules,
           showMetricsCount: values.showMetricsCount,
           metricsCountName: values.showMetricsCount ? trimmedCountName : ''
-        }
-        const categoryId: string = await window.api.categories.create(payload)
-        if (values.metricIds.length) {
-          await Promise.all(
-            values.metricIds.map((metricId) =>
-              window.api.categories.addMetric(categoryId, metricId)
-            )
-          )
         }
         const success = await runCategoryMutation(
           async () => {
@@ -224,9 +214,7 @@ export function CategoriesSection() {
     if (success) {
       setDeleteState({ status: 'closed', deleting: false })
     } else {
-      setDeleteState((prev) =>
-        prev.status === 'confirming' ? { ...prev, deleting: false } : prev
-      )
+      setDeleteState((prev) => (prev.status === 'confirming' ? { ...prev, deleting: false } : prev))
     }
   }
 
@@ -363,8 +351,8 @@ export function CategoriesSection() {
         description={
           deleteState.status === 'confirming' ? (
             <p>
-              This will permanently remove <strong>{deleteState.category.name}</strong> and unlink it
-              from all divisions and metrics. This action cannot be undone.
+              This will permanently remove <strong>{deleteState.category.name}</strong> and unlink
+              it from all divisions and metrics. This action cannot be undone.
             </p>
           ) : (
             'Are you sure you want to delete this category?'

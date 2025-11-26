@@ -1,5 +1,5 @@
 import { EventId, ItemStateChanged, RodeoEvent, ScorecardVoided, sortEventsByTime } from './events'
-import { getOrCreatePlayerItems, ItemResult, Results } from '../tournaments/results'
+import { getOrCreatePlayerResult, ItemResult, Results } from '../tournaments/results'
 
 type EventError = {
   status: 'error'
@@ -15,12 +15,13 @@ export function reduceEvent(results: Results, e: RodeoEvent, resolve: ResolveFn)
   // Void clears the player's scorecard
   // TODO: Come back and think about this behavior some more, can either fix here or down stream handle empties
   if (isVoidEvent(e)) {
-    results.set(e.playerId, new Map())
+    results.delete(e.playerId)
     return errors
   }
 
   const newEvent: ItemStateChanged = e
-  const playerItems = getOrCreatePlayerItems(results, newEvent.playerId)
+  const playerResult = getOrCreatePlayerResult(results, newEvent.playerId)
+  const playerItems = playerResult.items
   const current = playerItems.get(newEvent.metricId)
 
   // Ignore self-applied replay
@@ -62,6 +63,10 @@ export function reduceEvent(results: Results, e: RodeoEvent, resolve: ResolveFn)
     newEvent.state === 'value'
       ? ({ status: 'value', value: newEvent.value, ...base } as const)
       : ({ status: 'empty', ...base } as const)
+
+  if (!playerResult.scoredAt) {
+    playerResult.scoredAt = newEvent.ts
+  }
 
   playerItems.set(newEvent.metricId, next)
   return errors

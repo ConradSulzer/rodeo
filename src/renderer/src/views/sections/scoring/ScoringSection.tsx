@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
+import { toastShortSuccess } from '@renderer/lib/toast'
 import { FiCheck } from 'react-icons/fi'
 import type { EnrichedPlayer, PlayerMetric } from '@core/players/players'
 import type { ItemResult } from '@core/tournaments/results'
@@ -78,7 +79,7 @@ export function ScoringSection() {
       status: 'open',
       player,
       metrics,
-      existingResults: results.get(player.id)
+      existingResults: results.get(player.id)?.items
     })
   }
 
@@ -106,7 +107,7 @@ export function ScoringSection() {
         reportMutationErrors(result.errors, 'Unable to record scores')
         return result
       }
-      toast.success('Scores saved')
+      toastShortSuccess('Scores saved')
       closeModal()
       await queryClient.invalidateQueries({ queryKey: queryKeys.tournament.state() })
       return result
@@ -134,7 +135,7 @@ export function ScoringSection() {
         reportMutationErrors(result.errors, 'Unable to void scorecard')
         return
       }
-      toast.success('Scorecard voided')
+      toastShortSuccess('Scorecard voided')
       closeModal()
       await queryClient.invalidateQueries({ queryKey: queryKeys.tournament.state() })
     } catch (error) {
@@ -150,8 +151,9 @@ export function ScoringSection() {
       if (!metrics.length) return false
       const playerResults = results.get(playerId)
       if (!playerResults) return false
+      const items = playerResults.items
       for (const metric of metrics) {
-        if (!playerResults.has(metric.id)) {
+        if (!items.has(metric.id)) {
           return false
         }
       }

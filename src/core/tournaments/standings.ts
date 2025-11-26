@@ -27,10 +27,7 @@ export type DivisionStanding = {
   categories: CategoryStanding[]
 }
 
-export function computeDivisionStanding(
-  results: Results,
-  division: Division
-): DivisionStanding {
+export function computeDivisionStanding(results: Results, division: Division): DivisionStanding {
   const eligible = division.eligiblePlayerIds.length
     ? new Set<ULID>(division.eligiblePlayerIds)
     : null
@@ -58,11 +55,12 @@ function computeCategoryStanding(
 ): CategoryStanding {
   const entries: PlayerStanding[] = []
 
-  for (const [playerId, playerItems] of results) {
+  for (const [playerId, playerResult] of results) {
+    const playerItems = playerResult.items
     if (eligible && !eligible.has(playerId)) continue
     let total = 0
     let itemCount = 0
-    let earliestTs: number | null = null
+    let earliestTs: number | null = playerResult.scoredAt ?? null
 
     for (const metric of categoryView.metrics) {
       const item = playerItems.get(metric.id)

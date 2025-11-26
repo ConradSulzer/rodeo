@@ -1,5 +1,6 @@
 import { useState, type JSX } from 'react'
 import { toast } from 'sonner'
+import { toastMediumSuccess } from '@renderer/lib/toast'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
@@ -42,7 +43,7 @@ export function HomeView(): JSX.Element {
 
       addRecent(filePath)
       queryClient.clear()
-      toast.success('Tournament opened')
+      toastMediumSuccess('Tournament opened')
       navigate('/app/tournament', { replace: true })
     } catch (error) {
       console.error('Failed to open tournament', error)
@@ -59,7 +60,7 @@ export function HomeView(): JSX.Element {
 
       addRecent(filePath)
       queryClient.clear()
-      toast.success('Tournament opened')
+      toastMediumSuccess('Tournament opened')
       navigate('/app/tournament', { replace: true })
       setShowRecents(false)
     } catch (error) {

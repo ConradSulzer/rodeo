@@ -61,7 +61,9 @@ export function PlayerDetailsModal({ open, player, onClose }: PlayerDetailsModal
         <Field label={<Label>Divisions</Label>}>
           <Input
             value={
-              player.divisions.length ? player.divisions.map((division) => division.name).join(', ') : '—'
+              player.divisions.length
+                ? player.divisions.map((division) => division.name).join(', ')
+                : '—'
             }
             readOnly
           />
