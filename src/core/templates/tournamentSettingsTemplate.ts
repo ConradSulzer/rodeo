@@ -8,6 +8,7 @@ export type TemplateMetricRow = {
 
 export type TemplateCategoryRow = {
   name: string
+  mode: 'aggregate' | 'pick_one'
   direction: 'asc' | 'desc'
   description?: string
   metrics: string[]
@@ -94,14 +95,16 @@ export function parseTournamentTemplate(csvText: string): TournamentTemplateData
   )
   const categoriesRaw = parseTable<{
     name: string
+    mode?: string
     direction: string
     description?: string
     metrics?: string
-  }>(categorySection.rows, ['name', 'direction', 'description', 'metrics'])
+  }>(categorySection.rows, ['name', 'mode', 'direction', 'description', 'metrics'])
   const categories: TemplateCategoryRow[] = categoriesRaw
     .filter((row) => row.name)
     .map((row) => ({
       name: row.name,
+      mode: row.mode === 'pick_one' ? 'pick_one' : 'aggregate',
       direction: row.direction === 'asc' ? 'asc' : 'desc',
       description: row.description,
       metrics: row.metrics
@@ -166,6 +169,7 @@ export function buildTournamentTemplate(data: TournamentTemplateData): string {
   }))
   const categoryRows = data.categories.map((row) => ({
     name: row.name,
+    mode: row.mode,
     direction: row.direction,
     description: row.description ?? '',
     metrics: row.metrics.join('; ')
@@ -180,7 +184,7 @@ export function buildTournamentTemplate(data: TournamentTemplateData): string {
     buildSection(SECTION_HEADERS.metrics, ['name', 'unit', 'description'], metricRows),
     buildSection(
       SECTION_HEADERS.categories,
-      ['name', 'direction', 'description', 'metrics'],
+      ['name', 'mode', 'direction', 'description', 'metrics'],
       categoryRows
     ),
     buildSection(SECTION_HEADERS.divisions, ['name', 'description', 'categories'], divisionRows)

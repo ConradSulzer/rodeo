@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import type { Category } from '@core/tournaments/categories'
+import type { Category, CategoryMode } from '@core/tournaments/categories'
 import type { MetricRecord } from '@core/tournaments/metrics'
 import type { StandingRuleSummary } from '@core/tournaments/standingRules'
 import { Modal } from '@renderer/components/Modal'
@@ -10,6 +10,7 @@ import { Button } from '@renderer/components/ui/button'
 
 export type CategoryFormValues = {
   name: string
+  mode: CategoryMode
   direction: 'asc' | 'desc'
   rules: string[]
   metricIds: string[]
@@ -19,6 +20,7 @@ export type CategoryFormValues = {
 
 const defaultValues: CategoryFormValues = {
   name: '',
+  mode: 'aggregate',
   direction: 'asc',
   rules: [],
   metricIds: [],
@@ -58,6 +60,7 @@ export function CategoryFormModal({
     if (category) {
       setValues({
         name: category.name,
+        mode: category.mode ?? 'aggregate',
         direction: category.direction as 'asc' | 'desc',
         rules: category.rules ?? [],
         metricIds: category.metricIds ?? [],
@@ -116,7 +119,7 @@ export function CategoryFormModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={title}>
+    <Modal open={open} onClose={onClose} title={title} contentClassName="w-[900px]">
       <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
         <div className="flex gap-5">
           <Field
@@ -130,6 +133,22 @@ export function CategoryFormModal({
               onChange={(event) => setValues((prev) => ({ ...prev, name: event.target.value }))}
               autoFocus
             />
+          </Field>
+          <Field className="flex-1" label={<Label htmlFor="category-mode">Scoring Mode</Label>}>
+            <select
+              id="category-mode"
+              className="rounded-md border ro-border ro-bg-dim px-3 py-2 text-sm ro-text-main"
+              value={values.mode}
+              onChange={(event) =>
+                setValues((prev) => ({
+                  ...prev,
+                  mode: event.target.value as CategoryMode
+                }))
+              }
+            >
+              <option value="aggregate">Sum All</option>
+              <option value="pick_one">Pick One</option>
+            </select>
           </Field>
           <Field
             className="flex-1"

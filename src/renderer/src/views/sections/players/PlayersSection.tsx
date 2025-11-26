@@ -177,7 +177,7 @@ export function PlayersSection() {
           ])
         }
 
-        toast.success('Player updated')
+        toastShortSuccess('Player updated')
         shouldRefresh = true
       }
 
@@ -223,7 +223,7 @@ export function PlayersSection() {
         throw new Error('Delete returned false')
       }
 
-      toast.success(`Deleted ${deleteState.player.displayName}`)
+      toastShortSuccess(`Deleted ${deleteState.player.displayName}`)
       setDeleteState({ open: false, player: undefined, deleting: false })
       await invalidatePlayers()
     } catch (error) {

@@ -1,6 +1,6 @@
 import type { ULID } from 'ulid'
 import type { Division, DivisionCategory } from './divisions'
-import type { Results } from './results'
+import type { ItemResult, Results } from './results'
 import type { Timestamp } from '@core/types/Shared'
 import { applyRulesToStanding } from './standingRules'
 
@@ -48,6 +48,26 @@ export function computeAllDivisionStandings(
   return divisions.map((division) => computeDivisionStanding(results, division))
 }
 
+function getCategoryTotal(
+  items: ItemResult[],
+  mode: DivisionCategory['category']['mode'],
+  direction: RankDirection
+): number | null {
+  if (!items.length) return null
+
+  if (mode === 'pick_one') {
+    const sorted = [...items].sort((a, b) => (b.value ?? 0) - (a.value ?? 0))
+    const chosen = direction === 'desc' ? sorted[0] : sorted[sorted.length - 1]
+    return chosen.value ?? null
+  }
+
+  if (mode === 'aggregate') {
+    return items.reduce((sum, item) => sum + (item.value ?? 0), 0)
+  }
+
+  return null
+}
+
 function computeCategoryStanding(
   results: Results,
   categoryView: DivisionCategory,
@@ -58,25 +78,21 @@ function computeCategoryStanding(
   for (const [playerId, playerResult] of results) {
     const playerItems = playerResult.items
     if (eligible && !eligible.has(playerId)) continue
-    let total = 0
-    let itemCount = 0
-    let earliestTs: number | null = playerResult.scoredAt ?? null
+    if (!playerResult.scoredAt) continue
+    const mode = categoryView.category.mode ?? 'aggregate'
+    const items: ItemResult[] = []
 
     for (const metric of categoryView.metrics) {
       const item = playerItems.get(metric.id)
       if (!item || item.status !== 'value' || item.value === undefined) continue
-      total += item.value
-      itemCount += 1
-      earliestTs = earliestTs === null ? item.createdAt : Math.min(earliestTs, item.createdAt)
+      items.push(item)
     }
 
-    if (itemCount === 0) continue
+    const rawTotal = getCategoryTotal(items, mode, categoryView.category.direction)
+    if (rawTotal === null) continue
 
-    // ensures we have a timestamp here if not then send to bottom.
-    // TODO: make sure we always have a timestamp and never have to resort to this fallback.
-    const tieBreakTs = (earliestTs ?? Number.POSITIVE_INFINITY) as Timestamp
-
-    const roundedTotal = Number.parseFloat(total.toFixed(3))
+    const itemCount = items.length
+    const roundedTotal = Number.parseFloat(rawTotal.toFixed(3))
 
     const playerStanding: PlayerStanding = {
       playerId,
@@ -84,7 +100,7 @@ function computeCategoryStanding(
       total: roundedTotal,
       score: roundedTotal,
       rank: 0,
-      ts: tieBreakTs
+      ts: playerResult.scoredAt as Timestamp
     }
 
     const rules = categoryView.category.rules ?? []

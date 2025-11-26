@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { toastShortSuccess } from '@renderer/lib/toast'
 import { FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi'
 import type { Division, NewDivision, PatchDivision } from '@core/tournaments/divisions'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
@@ -60,7 +61,7 @@ export function DivisionsSection() {
       try {
         const result = await action()
         if (result === false) throw new Error('Mutation returned false')
-        toast.success(successMessage)
+        toastShortSuccess(successMessage)
         await invalidateDivisions()
         return true
       } catch (error) {

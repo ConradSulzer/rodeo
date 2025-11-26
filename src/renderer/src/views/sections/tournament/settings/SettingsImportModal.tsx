@@ -264,7 +264,9 @@ async function importTemplateData(
       }
       const id = await window.api.categories.create({
         name,
-        direction: row.direction
+        direction: row.direction,
+        mode: row.mode ?? 'aggregate',
+        showMetricsCount: false
       })
       categoryNameToId.set(name, id)
       for (const metricName of row.metrics) {

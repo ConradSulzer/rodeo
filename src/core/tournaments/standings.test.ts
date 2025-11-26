@@ -32,7 +32,12 @@ describe('standings computation', () => {
   it('aggregates available items and keeps partial cards by default', () => {
     withInMemoryDb((db) => {
       const divisionId = createDivision(db, { name: 'Pro' })
-      const categoryId = createCategory(db, { name: 'Mixed Bag', direction: 'desc' })
+      const categoryId = createCategory(db, {
+        name: 'Mixed Bag',
+        direction: 'desc',
+        mode: 'aggregate',
+        showMetricsCount: false
+      })
       const weightId = createMetric(db, { label: 'Weight', unit: 'lbs' })
       const lengthId = createMetric(db, { label: 'Length', unit: 'in' })
 
@@ -95,7 +100,12 @@ describe('standings computation', () => {
   it('orders ascending categories by summed totals', () => {
     withInMemoryDb((db) => {
       const divisionId = createDivision(db, { name: 'Masters' })
-      const categoryId = createCategory(db, { name: 'Low Total Wins', direction: 'asc' })
+      const categoryId = createCategory(db, {
+        name: 'Low Total Wins',
+        direction: 'asc',
+        mode: 'aggregate',
+        showMetricsCount: false
+      })
       const metricA = createMetric(db, { label: 'Attempt 1', unit: 'pts' })
       const metricB = createMetric(db, { label: 'Attempt 2', unit: 'pts' })
 
@@ -143,10 +153,143 @@ describe('standings computation', () => {
     })
   })
 
+  it('uses best single metric for pick_one descending categories', () => {
+    withInMemoryDb((db) => {
+      const divisionId = createDivision(db, { name: 'Select Best' })
+      const categoryId = createCategory(db, {
+        name: 'Top Attempt',
+        direction: 'desc',
+        mode: 'pick_one',
+        showMetricsCount: false
+      })
+      const metricA = createMetric(db, { label: 'Attempt 1', unit: 'pts' })
+      const metricB = createMetric(db, { label: 'Attempt 2', unit: 'pts' })
+
+      addMetricToCategory(db, categoryId, metricA)
+      addMetricToCategory(db, categoryId, metricB)
+      addCategoryToDivision(db, divisionId, categoryId, 5)
+
+      const playerA = createPlayer(db, basePlayer('A'))
+      const playerB = createPlayer(db, basePlayer('B'))
+      const playerC = createPlayer(db, basePlayer('C'))
+
+      addPlayerToDivision(db, divisionId, playerA)
+      addPlayerToDivision(db, divisionId, playerB)
+      addPlayerToDivision(db, divisionId, playerC)
+
+      const results: Results = new Map()
+      const baseTs = Date.now()
+      const makeEvent = (
+        metricId: string,
+        playerId: string,
+        value: number,
+        offset = 0
+      ): ItemStateChanged => ({
+        type: 'ItemStateChanged',
+        id: ulid(),
+        ts: baseTs + offset,
+        playerId,
+        metricId,
+        state: 'value',
+        value
+      })
+
+      // Player A: best is 10
+      persistEvent(db, results, makeEvent(metricA, playerA, 10, 1))
+      persistEvent(db, results, makeEvent(metricB, playerA, 4, 2))
+
+      // Player B: best is 12
+      persistEvent(db, results, makeEvent(metricA, playerB, 8, 1))
+      persistEvent(db, results, makeEvent(metricB, playerB, 12, 2))
+
+      // Player C: single metric only, best is 9
+      persistEvent(db, results, makeEvent(metricA, playerC, 9, 1))
+
+      const standing = computeDivisionStanding(
+        results,
+        listDivisions(db).find((division) => division.id === divisionId)!
+      )
+
+      const entries = standing.categories[0].entries
+      expect(entries.map((entry) => entry.playerId)).toEqual([playerB, playerA, playerC])
+      expect(entries.map((entry) => entry.total)).toEqual([12, 10, 9])
+      expect(entries.map((entry) => entry.itemCount)).toEqual([2, 2, 1])
+    })
+  })
+
+  it('uses best single metric for pick_one ascending categories', () => {
+    withInMemoryDb((db) => {
+      const divisionId = createDivision(db, { name: 'Select Best Asc' })
+      const categoryId = createCategory(db, {
+        name: 'Fastest Attempt',
+        direction: 'asc',
+        mode: 'pick_one',
+        showMetricsCount: false
+      })
+      const metricA = createMetric(db, { label: 'Run 1', unit: 'sec' })
+      const metricB = createMetric(db, { label: 'Run 2', unit: 'sec' })
+
+      addMetricToCategory(db, categoryId, metricA)
+      addMetricToCategory(db, categoryId, metricB)
+      addCategoryToDivision(db, divisionId, categoryId, 5)
+
+      const playerA = createPlayer(db, basePlayer('Aasc'))
+      const playerB = createPlayer(db, basePlayer('Basc'))
+      const playerC = createPlayer(db, basePlayer('Casc'))
+
+      addPlayerToDivision(db, divisionId, playerA)
+      addPlayerToDivision(db, divisionId, playerB)
+      addPlayerToDivision(db, divisionId, playerC)
+
+      const results: Results = new Map()
+      const baseTs = Date.now()
+      const makeEvent = (
+        metricId: string,
+        playerId: string,
+        value: number,
+        offset = 0
+      ): ItemStateChanged => ({
+        type: 'ItemStateChanged',
+        id: ulid(),
+        ts: baseTs + offset,
+        playerId,
+        metricId,
+        state: 'value',
+        value
+      })
+
+      // Player A: best is 5
+      persistEvent(db, results, makeEvent(metricA, playerA, 9, 1))
+      persistEvent(db, results, makeEvent(metricB, playerA, 5, 2))
+
+      // Player B: best is 3
+      persistEvent(db, results, makeEvent(metricA, playerB, 3, 1))
+
+      // Player C: best is 2
+      persistEvent(db, results, makeEvent(metricA, playerC, 4, 1))
+      persistEvent(db, results, makeEvent(metricB, playerC, 2, 2))
+
+      const standing = computeDivisionStanding(
+        results,
+        listDivisions(db).find((division) => division.id === divisionId)!
+      )
+
+      const entries = standing.categories[0].entries
+      expect(entries.map((entry) => entry.playerId)).toEqual([playerC, playerB, playerA])
+      expect(entries.map((entry) => entry.total)).toEqual([2, 3, 5])
+      expect(entries.map((entry) => entry.itemCount)).toEqual([2, 1, 2])
+    })
+  })
+
   it('applies the "More Items Trump Fewer" rule to prioritize fuller cards', () => {
     withInMemoryDb((db) => {
       const divisionId = createDivision(db, { name: 'Rule Division' })
-      const categoryId = createCategory(db, { name: 'Full Cards Win', direction: 'desc' })
+      const categoryId = createCategory(db, {
+        name: 'Full Cards Win',
+        direction: 'desc',
+        mode: 'aggregate',
+        showMetricsCount: false
+      })
       const metricA = createMetric(db, { label: 'Fish A', unit: 'lbs' })
       const metricB = createMetric(db, { label: 'Fish B', unit: 'lbs' })
       const metricC = createMetric(db, { label: 'Fish C', unit: 'lbs' })
@@ -211,7 +354,12 @@ describe('standings computation', () => {
   it('applies the "Require All Metrics" rule to drop incomplete cards', () => {
     withInMemoryDb((db) => {
       const divisionId = createDivision(db, { name: 'Require Division' })
-      const categoryId = createCategory(db, { name: 'Complete Cards Only', direction: 'desc' })
+      const categoryId = createCategory(db, {
+        name: 'Complete Cards Only',
+        direction: 'desc',
+        mode: 'aggregate',
+        showMetricsCount: false
+      })
       const metricA = createMetric(db, { label: 'Fish A', unit: 'lbs' })
       const metricB = createMetric(db, { label: 'Fish B', unit: 'lbs' })
       const metricC = createMetric(db, { label: 'Fish C', unit: 'lbs' })
@@ -266,7 +414,12 @@ describe('standings computation', () => {
   it('breaks ties using earliest timestamp when scores match', () => {
     withInMemoryDb((db) => {
       const divisionId = createDivision(db, { name: 'TieBreak' })
-      const categoryId = createCategory(db, { name: 'Heaviest Fish', direction: 'desc' })
+      const categoryId = createCategory(db, {
+        name: 'Heaviest Fish',
+        direction: 'desc',
+        mode: 'aggregate',
+        showMetricsCount: false
+      })
       const metricId = createMetric(db, { label: 'Fish', unit: 'lbs' })
 
       addMetricToCategory(db, categoryId, metricId)

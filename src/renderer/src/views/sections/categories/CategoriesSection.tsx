@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { toastShortSuccess } from '@renderer/lib/toast'
 import { FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi'
 import type { Category, NewCategory, PatchCategory } from '@core/tournaments/categories'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
@@ -33,6 +34,7 @@ type DeleteState =
 
 const columns: ReadonlyArray<CrudTableColumn<Category, 'actions'>> = [
   { key: 'name', label: 'Category', sortable: true },
+  { key: 'mode', label: 'Mode', sortable: false },
   { key: 'metrics', label: 'Metrics', sortable: false },
   { key: 'actions', label: 'Actions', sortable: false, align: 'right' }
 ]
@@ -74,7 +76,7 @@ export function CategoriesSection() {
       try {
         const result = await action()
         if (result === false) throw new Error('Mutation returned false')
-        toast.success(successMessage)
+        toastShortSuccess(successMessage)
         await refreshCategories()
         return true
       } catch (error) {
@@ -114,6 +116,7 @@ export function CategoriesSection() {
       if (formState.status === 'creating') {
         const payload: NewCategory = {
           name: values.name,
+          mode: values.mode,
           direction: values.direction,
           rules: values.rules,
           showMetricsCount: values.showMetricsCount,
@@ -141,6 +144,9 @@ export function CategoriesSection() {
         const category = formState.category
         const patch: PatchCategory = {}
         if (values.name !== category.name) patch.name = values.name
+        if ((values.mode ?? 'aggregate') !== (category.mode ?? 'aggregate')) {
+          patch.mode = values.mode
+        }
         if (values.direction !== category.direction) patch.direction = values.direction
         if (!areStringArraysEqual(values.rules, category.rules)) {
           patch.rules = values.rules
@@ -279,6 +285,11 @@ export function CategoriesSection() {
                             {category.direction === 'asc' ? 'Lower is better' : 'Higher is better'}
                           </span>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm ro-text-main">
+                          {category.mode === 'pick_one' ? 'Pick One' : 'Aggregate'}
+                        </span>
                       </TableCell>
                       <TableCell>
                         {category.metrics.length ? (

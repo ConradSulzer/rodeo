@@ -1,6 +1,8 @@
 import fuzzysort from 'fuzzysort'
 
 type SortablePrimitive = string | number | Date | null | undefined
+const DEFAULT_THRESHOLD = -200
+const DEFAULT_LIMIT = 6
 
 export type UniversalSortOptions<T> = {
   items: readonly T[]
@@ -34,10 +36,19 @@ function compare(a: SortablePrimitive, b: SortablePrimitive): number {
 }
 
 export function universalSearchSort<T>(opts: UniversalSortOptions<T>): T[] {
-  const { items, sortKey, direction = 'asc', query, searchKeys, limit, threshold = -10000 } = opts
+  const {
+    items,
+    sortKey,
+    direction = 'asc',
+    query,
+    searchKeys,
+    limit = DEFAULT_LIMIT,
+    threshold = DEFAULT_THRESHOLD
+  } = opts
 
   let results = items.slice()
   const dir = direction === 'asc' ? 1 : -1
+  let didFuzzy = false
 
   if (query && searchKeys?.length) {
     const fuzzy = fuzzysort.go(query, results, {
@@ -47,9 +58,10 @@ export function universalSearchSort<T>(opts: UniversalSortOptions<T>): T[] {
     })
 
     results = fuzzy.map((r) => r.obj)
+    didFuzzy = true
   }
 
-  if (sortKey) {
+  if (sortKey && !didFuzzy) {
     results.sort((a, b) => {
       const av = a[sortKey] as SortablePrimitive
       const bv = b[sortKey] as SortablePrimitive

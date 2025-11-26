@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { toastShortSuccess } from '@renderer/lib/toast'
 import { FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi'
 import type { MetricFormData } from '@core/metrics/metricFormSchema'
 import type { MetricRecord, NewMetric, PatchMetric } from '@core/tournaments/metrics'
@@ -127,7 +128,7 @@ export function MetricsSection() {
         if (result === false) {
           throw new Error('Mutation returned false')
         }
-        toast.success(successMessage)
+        toastShortSuccess(successMessage)
         await refreshMetrics()
         return true
       } catch (error) {

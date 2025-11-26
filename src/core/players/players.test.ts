@@ -110,7 +110,12 @@ describe('players data access', () => {
       const weightId = createMetric(db, { label: 'Weight', unit: 'lb' })
       const lengthId = createMetric(db, { label: 'Length', unit: 'in' })
 
-      const categoryId = createCategory(db, { name: 'Primary', direction: 'asc' })
+      const categoryId = createCategory(db, {
+        name: 'Primary',
+        direction: 'asc',
+        mode: 'aggregate',
+        showMetricsCount: false
+      })
       addMetricToCategory(db, categoryId, weightId)
       addMetricToCategory(db, categoryId, lengthId)
 

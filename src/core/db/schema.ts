@@ -43,6 +43,7 @@ export const category = sqliteTable(
   {
     id: text('id').primaryKey(),
     name: text('name').notNull(),
+    mode: text('mode', { enum: ['aggregate', 'pick_one'] }).notNull().default('aggregate'),
     direction: text('direction', { enum: ['asc', 'desc'] }).notNull(),
     showMetricsCount: integer('show_metrics_count', { mode: 'boolean' }).notNull().default(false),
     metricsCountName: text('metrics_count_name').notNull().default(''),

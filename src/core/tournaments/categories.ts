@@ -4,6 +4,7 @@ import { category as cat, categoryMetric as catMetric } from '@core/db/schema'
 import { and, eq } from 'drizzle-orm'
 import type { MetricRecord } from './metrics'
 
+export type CategoryMode = 'aggregate' | 'pick_one'
 export type CategoryRecord = typeof cat.$inferSelect
 
 export type Category = CategoryRecord & {
@@ -13,7 +14,7 @@ export type Category = CategoryRecord & {
 
 type CategoryWritableFields = Omit<CategoryRecord, 'id' | 'createdAt' | 'updatedAt'>
 
-type CategoryOptionalFields = 'rules' | 'showMetricsCount' | 'metricsCountName'
+type CategoryOptionalFields = 'rules' | 'metricsCountName'
 
 export type NewCategory = Omit<CategoryWritableFields, CategoryOptionalFields> &
   Partial<Pick<CategoryWritableFields, CategoryOptionalFields>> & {
@@ -23,6 +24,11 @@ export type NewCategory = Omit<CategoryWritableFields, CategoryOptionalFields> &
 export type PatchCategory = Partial<CategoryWritableFields>
 
 const now = () => Date.now()
+
+function normalizeCategoryMode(mode?: string): CategoryMode {
+  if (mode === 'pick_one') return 'pick_one'
+  return 'aggregate'
+}
 
 function normalizeCategoryRules(rules?: string[]): string[] {
   if (!Array.isArray(rules)) return []
@@ -42,13 +48,15 @@ function normalizeMetricsCountName(metricsCountName?: string): string {
 export function createCategory(db: AppDatabase, data: NewCategory): string {
   const id = ulid()
   const t = now()
-  const { rules, showMetricsCount = false, metricsCountName, ...rest } = data
+  const { rules, mode, showMetricsCount = false, metricsCountName, ...rest } = data
   const normalizedRules = normalizeCategoryRules(rules)
   const normalizedCountName = normalizeMetricsCountName(metricsCountName)
+  const normalizedMode = normalizeCategoryMode(mode)
   db.insert(cat)
     .values({
       id,
       ...rest,
+      mode: normalizedMode,
       rules: normalizedRules,
       showMetricsCount,
       metricsCountName: showMetricsCount ? normalizedCountName : '',
@@ -63,11 +71,15 @@ export function createCategory(db: AppDatabase, data: NewCategory): string {
 export function updateCategory(db: AppDatabase, id: string, patch: PatchCategory) {
   if (!Object.keys(patch).length) return false
 
-  const { rules, showMetricsCount, metricsCountName, ...rest } = patch
+  const { rules, mode, showMetricsCount, metricsCountName, ...rest } = patch
   const updateData: Partial<typeof cat.$inferInsert> = { ...rest }
 
   if (rules !== undefined) {
     updateData.rules = normalizeCategoryRules(rules)
+  }
+
+  if (mode !== undefined) {
+    updateData.mode = normalizeCategoryMode(mode)
   }
 
   if (showMetricsCount !== undefined) {
