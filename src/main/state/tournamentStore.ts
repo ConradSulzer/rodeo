@@ -113,10 +113,11 @@ function serializeState(current: TournamentState): SerializableTournamentState {
 function serializeResults(results: Results): SerializedResults {
   const serialized: SerializedResults = []
 
-  for (const [playerId, items] of results) {
+  for (const [playerId, playerResult] of results) {
     serialized.push({
       playerId,
-      items: Array.from(items.entries()).map(([metricId, result]) => ({
+      scoredAt: playerResult.scoredAt ?? null,
+      items: Array.from(playerResult.items.entries()).map(([metricId, result]) => ({
         metricId,
         result
       }))

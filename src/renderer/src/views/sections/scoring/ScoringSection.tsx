@@ -79,7 +79,7 @@ export function ScoringSection() {
       status: 'open',
       player,
       metrics,
-      existingResults: results.get(player.id)
+      existingResults: results.get(player.id)?.items
     })
   }
 
@@ -151,8 +151,9 @@ export function ScoringSection() {
       if (!metrics.length) return false
       const playerResults = results.get(playerId)
       if (!playerResults) return false
+      const items = playerResults.items
       for (const metric of metrics) {
-        if (!playerResults.has(metric.id)) {
+        if (!items.has(metric.id)) {
           return false
         }
       }

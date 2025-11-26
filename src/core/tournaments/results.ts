@@ -14,16 +14,24 @@ export type ItemResult = {
 }
 
 export type PlayerItems = Map<ULID, ItemResult>
-export type Results = Map<ULID, PlayerItems> // playerId -> itemId -> ItemResult
+export type PlayerResult = {
+  items: PlayerItems
+  /**
+   * Timestamp when the first score was recorded for this player.
+   * Used for tie-breaking in standings.
+   */
+  scoredAt?: Timestamp | null
+}
+export type Results = Map<ULID, PlayerResult> // playerId -> { items, scoredAt }
 
 export function cloneResults(results: Results): Results {
   const clone: Results = new Map()
-  for (const [playerId, items] of results) {
+  for (const [playerId, playerResult] of results) {
     const itemClone = new Map<ULID, ItemResult>()
-    for (const [metricId, result] of items) {
+    for (const [metricId, result] of playerResult.items) {
       itemClone.set(metricId, { ...result })
     }
-    clone.set(playerId, itemClone)
+    clone.set(playerId, { items: itemClone, scoredAt: playerResult.scoredAt ?? null })
   }
   return clone
 }
@@ -33,8 +41,9 @@ export function cloneResults(results: Results): Results {
  */
 export function addPlayerToResults(results: Results, playerId: ULID) {
   const items = new Map<ULID, ItemResult>()
-  results.set(playerId, items)
-  return items
+  const playerResult: PlayerResult = { items, scoredAt: null }
+  results.set(playerId, playerResult)
+  return playerResult
 }
 
 /**
@@ -42,7 +51,7 @@ export function addPlayerToResults(results: Results, playerId: ULID) {
  * does not exist in results
  */
 export function getPlayerItems(results: Results, playerId: ULID) {
-  return results.get(playerId)
+  return results.get(playerId)?.items
 }
 
 /**
@@ -51,12 +60,16 @@ export function getPlayerItems(results: Results, playerId: ULID) {
  */
 
 export function getOrCreatePlayerItems(results: Results, playerId: ULID) {
-  let items = results.get(playerId)
-  if (!items) {
-    items = new Map<ULID, ItemResult>()
-    results.set(playerId, items)
+  const playerResult = getOrCreatePlayerResult(results, playerId)
+  return playerResult.items
+}
+
+export function getOrCreatePlayerResult(results: Results, playerId: ULID): PlayerResult {
+  let entry = results.get(playerId)
+  if (!entry) {
+    entry = addPlayerToResults(results, playerId)
   }
-  return items
+  return entry
 }
 
 /**

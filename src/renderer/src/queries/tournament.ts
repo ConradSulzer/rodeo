@@ -29,13 +29,16 @@ export function useTournamentStateQuery() {
   return query
 }
 
-type PlayerResultsMap = Map<string, Map<string, ItemResult>>
+type PlayerResultsMap = Map<string, { items: Map<string, ItemResult>; scoredAt: number | null }>
 
 const buildResultsMap = (state?: SerializableTournamentState): PlayerResultsMap => {
   const map: PlayerResultsMap = new Map()
   if (!state) return map
   for (const entry of state.results) {
-    map.set(entry.playerId, new Map(entry.items.map(({ metricId, result }) => [metricId, result])))
+    map.set(entry.playerId, {
+      scoredAt: entry.scoredAt ?? null,
+      items: new Map(entry.items.map(({ metricId, result }) => [metricId, result]))
+    })
   }
   return map
 }

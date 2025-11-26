@@ -30,7 +30,16 @@ const sampleItem: ItemResult = {
   updatedAt: 1
 }
 
-const sampleResults = (): Results => new Map([['player-1', new Map([['metric-1', sampleItem]])]])
+const sampleResults = (): Results =>
+  new Map([
+    [
+      'player-1',
+      {
+        items: new Map([['metric-1', sampleItem]]),
+        scoredAt: null
+      }
+    ]
+  ])
 
 const sampleDivisionViews = (): Division[] => [
   {
