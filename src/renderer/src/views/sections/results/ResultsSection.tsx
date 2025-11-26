@@ -10,22 +10,27 @@ import { useResultsData } from '@renderer/hooks/useResultsData'
 
 type ScoreColumnKey = `score-${string}`
 type SortableRow = ReturnType<typeof useResultsData>['rows'][number] &
-  Partial<Record<ScoreColumnKey, number | undefined>>
+  Partial<Record<ScoreColumnKey, number | undefined>> & {
+    scoredAtSort: number
+  }
 
 export function ResultsSection() {
   const { metrics, rows, isLoading } = useResultsData()
 
   const columns: ReadonlyArray<CrudTableColumn<SortableRow, ScoreColumnKey>> = [
-    { key: 'displayName', label: 'Player', sortable: true },
+    { key: 'displayName', label: 'Player', sortable: false },
     ...metrics.map((metric) => ({
       key: `score-${metric.id}` as ScoreColumnKey,
       label: metric.label,
-      sortable: true
+      sortable: false
     }))
   ]
   const sortableRows: SortableRow[] = useMemo(() => {
     return rows.map((row) => {
-      const flat: SortableRow = { ...row }
+      const flat: SortableRow = {
+        ...row,
+        scoredAtSort: row.scoredAt ?? Number.POSITIVE_INFINITY
+      }
       for (const metric of metrics) {
         const result = row.scores[metric.id]
         flat[`score-${metric.id}`] = result?.value
@@ -38,12 +43,11 @@ export function ResultsSection() {
     results: filtered,
     query,
     setQuery,
-    sort,
-    toggleSort
+    sort
   } = useUniversalSearchSort<SortableRow>({
     items: sortableRows,
     searchKeys: ['displayName'],
-    initialSort: { key: 'displayName', direction: 'asc' }
+    initialSort: { key: 'scoredAtSort', direction: 'asc' }
   })
 
   return (
@@ -67,7 +71,7 @@ export function ResultsSection() {
                   {renderCrudTableHeader<SortableRow, string>({
                     columns,
                     sort,
-                    toggleSort
+                    toggleSort: () => {}
                   })}
                 </TableRow>
               </TableHeader>

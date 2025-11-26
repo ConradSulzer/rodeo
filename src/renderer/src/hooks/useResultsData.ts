@@ -11,6 +11,7 @@ export type ResultRow = {
   displayName: string
   email: string
   divisionIds: string[]
+  scoredAt: number | null
   scores: Record<string, ItemResult | undefined>
 }
 
@@ -44,6 +45,7 @@ export function useResultsData(): ResultsData {
           displayName: player.displayName,
           email: player.email ?? '',
           divisionIds: player.divisions.map((division) => division.id),
+          scoredAt: entry.scoredAt ?? null,
           scores
         }
       })

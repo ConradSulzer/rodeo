@@ -35,6 +35,7 @@ export function buildResultsCsv({
         displayName: player.displayName,
         email: player.email ?? '',
         divisionIds: player.divisions.map((division) => division.id),
+        scoredAt: null,
         scores: {}
       })
     })
