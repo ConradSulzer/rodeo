@@ -1,12 +1,11 @@
 import type { MetricRecord } from '@core/tournaments/metrics'
 import { useMetricCatalog } from '@renderer/queries/metrics'
-import { useTournamentResultsRows, type TournamentResultRow } from '@renderer/queries/tournament'
-
-export type ResultRow = TournamentResultRow
+import { useTournamentResultsRows } from '@renderer/queries/tournament'
+import type { ResultsRow } from '@core/tournaments/results'
 
 export type ResultsTableData = {
   metrics: MetricRecord[]
-  rows: ResultRow[]
+  rows: ResultsRow[]
   isLoading: boolean
 }
 

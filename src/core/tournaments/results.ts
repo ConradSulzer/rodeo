@@ -4,6 +4,7 @@ import { Timestamp } from '@core/types/Shared'
 import type { AppDatabase } from '@core/db/db'
 
 import type { ULID } from 'ulid'
+import type { EnrichedPlayer } from '@core/players/players'
 
 export type ItemResult = {
   status: ItemState
@@ -23,6 +24,13 @@ export type PlayerResult = {
   scoredAt?: Timestamp | null
 }
 export type Results = Map<ULID, PlayerResult> // playerId -> { items, scoredAt }
+
+export type ResultsRow = {
+  player: EnrichedPlayer
+  divisionIds: ULID[]
+  scoredAt: Timestamp | null
+  scores: Record<ULID, ItemResult | undefined>
+}
 
 export function cloneResults(results: Results): Results {
   const clone: Results = new Map()

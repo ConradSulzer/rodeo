@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { SerializableTournamentState } from '@core/tournaments/state'
-import type { ItemResult } from '@core/tournaments/results'
+import type { ItemResult, ResultsRow } from '@core/tournaments/results'
 import type { EnrichedPlayer } from '@core/players/players'
 import { queryKeys } from './queryKeys'
 import { usePlayersMap } from './players'
@@ -56,21 +56,12 @@ export function useTournamentResultsMap() {
   }
 }
 
-export type TournamentResultRow = {
-  player: EnrichedPlayer
-  displayName: string
-  email: string
-  divisionIds: string[]
-  scoredAt: number | null
-  scores: Record<string, ItemResult | undefined>
-}
-
-export function useTournamentResultsRows(): { rows: TournamentResultRow[]; isLoading: boolean } {
+export function useTournamentResultsRows(): { rows: ResultsRow[]; isLoading: boolean } {
   const { map: resultsMap, isLoading: resultsLoading } = useTournamentResultsMap()
   const { map: playerMap, isLoading: playersLoading } = usePlayersMap()
 
-  const rows = useMemo<TournamentResultRow[]>(() => {
-    const list: TournamentResultRow[] = []
+  const rows = useMemo<ResultsRow[]>(() => {
+    const list: ResultsRow[] = []
     for (const [playerId, playerResult] of resultsMap) {
       const player = playerMap?.get(playerId)
       if (!player) continue
@@ -80,8 +71,6 @@ export function useTournamentResultsRows(): { rows: TournamentResultRow[]; isLoa
       })
       list.push({
         player,
-        displayName: player.displayName,
-        email: player.email ?? '',
         divisionIds: player.divisions.map((division) => division.id),
         scoredAt: playerResult.scoredAt ?? null,
         scores

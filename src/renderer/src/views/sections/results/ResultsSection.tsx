@@ -11,6 +11,7 @@ import { useResultsTableData } from '@renderer/hooks/useResultsData'
 type ScoreColumnKey = `score-${string}`
 type SortableRow = ReturnType<typeof useResultsTableData>['rows'][number] &
   Partial<Record<ScoreColumnKey, number | undefined>> & {
+    playerName: string
     scoredAtSort: number
   }
 
@@ -18,7 +19,7 @@ export function ResultsSection() {
   const { metrics, rows, isLoading } = useResultsTableData()
 
   const columns: ReadonlyArray<CrudTableColumn<SortableRow, ScoreColumnKey>> = [
-    { key: 'displayName', label: 'Player', sortable: false },
+    { key: 'playerName', label: 'Player', sortable: false },
     ...metrics.map((metric) => ({
       key: `score-${metric.id}` as ScoreColumnKey,
       label: metric.label,
@@ -29,6 +30,7 @@ export function ResultsSection() {
     return rows.map((row) => {
       const flat: SortableRow = {
         ...row,
+        playerName: row.player.displayName,
         scoredAtSort: row.scoredAt ?? Number.POSITIVE_INFINITY
       }
       for (const metric of metrics) {
@@ -46,7 +48,7 @@ export function ResultsSection() {
     sort
   } = useUniversalSearchSort<SortableRow>({
     items: sortableRows,
-    searchKeys: ['displayName'],
+    searchKeys: ['playerName'],
     initialSort: { key: 'scoredAtSort', direction: 'asc' }
   })
 
@@ -80,7 +82,7 @@ export function ResultsSection() {
                   <TableRow key={row.player.id}>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="font-medium">{row.displayName}</span>
+                        <span className="font-medium">{row.player.displayName}</span>
                         <span className="text-xs ro-text-muted">{row.player.id}</span>
                       </div>
                     </TableCell>

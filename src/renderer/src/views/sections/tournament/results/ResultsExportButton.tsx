@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { Button } from '@renderer/components/ui/button'
 import { Modal } from '@renderer/components/Modal'
 import { toast } from 'sonner'
-import { buildCsvExportFilename } from '@core/utils/csv'
+import { buildCsvExportFilename } from '@core/utils/reports/csv'
 import { useResultsTableData } from '@renderer/hooks/useResultsData'
 import { useDivisionCatalog } from '@renderer/queries/divisions'
 import { usePlayersQuery } from '@renderer/queries/players'
-import { buildResultsCsv } from '@renderer/utils/reports/resultsCsv'
+import { buildResultsCsv } from '@core/utils/reports/resultsReport'
+import type { ResultsRow } from '@core/tournaments/results'
 
 export function ResultsExportButton() {
   const [open, setOpen] = useState(false)
@@ -23,7 +24,7 @@ export function ResultsExportButton() {
       const csv = buildResultsCsv({
         metrics,
         players,
-        rows,
+        rows: rows as ResultsRow[],
         divisions: divisionList,
         includeUnscored
       })

@@ -14,3 +14,4 @@
 - Always run typecheck, lint and test to make sure you didn't break shit.
 - Always prefer to use the "@" reference over relative paths when importing. ex. @renderer/...
 - Never just jump into coding when I ask a question. Always address the question first so that we are sure we are moving on a mutually agreeable path.
+- Avoid aliasing existing type names; use the canonical type directly instead of re-exporting under a new name.

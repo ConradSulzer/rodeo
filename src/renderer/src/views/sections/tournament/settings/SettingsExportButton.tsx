@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { Button } from '@renderer/components/ui/button'
-import { buildTournamentTemplate } from '@core/templates/tournamentSettingsTemplate'
+import { buildTournamentTemplate } from '@core/utils/reports/tournamentSettingsReport'
 import type {
   TemplateCategoryRow,
   TemplateDivisionRow,
   TemplateMetricRow
-} from '@core/templates/tournamentSettingsTemplate'
+} from '@core/utils/reports/tournamentSettingsReport'
 import { toast } from 'sonner'
-import { buildCsvExportFilename } from '@core/utils/csv'
+import { buildCsvExportFilename } from '@core/utils/reports/csv'
 
 const sanitizeName = (value: string) => value.trim()
 
