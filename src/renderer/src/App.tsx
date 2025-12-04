@@ -13,6 +13,7 @@ import { ResultsSection } from '@renderer/views/sections/results/ResultsSection'
 import { LeaderboardSection } from '@renderer/views/sections/leaderboard/LeaderboardSection'
 import { EventsSection } from '@renderer/views/sections/events/EventsSection'
 import { StandingsSection } from '@renderer/views/sections/standings/StandingsSection'
+import { PodiumSection } from '@renderer/views/sections/podium/PodiumSection'
 
 function App(): JSX.Element {
   return (
@@ -29,6 +30,7 @@ function App(): JSX.Element {
             <Route path="divisions" element={<DivisionsSection />} />
             <Route path="scoring" element={<ScoringSection />} />
             <Route path="standings" element={<StandingsSection />} />
+            <Route path="podium" element={<PodiumSection />} />
             <Route path="results" element={<ResultsSection />} />
             <Route path="leaderboard" element={<LeaderboardSection />} />
             <Route path="events" element={<EventsSection />} />

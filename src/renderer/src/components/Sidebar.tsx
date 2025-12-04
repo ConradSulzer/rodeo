@@ -35,7 +35,7 @@ export function Sidebar() {
   const navigate = useNavigate()
   const { theme, setTheme } = usePreferences()
   const queryClient = useQueryClient()
-  const resetSectionViews = useSectionViewStore((state) => state.resetStandings)
+  const resetSectionViews = useSectionViewStore((state) => state.resetAllViews)
 
   const handleExit = async () => {
     try {

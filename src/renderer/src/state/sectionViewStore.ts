@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 
+export type StandingsViewKey = 'standings' | 'podium'
+
 type StandingsViewState = {
   selectedDivisionId: string | null
   categorySelections: Record<string, string>
@@ -7,53 +9,62 @@ type StandingsViewState = {
 
 type SectionViewState = {
   standings: StandingsViewState
-  setStandingsSelectedDivision: (divisionId: string | null) => void
-  setStandingsCategorySelection: (divisionId: string, categoryId: string) => void
-  updateStandingsCategorySelections: (
+  podium: StandingsViewState
+  setSelectedDivision: (view: StandingsViewKey, divisionId: string | null) => void
+  setCategorySelection: (view: StandingsViewKey, divisionId: string, categoryId: string) => void
+  updateCategorySelections: (
+    view: StandingsViewKey,
     updater: (current: Record<string, string>) => Record<string, string>
   ) => void
-  resetStandings: () => void
+  resetView: (view: StandingsViewKey) => void
+  resetAllViews: () => void
 }
 
-const initialStandingsState: StandingsViewState = {
+const createInitialStandingsState = (): StandingsViewState => ({
   selectedDivisionId: null,
   categorySelections: {}
-}
+})
 
 export const useSectionViewStore = create<SectionViewState>()((set) => ({
-  standings: initialStandingsState,
-  setStandingsSelectedDivision: (divisionId) =>
+  standings: createInitialStandingsState(),
+  podium: createInitialStandingsState(),
+  setSelectedDivision: (view, divisionId) =>
     set((state) => ({
-      standings: { ...state.standings, selectedDivisionId: divisionId }
+      ...state,
+      [view]: { ...state[view], selectedDivisionId: divisionId }
     })),
-  setStandingsCategorySelection: (divisionId, categoryId) =>
+  setCategorySelection: (view, divisionId, categoryId) =>
     set((state) => ({
-      standings: {
-        ...state.standings,
+      ...state,
+      [view]: {
+        ...state[view],
         categorySelections: {
-          ...state.standings.categorySelections,
+          ...state[view].categorySelections,
           [divisionId]: categoryId
         }
       }
     })),
-  updateStandingsCategorySelections: (updater) =>
+  updateCategorySelections: (view, updater) =>
     set((state) => {
-      const nextSelections = updater(state.standings.categorySelections)
-      if (nextSelections === state.standings.categorySelections) {
+      const nextSelections = updater(state[view].categorySelections)
+      if (nextSelections === state[view].categorySelections) {
         return state
       }
       return {
-        standings: {
-          ...state.standings,
+        ...state,
+        [view]: {
+          ...state[view],
           categorySelections: nextSelections
         }
       }
     }),
-  resetStandings: () =>
-    set(() => ({
-      standings: {
-        selectedDivisionId: initialStandingsState.selectedDivisionId,
-        categorySelections: { ...initialStandingsState.categorySelections }
-      }
-    }))
+  resetView: (view) =>
+    set((state) => ({
+      ...state,
+      [view]: createInitialStandingsState()
+    })),
+  resetAllViews: () => ({
+    standings: createInitialStandingsState(),
+    podium: createInitialStandingsState()
+  })
 }))

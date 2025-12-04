@@ -1,13 +1,11 @@
-import { useMemo, useState } from 'react'
-import { universalSearchSort } from '@core/sort/universalSearchSort'
+import { useMemo } from 'react'
 import { StandingsTabsTable } from '@renderer/components/standings/StandingsTabsTable'
 import { useStandingsView } from '@renderer/components/standings/useStandingsView'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 import { useStandingsData } from '@renderer/hooks/useStandingsData'
 
-export function StandingsSection() {
+export function PodiumSection() {
   const { divisions, standings, players, isLoading } = useStandingsData()
-  const [query, setQuery] = useState('')
   const {
     activeDivisionId,
     divisionCategories,
@@ -15,46 +13,19 @@ export function StandingsSection() {
     activeCategoryStanding,
     handleSelectCategory,
     handleSelectDivision
-  } = useStandingsView('standings', divisions, standings, isLoading)
-
-  const filteredEntries = useMemo(() => {
-    if (!activeCategoryStanding) return []
-    const normalizedQuery = query.trim().toLowerCase()
-
-    const enrichedEntries = activeCategoryStanding.entries.map((entry) => ({
-      entry,
-      playerId: entry.playerId,
-      playerName: players.get(entry.playerId) ?? 'Unknown Player'
-    }))
-
-    if (!normalizedQuery) return enrichedEntries.map((item) => item.entry)
-
-    const ranked = universalSearchSort({
-      items: enrichedEntries,
-      query: normalizedQuery,
-      searchKeys: ['playerName', 'playerId'],
-      limit: enrichedEntries.length
-    })
-
-    return ranked.map((item) => item.entry)
-  }, [activeCategoryStanding, players, query])
+  } = useStandingsView('podium', divisions, standings, isLoading)
 
   const entriesWithNames = useMemo(
     () =>
-      filteredEntries.map((entry) => ({
+      (activeCategoryStanding?.entries ?? []).map((entry) => ({
         ...entry,
         playerName: players.get(entry.playerId) ?? 'Unknown Player'
       })),
-    [filteredEntries, players]
+    [activeCategoryStanding?.entries, players]
   )
 
   return (
-    <ManageSectionShell
-      title="Standings"
-      searchPlaceholder="Search player name or ID"
-      searchValue={query}
-      onSearchChange={setQuery}
-    >
+    <ManageSectionShell title="Podium">
       <StandingsTabsTable
         divisions={divisions}
         activeDivisionId={activeDivisionId}
