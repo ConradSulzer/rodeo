@@ -137,10 +137,7 @@ export function useStandingsView(
   }, [activeDivisionCategory, divisionStanding])
 
   return {
-    activeDivisionId,
-    categorySelections,
     activeDivision,
-    divisionStanding,
     divisionCategories,
     activeDivisionCategory,
     activeCategoryStanding,

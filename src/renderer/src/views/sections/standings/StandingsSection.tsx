@@ -9,7 +9,7 @@ export function StandingsSection() {
   const { divisions, standings, isLoading } = useStandingsData()
   const [query, setQuery] = useState('')
   const {
-    activeDivisionId,
+    activeDivision,
     divisionCategories,
     activeDivisionCategory,
     activeCategoryStanding,
@@ -42,7 +42,7 @@ export function StandingsSection() {
     >
       <StandingsTabsTable
         divisions={divisions}
-        activeDivisionId={activeDivisionId}
+        activeDivision={activeDivision}
         divisionCategories={divisionCategories}
         activeDivisionCategory={activeDivisionCategory}
         entries={filteredEntries}

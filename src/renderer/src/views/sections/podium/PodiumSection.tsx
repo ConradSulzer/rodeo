@@ -6,7 +6,7 @@ import { useStandingsData } from '@renderer/hooks/useStandingsData'
 export function PodiumSection() {
   const { divisions, standings, isLoading } = useStandingsData()
   const {
-    activeDivisionId,
+    activeDivision,
     divisionCategories,
     activeDivisionCategory,
     activeCategoryStanding,
@@ -20,7 +20,7 @@ export function PodiumSection() {
     <ManageSectionShell title="Podium">
       <StandingsTabsTable
         divisions={divisions}
-        activeDivisionId={activeDivisionId}
+        activeDivision={activeDivision}
         divisionCategories={divisionCategories}
         activeDivisionCategory={activeDivisionCategory}
         entries={entries}

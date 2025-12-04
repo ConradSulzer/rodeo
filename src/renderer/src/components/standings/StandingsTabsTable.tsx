@@ -12,7 +12,7 @@ import { cn } from '@renderer/lib/utils'
 
 type StandingsTabsTableProps = {
   divisions: Division[]
-  activeDivisionId: string | null
+  activeDivision: Division | null
   divisionCategories: DivisionCategory[]
   activeDivisionCategory: DivisionCategory | null
   entries: PlayerStanding[]
@@ -23,7 +23,7 @@ type StandingsTabsTableProps = {
 
 export function StandingsTabsTable({
   divisions,
-  activeDivisionId,
+  activeDivision,
   divisionCategories,
   activeDivisionCategory,
   entries,
@@ -31,8 +31,7 @@ export function StandingsTabsTable({
   onSelectDivision,
   onSelectCategory
 }: StandingsTabsTableProps) {
-  const activeDivisionName =
-    divisions.find((division) => division.id === activeDivisionId)?.name ?? null
+  const activeDivisionName = activeDivision?.name ?? null
   const showCountColumn = Boolean(activeDivisionCategory?.category.showMetricsCount)
   const countColumnLabel =
     activeDivisionCategory?.category.metricsCountName?.trim() || 'Entries Submitted'
@@ -57,7 +56,7 @@ export function StandingsTabsTable({
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
       <div className="flex flex-wrap gap-2">
         {divisions.map((division) => {
-          const active = activeDivisionId === division.id
+          const active = activeDivision?.id === division.id
           return (
             <button
               key={division.id}
@@ -79,7 +78,7 @@ export function StandingsTabsTable({
         {divisionCategories.length ? (
           divisionCategories.map((category) => {
             const active = activeDivisionCategory?.category.id === category.category.id
-            const currentDivisionId = activeDivisionId
+            const currentDivisionId = activeDivision?.id ?? null
             return (
               <button
                 key={category.category.id}
@@ -127,14 +126,13 @@ export function StandingsTabsTable({
             </TableHeader>
             <TableBody>
               {entries.map((entry) => {
+                const playerName = entry.player?.displayName || entry.playerId
                 return (
                   <TableRow key={entry.playerId}>
                     <TableCell className="font-mono text-sm">{entry.rank}</TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="font-semibold">
-                          {entry.player.displayName || entry.playerId}
-                        </span>
+                        <span className="font-semibold">{playerName}</span>
                         <span className="text-xs ro-text-muted">{entry.playerId}</span>
                       </div>
                     </TableCell>
