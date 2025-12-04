@@ -42,6 +42,7 @@ export function buildResultsCsv({
   const header = [
     'Player Name',
     'Email',
+    'Scored At',
     ...metrics.map((metric) => metric.label),
     ...divisionOrder.map((division) => division.name)
   ]
@@ -57,9 +58,11 @@ function formatRowForCsv(
   divisions: DivisionRecord[]
 ): string[] {
   const membershipSet = new Set(row.divisionIds)
+  const scoredAt = row.scoredAt ? new Date(row.scoredAt).toISOString() : ''
   return [
     row.player.displayName,
     row.player.email ?? '',
+    scoredAt,
     ...metrics.map((metric) => {
       const result = row.scores[metric.id]
       const value = result?.value
