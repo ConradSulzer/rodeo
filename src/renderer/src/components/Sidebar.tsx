@@ -7,6 +7,7 @@ import { DarkModeToggle } from './DarkModeToggle'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
 import { useQueryClient } from '@tanstack/react-query'
+import { useSectionViewStore } from '@renderer/state/sectionViewStore'
 
 type NavItem = {
   label: string
@@ -34,11 +35,13 @@ export function Sidebar() {
   const navigate = useNavigate()
   const { theme, setTheme } = usePreferences()
   const queryClient = useQueryClient()
+  const resetSectionViews = useSectionViewStore((state) => state.resetStandings)
 
   const handleExit = async () => {
     try {
       const success = await window.api.tournaments.close()
       if (success) {
+        resetSectionViews()
         queryClient.clear()
         toast.success('Tournament closed')
         navigate('/')

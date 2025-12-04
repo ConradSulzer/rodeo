@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import {
   parseTournamentTemplate,
   type TournamentTemplateData
-} from '@core/templates/tournamentSettingsTemplate'
+} from '@core/utils/reports/tournamentSettingsReport'
 
 const normalizeName = (value: string) => value.trim()
 

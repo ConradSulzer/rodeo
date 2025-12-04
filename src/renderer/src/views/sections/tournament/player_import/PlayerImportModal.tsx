@@ -8,8 +8,8 @@ import {
   type PlayerFormData
 } from '@core/players/playerFormSchema'
 import type { EnrichedPlayer } from '@core/players/players'
-import type { ParsedCsvFile } from '@core/utils/csv'
-import { parseCsvFile } from '@core/utils/csv'
+import type { ParsedCsvFile } from '@core/utils/reports/csv'
+import { parseCsvFile } from '@core/utils/reports/csv'
 import { Modal } from '@renderer/components/Modal'
 import { Button } from '@renderer/components/ui/button'
 import { MappingForm } from './MappingForm'

@@ -133,9 +133,24 @@ describe('categories data access', () => {
 
   it('lists categories ordered by name', () => {
     withInMemoryDb((db) => {
-      createCategory(db, { name: 'Speed', direction: 'asc', mode: 'aggregate', showMetricsCount: false })
-      createCategory(db, { name: 'Accuracy', direction: 'desc', mode: 'aggregate', showMetricsCount: false })
-      createCategory(db, { name: 'Strength', direction: 'asc', mode: 'aggregate', showMetricsCount: false })
+      createCategory(db, {
+        name: 'Speed',
+        direction: 'asc',
+        mode: 'aggregate',
+        showMetricsCount: false
+      })
+      createCategory(db, {
+        name: 'Accuracy',
+        direction: 'desc',
+        mode: 'aggregate',
+        showMetricsCount: false
+      })
+      createCategory(db, {
+        name: 'Strength',
+        direction: 'asc',
+        mode: 'aggregate',
+        showMetricsCount: false
+      })
 
       const categories = listCategories(db)
       expect(categories.map((c) => c.name)).toEqual(['Accuracy', 'Speed', 'Strength'])
@@ -190,8 +205,18 @@ describe('categories data access', () => {
   it('lists categories for a metric', () => {
     withInMemoryDb((db) => {
       const metricId = createMetric(db, baseMetric)
-      const categoryA = createCategory(db, { name: 'A', direction: 'asc', mode: 'aggregate', showMetricsCount: false })
-      const categoryB = createCategory(db, { name: 'B', direction: 'desc', mode: 'aggregate', showMetricsCount: false })
+      const categoryA = createCategory(db, {
+        name: 'A',
+        direction: 'asc',
+        mode: 'aggregate',
+        showMetricsCount: false
+      })
+      const categoryB = createCategory(db, {
+        name: 'B',
+        direction: 'desc',
+        mode: 'aggregate',
+        showMetricsCount: false
+      })
 
       addMetricToCategory(db, categoryA, metricId)
       addMetricToCategory(db, categoryB, metricId)

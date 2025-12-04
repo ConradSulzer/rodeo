@@ -12,6 +12,8 @@ import {
 } from '@renderer/components/ui/table'
 import { cn } from '@renderer/lib/utils'
 import { useStandingsData } from '@renderer/hooks/useStandingsData'
+import { useSectionViewStore } from '@renderer/state/sectionViewStore'
+import { useShallow } from 'zustand/react/shallow'
 
 const sortCategories = (categories: DivisionCategory[]): DivisionCategory[] => {
   return [...categories].sort((a, b) => {
@@ -23,21 +25,43 @@ const sortCategories = (categories: DivisionCategory[]): DivisionCategory[] => {
 
 export function StandingsSection() {
   const { divisions, standings, players, isLoading: loading } = useStandingsData()
-  const [selectedDivisionId, setSelectedDivisionId] = useState<string | null>(null)
-  const [categorySelections, setCategorySelections] = useState<Record<string, string>>({})
+  const selectedDivisionId = useSectionViewStore((state) => state.standings.selectedDivisionId)
+  const setStandingsSelectedDivision = useSectionViewStore(
+    (state) => state.setStandingsSelectedDivision
+  )
+  const { categorySelections, setStandingsCategorySelection, updateStandingsCategorySelections } =
+    useSectionViewStore(
+      useShallow((state) => ({
+        categorySelections: state.standings.categorySelections,
+        setStandingsCategorySelection: state.setStandingsCategorySelection,
+        updateStandingsCategorySelections: state.updateStandingsCategorySelections
+      }))
+    )
+  const resetStandings = useSectionViewStore((state) => state.resetStandings)
   const [query, setQuery] = useState('')
 
   useEffect(() => {
-    setSelectedDivisionId((prev) => {
-      if (prev && divisions.some((division) => division.id === prev)) {
-        return prev
-      }
-      return divisions[0]?.id ?? null
-    })
-  }, [divisions])
+    if (!loading && !divisions.length && !standings.length) {
+      resetStandings()
+    }
+  }, [divisions.length, standings.length, loading, resetStandings])
 
   useEffect(() => {
-    setCategorySelections((prev) => {
+    if (!divisions.length) {
+      if (selectedDivisionId !== null) {
+        setStandingsSelectedDivision(null)
+      }
+      return
+    }
+    const hasSelected = selectedDivisionId
+      ? divisions.some((division) => division.id === selectedDivisionId)
+      : false
+    if (hasSelected) return
+    setStandingsSelectedDivision(divisions[0]?.id ?? null)
+  }, [divisions, selectedDivisionId, setStandingsSelectedDivision])
+
+  useEffect(() => {
+    updateStandingsCategorySelections((prev) => {
       const next = { ...prev }
       let changed = false
       const divisionMap = new Map(divisions.map((division) => [division.id, division]))
@@ -58,14 +82,14 @@ export function StandingsSection() {
       }
       return changed ? next : prev
     })
-  }, [divisions])
+  }, [divisions, updateStandingsCategorySelections])
 
   const handleSelectDivision = (divisionId: string) => {
-    setSelectedDivisionId(divisionId)
+    setStandingsSelectedDivision(divisionId)
   }
 
   const handleSelectCategory = (divisionId: string, categoryId: string) => {
-    setCategorySelections((prev) => ({ ...prev, [divisionId]: categoryId }))
+    setStandingsCategorySelection(divisionId, categoryId)
   }
 
   const activeDivision = useMemo(() => {
