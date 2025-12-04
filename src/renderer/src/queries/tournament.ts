@@ -2,7 +2,6 @@ import { useEffect, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { SerializableTournamentState } from '@core/tournaments/state'
 import type { ItemResult, ResultsRow } from '@core/tournaments/results'
-import type { EnrichedPlayer } from '@core/players/players'
 import { queryKeys } from './queryKeys'
 import { usePlayersMap } from './players'
 

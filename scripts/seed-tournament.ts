@@ -286,8 +286,8 @@ function seedCategories(db: AppDatabase, metricIds: Map<string, string>) {
       key: 'cajun_slam',
       name: 'Cajun Slam',
       direction: 'desc',
-       mode: 'aggregate',
-       showMetricsCount: false,
+      mode: 'aggregate',
+      showMetricsCount: false,
       rules: [],
       metrics: ['redfish', 'trout', 'flounder']
     },
@@ -295,8 +295,8 @@ function seedCategories(db: AppDatabase, metricIds: Map<string, string>) {
       key: 'stud_red',
       name: 'Stud Red',
       direction: 'desc',
-       mode: 'aggregate',
-       showMetricsCount: false,
+      mode: 'aggregate',
+      showMetricsCount: false,
       rules: [],
       metrics: ['redfish']
     },
@@ -304,8 +304,8 @@ function seedCategories(db: AppDatabase, metricIds: Map<string, string>) {
       key: 'mule_trout',
       name: 'Mule Trout',
       direction: 'desc',
-       mode: 'aggregate',
-       showMetricsCount: false,
+      mode: 'aggregate',
+      showMetricsCount: false,
       rules: [],
       metrics: ['trout']
     },
@@ -313,8 +313,8 @@ function seedCategories(db: AppDatabase, metricIds: Map<string, string>) {
       key: 'saddle_flounder',
       name: 'Saddle Flounder',
       direction: 'desc',
-       mode: 'aggregate',
-       showMetricsCount: false,
+      mode: 'aggregate',
+      showMetricsCount: false,
       rules: [],
       metrics: ['flounder']
     },
@@ -322,8 +322,8 @@ function seedCategories(db: AppDatabase, metricIds: Map<string, string>) {
       key: 'leopard_red',
       name: 'Leopard Red',
       direction: 'desc',
-       mode: 'aggregate',
-       showMetricsCount: false,
+      mode: 'aggregate',
+      showMetricsCount: false,
       rules: [],
       metrics: ['leopard']
     }
