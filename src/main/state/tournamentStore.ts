@@ -2,6 +2,7 @@ import { appendEvent, getEvent, type RodeoEvent } from '@core/events/events'
 import { computeAllDivisionStandings } from '@core/tournaments/standings'
 import { buildResults, type Results } from '@core/tournaments/results'
 import { listDivisions } from '@core/tournaments/divisions'
+import { listViewablePlayers, type PlayerViewable } from '@core/players/players'
 import type { AppDatabase } from '@core/db/db'
 import type { SerializableTournamentState, SerializedResults } from '@core/tournaments/state'
 import type { DivisionStanding } from '@core/tournaments/standings'
@@ -46,7 +47,8 @@ export function hydrate(db: AppDatabase): SerializableTournamentState {
   }
 
   const divisions = listDivisions(db)
-  const standings = computeAllDivisionStandings(results, divisions)
+  const playerDirectory = loadPlayerDirectory(db)
+  const standings = computeAllDivisionStandings(results, divisions, playerDirectory)
 
   state = {
     results,
@@ -92,8 +94,9 @@ export function applyEvent(db: AppDatabase, event: RodeoEvent): ReturnType<typeo
 
 export function refreshStandings(db: AppDatabase) {
   const divisions = listDivisions(db)
+  const playerDirectory = loadPlayerDirectory(db)
 
-  const standings = computeAllDivisionStandings(state.results, divisions)
+  const standings = computeAllDivisionStandings(state.results, divisions, playerDirectory)
 
   state = {
     ...state,
@@ -135,6 +138,11 @@ function notify(update: SerializableTournamentState) {
       console.error('Tournament store listener failed', error)
     }
   })
+}
+
+function loadPlayerDirectory(db: AppDatabase): Map<string, PlayerViewable> {
+  const players = listViewablePlayers(db)
+  return new Map(players.map((player) => [player.id, player]))
 }
 
 /**

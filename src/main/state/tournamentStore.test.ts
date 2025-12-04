@@ -9,6 +9,8 @@ import * as reducerModule from '@core/events/eventReducer'
 import * as resultsModule from '@core/tournaments/results'
 import * as divisionsModule from '@core/tournaments/divisions'
 import * as standingsModule from '@core/tournaments/standings'
+import * as playersModule from '@core/players/players'
+import type { PlayerViewable } from '@core/players/players'
 import {
   withStandingsRefresh,
   hydrate,
@@ -59,6 +61,22 @@ const sampleStandings = (): DivisionStanding[] => [
     categories: []
   }
 ]
+
+const samplePlayers = (): PlayerViewable[] => [
+  {
+    id: 'player-1',
+    displayName: 'Player One',
+    email: 'one@example.com'
+  }
+]
+
+const samplePlayerDirectory = () =>
+  new Map(
+    samplePlayers().map((player) => [
+      player.id,
+      { id: player.id, displayName: player.displayName, email: '' } satisfies PlayerViewable
+    ])
+  )
 
 const activeSubscriptions: Array<() => void> = []
 
@@ -122,6 +140,9 @@ describe('hydrate', () => {
     const results = sampleResults()
     const divisions = sampleDivisionViews()
     const standings = sampleStandings()
+    const playersSpy = vi
+      .spyOn(playersModule, 'listViewablePlayers')
+      .mockReturnValue(samplePlayers())
     const buildSpy = vi.spyOn(resultsModule, 'buildResults').mockReturnValue({
       results,
       errors: []
@@ -130,6 +151,7 @@ describe('hydrate', () => {
     const standingsSpy = vi
       .spyOn(standingsModule, 'computeAllDivisionStandings')
       .mockReturnValue(standings)
+    const directory = samplePlayerDirectory()
 
     const listener = vi.fn()
     activeSubscriptions.push(subscribe(listener))
@@ -139,7 +161,9 @@ describe('hydrate', () => {
 
     expect(buildSpy).toHaveBeenCalledWith(db)
     expect(listSpy).toHaveBeenCalledWith(db)
-    expect(standingsSpy).toHaveBeenCalledWith(results, divisions)
+    expect(playersSpy).toHaveBeenCalledWith(db)
+    const [, , playerDirectory] = standingsSpy.mock.calls[0]
+    expect(Array.from(playerDirectory.entries())).toEqual(Array.from(directory.entries()))
     expect(snapshot).toEqual({
       standings,
       results: [
@@ -198,6 +222,9 @@ describe('refreshStandings', () => {
       errors: []
     })
     const listSpy = vi.spyOn(divisionsModule, 'listDivisions').mockReturnValue(initialViews)
+    const playersSpy = vi
+      .spyOn(playersModule, 'listViewablePlayers')
+      .mockReturnValue(samplePlayers())
     const standingsSpy = vi
       .spyOn(standingsModule, 'computeAllDivisionStandings')
       .mockReturnValue(initialStandings)
@@ -235,8 +262,13 @@ describe('refreshStandings', () => {
     expect(buildSpy).toHaveBeenCalledTimes(1) // only during hydrate
     expect(listSpy).toHaveBeenCalledTimes(2)
     expect(listSpy).toHaveBeenLastCalledWith(db)
+    expect(playersSpy).toHaveBeenCalledTimes(2)
+    expect(playersSpy).toHaveBeenLastCalledWith(db)
     expect(standingsSpy).toHaveBeenCalledTimes(2)
-    expect(standingsSpy).toHaveBeenLastCalledWith(results, updatedViews)
+    const [, , latestPlayerDirectory] = standingsSpy.mock.calls[1]
+    expect(Array.from(latestPlayerDirectory.entries())).toEqual(
+      Array.from(samplePlayerDirectory().entries())
+    )
 
     const snapshot = getSerializableState()
     expect(snapshot.standings).toEqual(updatedStandings)
@@ -266,13 +298,16 @@ describe('applyEvent', () => {
       errors: []
     })
     const listSpy = vi.spyOn(divisionsModule, 'listDivisions').mockReturnValue(divisions)
+    const playersSpy = vi
+      .spyOn(playersModule, 'listViewablePlayers')
+      .mockReturnValue(samplePlayers())
     const standingsSpy = vi
       .spyOn(standingsModule, 'computeAllDivisionStandings')
       .mockReturnValue(standings)
 
     hydrate(db)
 
-    return { results, divisions, standings, buildSpy, listSpy, standingsSpy }
+    return { results, divisions, standings, buildSpy, listSpy, standingsSpy, playersSpy }
   }
 
   it('records event, refreshes standings, and returns empty errors array on success', () => {

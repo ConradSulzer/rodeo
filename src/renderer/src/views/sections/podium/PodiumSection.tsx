@@ -1,11 +1,10 @@
-import { useMemo } from 'react'
 import { StandingsTabsTable } from '@renderer/components/standings/StandingsTabsTable'
 import { useStandingsView } from '@renderer/components/standings/useStandingsView'
 import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 import { useStandingsData } from '@renderer/hooks/useStandingsData'
 
 export function PodiumSection() {
-  const { divisions, standings, players, isLoading } = useStandingsData()
+  const { divisions, standings, isLoading } = useStandingsData()
   const {
     activeDivisionId,
     divisionCategories,
@@ -15,14 +14,7 @@ export function PodiumSection() {
     handleSelectDivision
   } = useStandingsView('podium', divisions, standings, isLoading)
 
-  const entriesWithNames = useMemo(
-    () =>
-      (activeCategoryStanding?.entries ?? []).map((entry) => ({
-        ...entry,
-        playerName: players.get(entry.playerId) ?? 'Unknown Player'
-      })),
-    [activeCategoryStanding?.entries, players]
-  )
+  const entries = activeCategoryStanding?.entries ?? []
 
   return (
     <ManageSectionShell title="Podium">
@@ -31,7 +23,7 @@ export function PodiumSection() {
         activeDivisionId={activeDivisionId}
         divisionCategories={divisionCategories}
         activeDivisionCategory={activeDivisionCategory}
-        entries={entriesWithNames}
+        entries={entries}
         loading={isLoading}
         onSelectDivision={(divisionId) => handleSelectDivision(divisionId)}
         onSelectCategory={(divisionId, categoryId) => handleSelectCategory(divisionId, categoryId)}

@@ -15,7 +15,7 @@ type StandingsTabsTableProps = {
   activeDivisionId: string | null
   divisionCategories: DivisionCategory[]
   activeDivisionCategory: DivisionCategory | null
-  entries: Array<PlayerStanding & { playerName: string }>
+  entries: PlayerStanding[]
   loading?: boolean
   onSelectDivision: (divisionId: string) => void
   onSelectCategory: (divisionId: string, categoryId: string) => void
@@ -132,7 +132,9 @@ export function StandingsTabsTable({
                     <TableCell className="font-mono text-sm">{entry.rank}</TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="font-semibold">{entry.playerName}</span>
+                        <span className="font-semibold">
+                          {entry.player.displayName || entry.playerId}
+                        </span>
                         <span className="text-xs ro-text-muted">{entry.playerId}</span>
                       </div>
                     </TableCell>

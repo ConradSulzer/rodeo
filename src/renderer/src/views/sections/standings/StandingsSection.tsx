@@ -6,7 +6,7 @@ import { ManageSectionShell } from '@renderer/components/ManageSectionShell'
 import { useStandingsData } from '@renderer/hooks/useStandingsData'
 
 export function StandingsSection() {
-  const { divisions, standings, players, isLoading } = useStandingsData()
+  const { divisions, standings, isLoading } = useStandingsData()
   const [query, setQuery] = useState('')
   const {
     activeDivisionId,
@@ -23,8 +23,8 @@ export function StandingsSection() {
 
     const enrichedEntries = activeCategoryStanding.entries.map((entry) => ({
       entry,
-      playerId: entry.playerId,
-      playerName: players.get(entry.playerId) ?? 'Unknown Player'
+      playerId: entry.player.id,
+      playerName: entry.player.displayName
     }))
 
     if (!normalizedQuery) return enrichedEntries.map((item) => item.entry)
@@ -37,16 +37,7 @@ export function StandingsSection() {
     })
 
     return ranked.map((item) => item.entry)
-  }, [activeCategoryStanding, players, query])
-
-  const entriesWithNames = useMemo(
-    () =>
-      filteredEntries.map((entry) => ({
-        ...entry,
-        playerName: players.get(entry.playerId) ?? 'Unknown Player'
-      })),
-    [filteredEntries, players]
-  )
+  }, [activeCategoryStanding, query])
 
   return (
     <ManageSectionShell
@@ -60,7 +51,7 @@ export function StandingsSection() {
         activeDivisionId={activeDivisionId}
         divisionCategories={divisionCategories}
         activeDivisionCategory={activeDivisionCategory}
-        entries={entriesWithNames}
+        entries={filteredEntries}
         loading={isLoading}
         onSelectDivision={(divisionId) => handleSelectDivision(divisionId)}
         onSelectCategory={(divisionId, categoryId) => handleSelectCategory(divisionId, categoryId)}
