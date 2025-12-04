@@ -21,22 +21,16 @@ export function StandingsSection() {
     if (!activeCategoryStanding) return []
     const normalizedQuery = query.trim().toLowerCase()
 
-    const enrichedEntries = activeCategoryStanding.entries.map((entry) => ({
-      entry,
-      playerId: entry.player.id,
-      playerName: entry.player.displayName
-    }))
-
-    if (!normalizedQuery) return enrichedEntries.map((item) => item.entry)
+    if (!normalizedQuery) return activeCategoryStanding.entries
 
     const ranked = universalSearchSort({
-      items: enrichedEntries,
+      items: activeCategoryStanding.entries,
       query: normalizedQuery,
-      searchKeys: ['playerName', 'playerId'],
-      limit: enrichedEntries.length
+      searchKeys: ['player.displayName', 'player.id'],
+      limit: activeCategoryStanding.entries.length
     })
 
-    return ranked.map((item) => item.entry)
+    return ranked
   }, [activeCategoryStanding, query])
 
   return (

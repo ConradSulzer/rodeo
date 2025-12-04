@@ -9,7 +9,7 @@ export type UniversalSortOptions<T> = {
   sortKey?: keyof T
   direction?: 'asc' | 'desc'
   query?: string
-  searchKeys?: (keyof T & string)[]
+  searchKeys?: string[]
   limit?: number
   threshold?: number
 }
@@ -19,7 +19,7 @@ export const defaultSearchSort = {
   sortKey: '',
   direction: 'asc',
   query: '',
-  searchKeys: []
+  searchKeys: [] as string[]
 }
 
 function compare(a: SortablePrimitive, b: SortablePrimitive): number {
@@ -52,7 +52,7 @@ export function universalSearchSort<T>(opts: UniversalSortOptions<T>): T[] {
 
   if (query && searchKeys?.length) {
     const fuzzy = fuzzysort.go(query, results, {
-      keys: searchKeys as string[],
+      keys: searchKeys,
       limit,
       threshold
     })
