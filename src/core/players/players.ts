@@ -9,6 +9,8 @@ import { loadDivisionMetricDirectory } from '@core/tournaments/divisions'
 export type PlayerRecord = typeof pl.$inferSelect
 export type PlayerMetric = Pick<MetricRecord, 'id' | 'label'>
 
+export type PlayerViewable = Pick<PlayerRecord, 'id' | 'displayName' | 'email'>
+
 export type EnrichedPlayer = PlayerRecord & {
   divisions: DivisionRecord[]
   metrics: PlayerMetric[]
@@ -107,6 +109,21 @@ export function listEnrichedPlayers(db: AppDatabase): EnrichedPlayer[] {
   })
 
   return enrichedPlayers
+}
+
+export function listViewablePlayers(db: AppDatabase): PlayerViewable[] {
+  const players = db.query.player
+    .findMany({
+      columns: {
+        id: true,
+        displayName: true,
+        email: true
+      },
+      orderBy: (player, { asc }) => [asc(player.displayName)]
+    })
+    .sync()
+
+  return players
 }
 
 function cleanPlayerDivisions(row: {

@@ -8,7 +8,7 @@ import {
 } from './divisions'
 import { addMetricToCategory, createCategory, updateCategory } from './categories'
 import { createMetric } from './metrics'
-import { createPlayer } from '@core/players/players'
+import { createPlayer, listEnrichedPlayers } from '@core/players/players'
 import { computeDivisionStanding } from './standings'
 import { appendEvent, getEvent, type ItemStateChanged } from '@core/events/events'
 import { reduceEvent } from '@core/events/eventReducer'
@@ -22,6 +22,14 @@ const basePlayer = (suffix: string) => ({
   displayName: `Player ${suffix}`,
   email: `player${suffix}@example.com`
 })
+
+const buildPlayerDirectory = (db: AppDatabase) =>
+  new Map(
+    listEnrichedPlayers(db).map((player) => [
+      player.id,
+      { id: player.id, displayName: player.displayName, email: player.email }
+    ])
+  )
 
 describe('standings computation', () => {
   const persistEvent = (db: AppDatabase, results: Results, event: ItemStateChanged) => {
@@ -75,7 +83,7 @@ describe('standings computation', () => {
       persistEvent(db, results, makeEvent(weightId, playerPartial, 12, 3))
 
       const divisionView = listDivisions(db).find((division) => division.id === divisionId)!
-      const standing = computeDivisionStanding(results, divisionView)
+      const standing = computeDivisionStanding(results, divisionView, buildPlayerDirectory(db))
       const [categoryStanding] = standing.categories
 
       expect(categoryStanding.entries.map((entry) => entry.playerId)).toEqual([
@@ -142,7 +150,7 @@ describe('standings computation', () => {
       persistEvent(db, results, makeEvent(metricB, playerB, 3, 2))
 
       const divisionView = listDivisions(db).find((division) => division.id === divisionId)!
-      const standing = computeDivisionStanding(results, divisionView)
+      const standing = computeDivisionStanding(results, divisionView, buildPlayerDirectory(db))
       const entries = standing.categories[0].entries
 
       expect(entries.map((entry) => entry.playerId)).toEqual([playerB, playerA])
@@ -207,7 +215,8 @@ describe('standings computation', () => {
 
       const standing = computeDivisionStanding(
         results,
-        listDivisions(db).find((division) => division.id === divisionId)!
+        listDivisions(db).find((division) => division.id === divisionId)!,
+        buildPlayerDirectory(db)
       )
 
       const entries = standing.categories[0].entries
@@ -271,7 +280,8 @@ describe('standings computation', () => {
 
       const standing = computeDivisionStanding(
         results,
-        listDivisions(db).find((division) => division.id === divisionId)!
+        listDivisions(db).find((division) => division.id === divisionId)!,
+        buildPlayerDirectory(db)
       )
 
       const entries = standing.categories[0].entries
@@ -333,7 +343,8 @@ describe('standings computation', () => {
 
       const standing = computeDivisionStanding(
         results,
-        listDivisions(db).find((division) => division.id === divisionId)!
+        listDivisions(db).find((division) => division.id === divisionId)!,
+        buildPlayerDirectory(db)
       )
       const [categoryStanding] = standing.categories
 
@@ -402,7 +413,8 @@ describe('standings computation', () => {
 
       const standing = computeDivisionStanding(
         results,
-        listDivisions(db).find((division) => division.id === divisionId)!
+        listDivisions(db).find((division) => division.id === divisionId)!,
+        buildPlayerDirectory(db)
       )
       const [categoryStanding] = standing.categories
 
@@ -449,7 +461,8 @@ describe('standings computation', () => {
 
       const standing = computeDivisionStanding(
         results,
-        listDivisions(db).find((division) => division.id === divisionId)!
+        listDivisions(db).find((division) => division.id === divisionId)!,
+        buildPlayerDirectory(db)
       )
       const [categoryStanding] = standing.categories
       const [first, second] = categoryStanding.entries

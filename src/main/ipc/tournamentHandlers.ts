@@ -7,7 +7,7 @@ import {
   type TournamentMetadataPatch
 } from '@core/tournaments/tournaments'
 import { ipcMain } from 'electron'
-import { hydrate, clear, getSerializableState } from '../state/tournamentStore'
+import { hydrate, clear, getSerializableState, refreshStandings } from '../state/tournamentStore'
 import { showOpenFileDialog, showSaveFileDialog } from './utils/dialogs'
 
 ipcMain.handle('tournaments:open', (_evt, filePath: string) => {
@@ -46,4 +46,10 @@ ipcMain.handle('tournaments:close', () => {
 
 ipcMain.handle('tournaments:state:get', () => {
   return getSerializableState()
+})
+
+ipcMain.handle('tournaments:standings:refresh', () => {
+  const db = getTournamentDb()
+  refreshStandings(db)
+  return true
 })

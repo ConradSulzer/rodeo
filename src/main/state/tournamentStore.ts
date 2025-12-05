@@ -2,11 +2,23 @@ import { appendEvent, getEvent, type RodeoEvent } from '@core/events/events'
 import { computeAllDivisionStandings } from '@core/tournaments/standings'
 import { buildResults, type Results } from '@core/tournaments/results'
 import { listDivisions } from '@core/tournaments/divisions'
+import { listViewablePlayers, type PlayerViewable } from '@core/players/players'
 import type { AppDatabase } from '@core/db/db'
 import type { SerializableTournamentState, SerializedResults } from '@core/tournaments/state'
 import type { DivisionStanding } from '@core/tournaments/standings'
 import { reduceEvent } from '@core/events/eventReducer'
 import type { ULID } from 'ulid'
+import {
+  appendPodiumEvent,
+  listPodiumEvents,
+  type PodiumEvent
+} from '@core/tournaments/podiumEvents'
+import {
+  applyPodiumEventToAdjustments,
+  createEmptyPodiumAdjustments,
+  serializePodiumAdjustments,
+  type PodiumAdjustments
+} from '@core/tournaments/podiumAdjustments'
 
 /**
  * A listener is a function that is called with `state` when store `state` changes.
@@ -16,18 +28,21 @@ type Listener = (serializedState: SerializableTournamentState) => void
 type TournamentState = {
   results: Results
   standings: DivisionStanding[]
+  podiumAdjustments: PodiumAdjustments
 }
 
 const createEmptyState = (): TournamentState => ({
   results: new Map(),
-  standings: []
+  standings: [],
+  podiumAdjustments: createEmptyPodiumAdjustments()
 })
 
 let state: TournamentState = createEmptyState()
 const listeners = new Set<Listener>()
 const EMPTY_STATE: SerializableTournamentState = {
   standings: [],
-  results: []
+  results: [],
+  podiumAdjustments: serializePodiumAdjustments(createEmptyPodiumAdjustments())
 }
 
 export function getState(): TournamentState {
@@ -46,11 +61,14 @@ export function hydrate(db: AppDatabase): SerializableTournamentState {
   }
 
   const divisions = listDivisions(db)
-  const standings = computeAllDivisionStandings(results, divisions)
+  const playerDirectory = loadPlayerDirectory(db)
+  const standings = computeAllDivisionStandings(results, divisions, playerDirectory)
+  const podiumAdjustments = reducePodiumEvents(listPodiumEvents(db))
 
   state = {
     results,
-    standings
+    standings,
+    podiumAdjustments
   }
 
   const serializable = serializeState(state)
@@ -90,10 +108,23 @@ export function applyEvent(db: AppDatabase, event: RodeoEvent): ReturnType<typeo
   return errors
 }
 
+export function applyPodiumEvent(db: AppDatabase, event: PodiumEvent) {
+  appendPodiumEvent(db, event)
+  state = {
+    ...state,
+    podiumAdjustments: applyPodiumEventToAdjustments(
+      clonePodiumAdjustments(state.podiumAdjustments),
+      event
+    )
+  }
+  notify(serializeState(state))
+}
+
 export function refreshStandings(db: AppDatabase) {
   const divisions = listDivisions(db)
+  const playerDirectory = loadPlayerDirectory(db)
 
-  const standings = computeAllDivisionStandings(state.results, divisions)
+  const standings = computeAllDivisionStandings(state.results, divisions, playerDirectory)
 
   state = {
     ...state,
@@ -106,7 +137,8 @@ export function refreshStandings(db: AppDatabase) {
 function serializeState(current: TournamentState): SerializableTournamentState {
   return {
     standings: current.standings,
-    results: serializeResults(current.results)
+    results: serializeResults(current.results),
+    podiumAdjustments: serializePodiumAdjustments(current.podiumAdjustments)
   }
 }
 
@@ -135,6 +167,31 @@ function notify(update: SerializableTournamentState) {
       console.error('Tournament store listener failed', error)
     }
   })
+}
+
+function reducePodiumEvents(events: PodiumEvent[]): PodiumAdjustments {
+  const adjustments = createEmptyPodiumAdjustments()
+  for (const event of events) {
+    applyPodiumEventToAdjustments(adjustments, event)
+  }
+  return adjustments
+}
+
+function clonePodiumAdjustments(source: PodiumAdjustments): PodiumAdjustments {
+  const removed = new Map<string, Map<string, Set<string>>>()
+  source.removed.forEach((categories, divisionId) => {
+    const categoryCopy = new Map<string, Set<string>>()
+    categories.forEach((players, categoryId) => {
+      categoryCopy.set(categoryId, new Set(players))
+    })
+    removed.set(divisionId, categoryCopy)
+  })
+  return { removed }
+}
+
+function loadPlayerDirectory(db: AppDatabase): Map<string, PlayerViewable> {
+  const players = listViewablePlayers(db)
+  return new Map(players.map((player) => [player.id, player]))
 }
 
 /**

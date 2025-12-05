@@ -2,10 +2,12 @@ import type { ULID } from 'ulid'
 import type { Division, DivisionCategory } from './divisions'
 import type { ItemResult, Results } from './results'
 import type { Timestamp } from '@core/types/Shared'
+import type { PlayerViewable } from '@core/players/players'
 import { applyRulesToStanding } from './standingRules'
 
 export type PlayerStanding = {
   playerId: ULID
+  player: PlayerViewable
   itemCount: number
   total: number
   score: number
@@ -27,12 +29,14 @@ export type DivisionStanding = {
   categories: CategoryStanding[]
 }
 
-export function computeDivisionStanding(results: Results, division: Division): DivisionStanding {
-  const eligible = division.eligiblePlayerIds.length
-    ? new Set<ULID>(division.eligiblePlayerIds)
-    : null
+export function computeDivisionStanding(
+  results: Results,
+  division: Division,
+  players: Map<string, PlayerViewable>
+): DivisionStanding {
+  const eligible = new Set<ULID>(division.eligiblePlayerIds)
   const categories = division.categories.map((category) =>
-    computeCategoryStanding(results, category, eligible)
+    computeCategoryStanding(results, category, eligible, players)
   )
 
   return {
@@ -43,9 +47,10 @@ export function computeDivisionStanding(results: Results, division: Division): D
 
 export function computeAllDivisionStandings(
   results: Results,
-  divisions: Division[]
+  divisions: Division[],
+  players: Map<string, PlayerViewable>
 ): DivisionStanding[] {
-  return divisions.map((division) => computeDivisionStanding(results, division))
+  return divisions.map((division) => computeDivisionStanding(results, division, players))
 }
 
 function getCategoryTotal(
@@ -70,8 +75,9 @@ function getCategoryTotal(
 
 function computeCategoryStanding(
   results: Results,
-  categoryView: DivisionCategory,
-  eligible: Set<ULID> | null
+  divisionCategory: DivisionCategory,
+  eligible: Set<ULID> | null,
+  players: Map<string, PlayerViewable>
 ): CategoryStanding {
   const entries: PlayerStanding[] = []
 
@@ -79,16 +85,18 @@ function computeCategoryStanding(
     const playerItems = playerResult.items
     if (eligible && !eligible.has(playerId)) continue
     if (!playerResult.scoredAt) continue
-    const mode = categoryView.category.mode ?? 'aggregate'
+    const player = players.get(playerId)
+    if (!player) continue
+    const mode = divisionCategory.category.mode ?? 'aggregate'
     const items: ItemResult[] = []
 
-    for (const metric of categoryView.metrics) {
+    for (const metric of divisionCategory.metrics) {
       const item = playerItems.get(metric.id)
       if (!item || item.status !== 'value' || item.value === undefined) continue
       items.push(item)
     }
 
-    const rawTotal = getCategoryTotal(items, mode, categoryView.category.direction)
+    const rawTotal = getCategoryTotal(items, mode, divisionCategory.category.direction)
     if (rawTotal === null) continue
 
     const itemCount = items.length
@@ -96,6 +104,7 @@ function computeCategoryStanding(
 
     const playerStanding: PlayerStanding = {
       playerId,
+      player,
       itemCount,
       total: roundedTotal,
       score: roundedTotal,
@@ -103,8 +112,10 @@ function computeCategoryStanding(
       ts: playerResult.scoredAt as Timestamp
     }
 
-    const rules = categoryView.category.rules ?? []
-    const adjustedStanding = applyRulesToStanding(playerStanding, rules, { categoryView })
+    const rules = divisionCategory.category.rules ?? []
+    const adjustedStanding = applyRulesToStanding(playerStanding, rules, {
+      categoryView: divisionCategory
+    })
 
     if (!adjustedStanding) continue
 
@@ -114,14 +125,14 @@ function computeCategoryStanding(
   // Fallback for no valid entries created in the above loop over results for this category
   if (!entries.length) {
     return {
-      categoryId: categoryView.category.id,
-      depth: categoryView.depth,
-      direction: categoryView.category.direction,
+      categoryId: divisionCategory.category.id,
+      depth: divisionCategory.depth,
+      direction: divisionCategory.category.direction,
       entries: []
     }
   }
 
-  const direction = categoryView.category.direction
+  const direction = divisionCategory.category.direction
 
   // Sort all entries by score, then tie-break using the earliest timestamp
   entries.sort((a, b) => {
@@ -137,9 +148,9 @@ function computeCategoryStanding(
   })
 
   return {
-    categoryId: categoryView.category.id,
-    depth: categoryView.depth,
-    direction: categoryView.category.direction,
+    categoryId: divisionCategory.category.id,
+    depth: divisionCategory.depth,
+    direction: divisionCategory.category.direction,
     entries: entries
   }
 }

@@ -9,6 +9,7 @@ import type { MetricRecord } from './metrics'
 
 const baseStanding = (overrides: Partial<PlayerStanding> = {}): PlayerStanding => ({
   playerId: '01TESTPLAYER',
+  player: { id: '01TESTPLAYER', displayName: 'Test Player', email: 'player@example.com' },
   itemCount: 1,
   total: 10,
   score: 10,

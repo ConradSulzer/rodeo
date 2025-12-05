@@ -11,6 +11,7 @@ import {
 import { NewMetric, PatchMetric, MetricRecord, Metric } from '@core/tournaments/metrics'
 import type { SerializableTournamentState } from '@core/tournaments/state'
 import type { RodeoEvent, ScoreEventInput } from '@core/events/events'
+import type { PodiumEvent, PodiumEventInput } from '@core/tournaments/podiumEvents'
 
 interface PlayerAPI {
   create(data: NewPlayer): Promise<string>
@@ -70,6 +71,11 @@ interface EventsAPI {
   list(): Promise<RodeoEvent[]>
 }
 
+interface PodiumAPI {
+  recordEvent(input: PodiumEventInput): Promise<{ success: boolean }>
+  listEvents(): Promise<PodiumEvent[]>
+}
+
 interface TournamentAPI {
   open(filePath: string): Promise<boolean>
   openDialog(): Promise<string | null>
@@ -90,6 +96,7 @@ interface TournamentAPI {
   }>
   close(): Promise<boolean>
   getState(): Promise<SerializableTournamentState>
+  refreshStandings(): Promise<boolean>
   subscribe(listener: (snapshot: SerializableTournamentState) => void): () => void
 }
 
@@ -98,11 +105,12 @@ declare global {
     electron: ElectronAPI
     api: {
       players: PlayerAPI
-      metrics: MetricAPI
-      categories: CategoryAPI
-      divisions: DivisionAPI
-      events: EventsAPI
-      tournaments: TournamentAPI
-    }
+    metrics: MetricAPI
+    categories: CategoryAPI
+    divisions: DivisionAPI
+    events: EventsAPI
+    podium: PodiumAPI
+    tournaments: TournamentAPI
   }
+}
 }
