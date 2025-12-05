@@ -8,7 +8,7 @@ import { Label } from '../../../components/ui/label'
 import { Input } from '../../../components/ui/input'
 import { Button } from '../../../components/ui/button'
 
-export type DivisionCategorySelection = { categoryId: string; depth: number }
+export type DivisionCategorySelection = { categoryId: string; depth: number; order: number }
 export type DivisionFormValues = { name: string; categories: DivisionCategorySelection[] }
 
 type DivisionFormModalProps = {
@@ -26,12 +26,14 @@ const formSchema = z.object({
   categories: z.array(
     z.object({
       categoryId: z.string(),
-      depth: z.number().int().min(1, 'Depth must be at least 1')
+      depth: z.number().int().min(1, 'Depth must be at least 1'),
+      order: z.number().int().min(1, 'Order must be at least 1')
     })
   )
 })
 
 const DEFAULT_DEPTH = 10
+const DEFAULT_ORDER = 1
 
 export function DivisionFormModal({
   open,
@@ -44,18 +46,24 @@ export function DivisionFormModal({
 }: DivisionFormModalProps) {
   const [name, setName] = useState('')
   const [categoryState, setCategoryState] = useState<
-    Record<string, { selected: boolean; depth: number }>
+    Record<string, { selected: boolean; depth: number; order: number }>
   >({})
   const [errors, setErrors] = useState<{ name?: string; categories?: Record<string, string> }>({})
 
   const buildDefaultCategoryState = useMemo(() => {
-    const lookup = new Map(division?.categories.map((entry) => [entry.category.id, entry.depth]))
-    return categories.reduce<Record<string, { selected: boolean; depth: number }>>(
+    const lookup = new Map(
+      division?.categories.map((entry) => [
+        entry.category.id,
+        { depth: entry.depth, order: entry.order }
+      ])
+    )
+    return categories.reduce<Record<string, { selected: boolean; depth: number; order: number }>>(
       (acc, category) => {
-        const depth = lookup.get(category.id)
+        const entry = lookup.get(category.id)
         acc[category.id] = {
-          selected: depth !== undefined,
-          depth: depth ?? DEFAULT_DEPTH
+          selected: entry !== undefined,
+          depth: entry?.depth ?? DEFAULT_DEPTH,
+          order: entry?.order ?? DEFAULT_ORDER
         }
         return acc
       },
@@ -83,7 +91,7 @@ export function DivisionFormModal({
 
     const selectedCategories = Object.entries(categoryState)
       .filter(([, state]) => state.selected)
-      .map(([categoryId, state]) => ({ categoryId, depth: state.depth }))
+      .map(([categoryId, state]) => ({ categoryId, depth: state.depth, order: state.order }))
 
     const validation = formSchema.safeParse({
       name,
@@ -124,9 +132,10 @@ export function DivisionFormModal({
       const next = prev[categoryId]
       const selected = next ? !next.selected : true
       const depth = next?.depth ?? DEFAULT_DEPTH
+      const order = next?.order ?? DEFAULT_ORDER
       return {
         ...prev,
-        [categoryId]: { selected, depth }
+        [categoryId]: { selected, depth, order }
       }
     })
     setErrors((prev) => {
@@ -142,7 +151,25 @@ export function DivisionFormModal({
       ...prev,
       [categoryId]: {
         selected: prev[categoryId]?.selected ?? false,
-        depth: Math.max(1, Math.floor(Number.isFinite(depthValue) ? depthValue : DEFAULT_DEPTH))
+        depth: Math.max(1, Math.floor(Number.isFinite(depthValue) ? depthValue : DEFAULT_DEPTH)),
+        order: prev[categoryId]?.order ?? DEFAULT_ORDER
+      }
+    }))
+    setErrors((prev) => {
+      if (!prev.categories) return prev
+      const rest = { ...prev.categories }
+      delete rest[categoryId]
+      return { ...prev, categories: rest }
+    })
+  }
+
+  const updateOrder = (categoryId: string, orderValue: number) => {
+    setCategoryState((prev) => ({
+      ...prev,
+      [categoryId]: {
+        selected: prev[categoryId]?.selected ?? false,
+        depth: prev[categoryId]?.depth ?? DEFAULT_DEPTH,
+        order: Math.max(1, Math.floor(Number.isFinite(orderValue) ? orderValue : DEFAULT_ORDER))
       }
     }))
     setErrors((prev) => {
@@ -172,7 +199,8 @@ export function DivisionFormModal({
               {categories.map((category) => {
                 const entry = categoryState[category.id] ?? {
                   selected: false,
-                  depth: DEFAULT_DEPTH
+                  depth: DEFAULT_DEPTH,
+                  order: DEFAULT_ORDER
                 }
                 return (
                   <div
@@ -188,21 +216,39 @@ export function DivisionFormModal({
                       />
                       <span>{category.name}</span>
                     </label>
-                    <div className="flex items-center gap-2">
-                      <Label htmlFor={`depth-${category.id}`} className="text-xs">
-                        Top
-                      </Label>
-                      <Input
-                        id={`depth-${category.id}`}
-                        type="number"
-                        min={1}
-                        className="h-8 max-w-20"
-                        value={entry.depth}
-                        disabled={!entry.selected}
-                        onChange={(event) =>
-                          updateDepth(category.id, Number.parseInt(event.target.value, 10))
-                        }
-                      />
+                    <div className="flex space-x-3">
+                      <div className="flex items-center gap-1">
+                        <Label htmlFor={`depth-${category.id}`} className="text-xs">
+                          Top
+                        </Label>
+                        <Input
+                          id={`depth-${category.id}`}
+                          type="number"
+                          min={1}
+                          className="h-8 max-w-16"
+                          value={entry.depth}
+                          disabled={!entry.selected}
+                          onChange={(event) =>
+                            updateDepth(category.id, Number.parseInt(event.target.value, 10))
+                          }
+                        />
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Label htmlFor={`order-${category.id}`} className="text-xs">
+                          Pos
+                        </Label>
+                        <Input
+                          id={`order-${category.id}`}
+                          type="number"
+                          min={1}
+                          className="h-8 max-w-16"
+                          value={entry.order}
+                          disabled={!entry.selected}
+                          onChange={(event) =>
+                            updateOrder(category.id, Number.parseInt(event.target.value, 10))
+                          }
+                        />
+                      </div>
                     </div>
                     {errors.categories?.[category.id] ? (
                       <span className="text-xs text-red-500">{errors.categories[category.id]}</span>

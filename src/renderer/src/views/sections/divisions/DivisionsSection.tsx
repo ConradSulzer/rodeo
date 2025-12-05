@@ -122,12 +122,12 @@ export function DivisionsSection() {
             const divisionId: string = await window.api.divisions.create(payload)
             if (values.categories.length) {
               await Promise.all(
-                values.categories.map((entry, index) =>
+                values.categories.map((entry) =>
                   window.api.divisions.addCategory(
                     divisionId,
                     entry.categoryId,
                     entry.depth,
-                    index + 1
+                    entry.order
                   )
                 )
               )
@@ -152,7 +152,7 @@ export function DivisionsSection() {
           ])
         )
         const desiredOrder = new Map(
-          values.categories.map((entry, index) => [entry.categoryId, index + 1])
+          values.categories.map((entry) => [entry.categoryId, entry.order])
         )
         const desiredDepth = new Map(
           values.categories.map((entry) => [entry.categoryId, entry.depth])
@@ -208,7 +208,7 @@ export function DivisionsSection() {
                     division.id,
                     entry.categoryId,
                     entry.depth,
-                    desiredOrder.get(entry.categoryId) ?? index + 1
+                    desiredOrder.get(entry.categoryId) ?? entry.order ?? index + 1
                   )
                 ),
                 ...toRemove.map((id) => window.api.divisions.removeCategory(division.id, id)),
