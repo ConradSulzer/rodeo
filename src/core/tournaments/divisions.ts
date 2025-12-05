@@ -155,7 +155,7 @@ export function addCategoryToDivision(
   db: AppDatabase,
   divisionId: string,
   categoryId: string,
-  depth = 1,
+  depth = 10,
   order?: number
 ) {
   const normalizedDepth = Math.max(1, Math.floor(depth))

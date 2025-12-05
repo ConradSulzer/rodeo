@@ -6,6 +6,7 @@ import { NewMetric, PatchMetric } from '@core/tournaments/metrics'
 import { NewCategory, PatchCategory } from '@core/tournaments/categories'
 import { NewDivision, PatchDivision, DivisionCategoryPatch } from '@core/tournaments/divisions'
 import type { RodeoEvent, ScoreEventInput } from '@core/events/events'
+import type { PodiumEvent, PodiumEventInput } from '@core/tournaments/podiumEvents'
 import type { SerializableTournamentState } from '@core/tournaments/state'
 import { TOURNAMENT_STATE_CHANNEL } from '@core/ipc/channels'
 
@@ -60,6 +61,10 @@ const api = {
     record: (entries: ScoreEventInput[]) => ipcRenderer.invoke('events:recordMany', entries),
     list: () => ipcRenderer.invoke('events:list') as Promise<RodeoEvent[]>
   },
+  podium: {
+    recordEvent: (input: PodiumEventInput) => ipcRenderer.invoke('podium:events:record', input),
+    listEvents: () => ipcRenderer.invoke('podium:events:list') as Promise<PodiumEvent[]>
+  },
   tournaments: {
     open: (filePath: string) => ipcRenderer.invoke('tournaments:open', filePath),
     openDialog: () => ipcRenderer.invoke('tournaments:dialog:openExisting'),
@@ -70,6 +75,7 @@ const api = {
     close: () => ipcRenderer.invoke('tournaments:close'),
     getState: () =>
       ipcRenderer.invoke('tournaments:state:get') as Promise<SerializableTournamentState>,
+    refreshStandings: () => ipcRenderer.invoke('tournaments:standings:refresh') as Promise<boolean>,
     subscribe: (listener: (snapshot: SerializableTournamentState) => void) => {
       const handler = (_evt: IpcRendererEvent, payload: SerializableTournamentState) => {
         listener(payload)

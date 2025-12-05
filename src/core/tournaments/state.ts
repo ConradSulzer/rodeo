@@ -1,6 +1,7 @@
 import type { ItemResult } from './results'
 import type { Timestamp } from '@core/types/Shared'
 import type { DivisionStanding } from './standings'
+import type { SerializedPodiumAdjustments } from './podiumAdjustments'
 
 export type SerializedResults = Array<{
   playerId: string
@@ -14,4 +15,5 @@ export type SerializedResults = Array<{
 export type SerializableTournamentState = {
   standings: DivisionStanding[]
   results: SerializedResults
+  podiumAdjustments: SerializedPodiumAdjustments
 }

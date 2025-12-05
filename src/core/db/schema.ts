@@ -97,7 +97,7 @@ export const divisionCategory = sqliteTable(
       .notNull()
       .references(() => category.id, { onUpdate: 'cascade', onDelete: 'cascade' }),
     order: integer('order', { mode: 'number' }).notNull().default(0),
-    depth: integer('depth', { mode: 'number' }).notNull().default(1)
+    depth: integer('depth', { mode: 'number' }).notNull().default(10)
   },
   (t) => [
     primaryKey({ columns: [t.divisionId, t.categoryId], name: 'division_category_pk' }),
@@ -147,6 +147,31 @@ export const event = sqliteTable(
     })
       .onUpdate('cascade')
       .onDelete('restrict')
+  ]
+)
+
+export const podiumEvent = sqliteTable(
+  'podium_event',
+  {
+    id: text('id').primaryKey(),
+    type: text('type').notNull(),
+    ts: integer('ts', { mode: 'number' }).notNull(),
+    divisionId: text('division_id')
+      .notNull()
+      .references(() => division.id, { onUpdate: 'cascade', onDelete: 'cascade' }),
+    categoryId: text('category_id')
+      .notNull()
+      .references(() => category.id, { onUpdate: 'cascade', onDelete: 'cascade' }),
+    playerId: text('player_id')
+      .notNull()
+      .references(() => player.id, { onUpdate: 'cascade', onDelete: 'cascade' }),
+    payload: text('payload', { mode: 'json' })
+      .$type<Record<string, unknown> | null>()
+      .default(null)
+  },
+  (t) => [
+    index('podium_event_division_category').on(t.divisionId, t.categoryId),
+    index('podium_event_player').on(t.playerId)
   ]
 )
 
@@ -227,5 +252,20 @@ export const eventRelations = relations(event, ({ one, many }) => ({
   }),
   nextEvents: many(event, {
     relationName: 'priorEvent'
+  })
+}))
+
+export const podiumEventRelations = relations(podiumEvent, ({ one }) => ({
+  division: one(division, {
+    fields: [podiumEvent.divisionId],
+    references: [division.id]
+  }),
+  category: one(category, {
+    fields: [podiumEvent.categoryId],
+    references: [category.id]
+  }),
+  player: one(player, {
+    fields: [podiumEvent.playerId],
+    references: [player.id]
   })
 }))

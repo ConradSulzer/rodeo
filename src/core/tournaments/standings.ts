@@ -34,9 +34,7 @@ export function computeDivisionStanding(
   division: Division,
   players: Map<string, PlayerViewable>
 ): DivisionStanding {
-  const eligible = division.eligiblePlayerIds.length
-    ? new Set<ULID>(division.eligiblePlayerIds)
-    : null
+  const eligible = new Set<ULID>(division.eligiblePlayerIds)
   const categories = division.categories.map((category) =>
     computeCategoryStanding(results, category, eligible, players)
   )

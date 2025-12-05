@@ -8,6 +8,7 @@ import {
   TableHeaderCell,
   TableRow
 } from '@renderer/components/ui/table'
+import { Button } from '@renderer/components/ui/button'
 import { cn } from '@renderer/lib/utils'
 
 type StandingsTabsTableProps = {
@@ -19,6 +20,9 @@ type StandingsTabsTableProps = {
   loading?: boolean
   onSelectDivision: (divisionId: string) => void
   onSelectCategory: (divisionId: string, categoryId: string) => void
+  onEntryAction?: (entry: PlayerStanding) => void
+  entryActionLabel?: string
+  entryActionDisabled?: boolean
 }
 
 export function StandingsTabsTable({
@@ -29,7 +33,10 @@ export function StandingsTabsTable({
   entries,
   loading = false,
   onSelectDivision,
-  onSelectCategory
+  onSelectCategory,
+  onEntryAction,
+  entryActionLabel = 'Adjust',
+  entryActionDisabled = false
 }: StandingsTabsTableProps) {
   const activeDivisionName = activeDivision?.name ?? null
   const showCountColumn = Boolean(activeDivisionCategory?.category.showMetricsCount)
@@ -58,19 +65,19 @@ export function StandingsTabsTable({
         {divisions.map((division) => {
           const active = activeDivision?.id === division.id
           return (
-            <button
+            <Button
               key={division.id}
               type="button"
+              variant={active ? 'outline' : 'outline-muted'}
+              size="sm"
               className={cn(
-                'rounded-md border px-3 py-2 text-xs font-semibold uppercase tracking-[0.3em] transition-colors',
-                active
-                  ? 'ro-border-main ro-bg-main/10 ro-text-main'
-                  : 'ro-border ro-text-muted hover:ro-border-main hover:ro-text-main'
+                'uppercase tracking-[0.3em]',
+                active ? 'ro-bg-main/10 ro-border-main ro-text-main' : 'ro-text-muted'
               )}
               onClick={() => onSelectDivision(division.id)}
             >
               {division.name}
-            </button>
+            </Button>
           )
         })}
       </div>
@@ -80,12 +87,14 @@ export function StandingsTabsTable({
             const active = activeDivisionCategory?.category.id === category.category.id
             const currentDivisionId = activeDivision?.id ?? null
             return (
-              <button
+              <Button
                 key={category.category.id}
                 type="button"
+                variant="ghost"
+                size="sm"
                 className={cn(
-                  'rounded-full px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] transition-colors',
-                  active ? 'ro-bg-main/10 ro-text-main' : 'ro-text-muted hover:ro-text-main'
+                  'rounded-full uppercase tracking-[0.2em]',
+                  active ? 'ro-bg-main/10 ro-text-main' : 'ro-text-muted'
                 )}
                 onClick={() => {
                   if (!currentDivisionId) return
@@ -94,7 +103,7 @@ export function StandingsTabsTable({
                 disabled={!currentDivisionId}
               >
                 {category.category.name}
-              </button>
+              </Button>
             )
           })
         ) : (
@@ -121,8 +130,11 @@ export function StandingsTabsTable({
                 {showCountColumn ? (
                   <TableHeaderCell className="text-right">{countColumnLabel}</TableHeaderCell>
                 ) : null}
-                <TableHeaderCell className="w-32 text-right">Total</TableHeaderCell>
-              </TableRow>
+              <TableHeaderCell className="w-32 text-right">Total</TableHeaderCell>
+              {onEntryAction ? (
+                <TableHeaderCell className="w-28 text-right">Actions</TableHeaderCell>
+              ) : null}
+            </TableRow>
             </TableHeader>
             <TableBody>
               {entries.map((entry) => {
@@ -142,6 +154,23 @@ export function StandingsTabsTable({
                       </TableCell>
                     ) : null}
                     <TableCell className="text-right font-mono text-sm">{entry.total}</TableCell>
+                    {onEntryAction ? (
+                      <TableCell className="text-right">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className={cn(
+                            'text-xs uppercase tracking-[0.2em]',
+                            entryActionDisabled ? 'opacity-60' : 'hover:ro-text-main'
+                          )}
+                          onClick={() => onEntryAction(entry)}
+                          disabled={entryActionDisabled}
+                        >
+                          {entryActionLabel}
+                        </Button>
+                      </TableCell>
+                    ) : null}
                   </TableRow>
                 )
               })}

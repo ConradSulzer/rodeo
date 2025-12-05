@@ -100,9 +100,8 @@ export function useStandingsView(
 
   const activeDivision = useMemo(() => {
     if (!divisions.length) return null
-    const fallback = divisions[0]
-    if (!activeDivisionId) return fallback
-    return divisions.find((division) => division.id === activeDivisionId) ?? fallback
+    if (!activeDivisionId) return divisions[0]
+    return divisions.find((division) => division.id === activeDivisionId) ?? null
   }, [divisions, activeDivisionId])
 
   const divisionStanding = useMemo(() => {

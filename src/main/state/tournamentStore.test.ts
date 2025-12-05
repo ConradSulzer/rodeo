@@ -80,6 +80,8 @@ const samplePlayerDirectory = () =>
 
 const activeSubscriptions: Array<() => void> = []
 
+const emptySerializedAdjustments = { removed: {} }
+
 afterEach(() => {
   activeSubscriptions.splice(0).forEach((unsubscribe) => unsubscribe())
   clear()
@@ -166,6 +168,7 @@ describe('hydrate', () => {
     expect(Array.from(playerDirectory.entries())).toEqual(Array.from(directory.entries()))
     expect(snapshot).toEqual({
       standings,
+      podiumAdjustments: emptySerializedAdjustments,
       results: [
         {
           playerId: 'player-1',
@@ -180,6 +183,7 @@ describe('hydrate', () => {
       ]
     })
     expect(getState().standings).toEqual(standings)
+    expect(getSerializableState().podiumAdjustments).toEqual(emptySerializedAdjustments)
     expect(getSerializableState()).toEqual(snapshot)
     expect(listener).toHaveBeenCalledTimes(1)
     expect(listener).toHaveBeenLastCalledWith(snapshot)
@@ -207,7 +211,11 @@ describe('clear', () => {
     expect(Array.from(getState().results.entries())).toEqual([])
     expect(getState().standings).toEqual([])
     expect(listener).toHaveBeenCalledTimes(1)
-    expect(listener).toHaveBeenLastCalledWith({ standings: [], results: [] })
+    expect(listener).toHaveBeenLastCalledWith({
+      standings: [],
+      results: [],
+      podiumAdjustments: emptySerializedAdjustments
+    })
   })
 })
 
