@@ -13,12 +13,14 @@ import { Button } from '@renderer/components/ui/button'
 import { Modal } from '@renderer/components/Modal'
 import { FiRefreshCw } from 'react-icons/fi'
 import { cn } from '@renderer/lib/utils'
+import { saveAs } from 'file-saver'
 
 export function PodiumSection() {
   const { divisions, standings, podiumAdjustments, isLoading } = useStandingsData()
   const [isAdjustmentsOpen, setAdjustmentsOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   const adjustments = useMemo(
     () => deserializePodiumAdjustments(podiumAdjustments),
@@ -48,9 +50,8 @@ export function PodiumSection() {
     )
     if (!divisionStanding) return null
     return (
-      divisionStanding.categories.find(
-        (category) => category.categoryId === activeCategoryId
-      ) ?? null
+      divisionStanding.categories.find((category) => category.categoryId === activeCategoryId) ??
+      null
     )
   }, [activeCategoryId, activeDivisionId, derivedStandings])
 
@@ -98,6 +99,57 @@ export function PodiumSection() {
       return a.playerId.localeCompare(b.playerId)
     })
   }, [adjustments.removed, divisions, standings])
+
+  const buildExportText = useCallback(
+    (divisionStandings: typeof derivedStandings, allDivisions: typeof divisions) => {
+      if (!divisionStandings.length) return 'No podium standings available.'
+
+      const divisionName = (id: string) => allDivisions.find((d) => d.id === id)?.name ?? id
+      const categoryName = (divisionId: string, categoryId: string) => {
+        const division = allDivisions.find((d) => d.id === divisionId)
+        const category = division?.categories.find((c) => c.category.id === categoryId)
+        return category?.category.name ?? categoryId
+      }
+      const categoryUnit = (divisionId: string, categoryId: string) => {
+        const division = allDivisions.find((d) => d.id === divisionId)
+        const metrics =
+          division?.categories.find((c) => c.category.id === categoryId)?.metrics ?? []
+        if (!metrics.length) return ''
+        const firstUnit = metrics[0]?.unit ?? ''
+        const uniform = metrics.every((metric) => metric.unit === firstUnit)
+        return uniform ? firstUnit : ''
+      }
+
+      const lines: string[] = []
+
+      for (const divisionStanding of divisionStandings) {
+        lines.push(`Division: ${divisionName(divisionStanding.divisionId)}`)
+        if (!divisionStanding.categories.length) {
+          lines.push('  No categories.')
+          lines.push('')
+          continue
+        }
+        for (const category of divisionStanding.categories) {
+          lines.push(
+            `  Category: ${categoryName(divisionStanding.divisionId, category.categoryId)}`
+          )
+          const unit = categoryUnit(divisionStanding.divisionId, category.categoryId)
+          if (!category.entries.length) {
+            lines.push('    No podium entries.')
+            continue
+          }
+          for (const entry of category.entries) {
+            const playerName = entry.player?.displayName || entry.playerId
+            lines.push(`    ${entry.rank}) ${playerName} - ${entry.total}${unit ? ` ${unit}` : ''}`)
+          }
+        }
+        lines.push('')
+      }
+
+      return lines.join('\n')
+    },
+    []
+  )
 
   const handleRemoveEntry = useCallback(
     async (entry: PlayerStanding) => {
@@ -172,6 +224,30 @@ export function PodiumSection() {
         aria-label="Refresh standings"
       >
         <FiRefreshCw className={cn('transition-transform', refreshing ? 'animate-spin' : '')} />
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={exporting}
+        onClick={async () => {
+          if (exporting) return
+          setExporting(true)
+          try {
+            const content = buildExportText(derivedStandings, divisions)
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+            saveAs(blob, 'podium-standings.txt')
+            toast.success('Podium standings exported')
+          } catch (error) {
+            console.error('Failed to export podium standings', error)
+            toast.error('Failed to export podium standings')
+          } finally {
+            setExporting(false)
+          }
+        }}
+        className="tracking-[0.3em]"
+      >
+        Export
       </Button>
       <Button
         type="button"
