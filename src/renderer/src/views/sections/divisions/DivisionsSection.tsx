@@ -11,7 +11,7 @@ import {
 import { CrudTableActions } from '@renderer/components/crud/CrudTableActions'
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@renderer/components/ui/table'
 import { Button } from '@renderer/components/ui/button'
-import { DragDropTable, DragHandle } from '@renderer/components/dnd/DragDropTable'
+import { DragHandle } from '@renderer/components/dnd/DragDropTable'
 import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
 import { DraggablePillList } from '@renderer/components/dnd/DraggablePillList'
 import {
@@ -25,6 +25,22 @@ import { useCategoriesQuery } from '@renderer/queries/categories'
 import { useDivisionsQuery } from '@renderer/queries/divisions'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@renderer/queries/queryKeys'
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 type FormState =
   | { status: 'closed' }
@@ -107,7 +123,12 @@ export function DivisionsSection() {
             if (values.categories.length) {
               await Promise.all(
                 values.categories.map((entry, index) =>
-                  window.api.divisions.addCategory(divisionId, entry.categoryId, entry.depth, index + 1)
+                  window.api.divisions.addCategory(
+                    divisionId,
+                    entry.categoryId,
+                    entry.depth,
+                    index + 1
+                  )
                 )
               )
             }
@@ -246,24 +267,44 @@ export function DivisionsSection() {
   }
 
   const handleCategoryPillReorder = async (divisionId: string, orderedCategoryIds: string[]) => {
-    try {
-      await Promise.all(
-        orderedCategoryIds.map((categoryId, index) =>
-          window.api.divisions.updateCategoryLink(divisionId, categoryId, { order: index + 1 })
+    await runDivisionMutation(
+      async () => {
+        const results = await Promise.all(
+          orderedCategoryIds.map((categoryId, index) =>
+            window.api.divisions.updateCategoryLink(divisionId, categoryId, { order: index + 1 })
+          )
         )
-      )
-      await invalidateDivisions()
-    } catch (error) {
-      console.error('Failed to reorder division categories', error)
-      toast.error('Unable to reorder categories')
-      await invalidateDivisions()
-    }
+        if (results.some((res) => res === false)) {
+          throw new Error('At least one category reorder failed')
+        }
+        return true
+      },
+      'Categories reordered',
+      'Unable to reorder categories'
+    )
   }
 
   const refreshing = isFetching && !isLoading
   const isEmpty = !isLoading && divisionData.length === 0
   const divisionCount = divisionData.length
   const divisionCountLabel = isLoading ? '—' : divisionCount.toLocaleString()
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
+  const handleDivisionDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = divisionData.findIndex((item) => item.id === active.id)
+    const newIndex = divisionData.findIndex((item) => item.id === over.id)
+    if (oldIndex === -1 || newIndex === -1) return
+
+    const reordered = arrayMove(divisionData, oldIndex, newIndex)
+    handleReorder(reordered)
+  }
 
   const editModalDivision = useMemo(() => {
     if (formState.status !== 'editing') return undefined
@@ -294,76 +335,85 @@ export function DivisionsSection() {
         ) : (
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="min-h-0 flex-1">
-              <Table containerClassName="h-full">
-                <TableHeader>
-                  <TableRow>
-                    {renderCrudTableHeader<Division, 'actions' | 'categories'>({
-                      columns,
-                      sort: sortPlaceholder,
-                      toggleSort: () => {}
-                    })}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <DragDropTable items={divisionData} onReorder={handleReorder}>
-                    {(division, { listeners, setActivatorNodeRef }) => (
-                      <>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <DragHandle
-                              listeners={listeners}
-                              setActivatorNodeRef={setActivatorNodeRef}
-                              label={`Reorder ${division.name}`}
-                            />
-                            <span className="text-sm">{division.order}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-medium">{division.name}</span>
-                        </TableCell>
-                        <TableCell>
-                          {division.categories.length ? (
-                            <DraggablePillList
-                              items={division.categories.map((entry) => ({
-                                id: entry.category.id,
-                                label: entry.category.name,
-                                ariaLabel: `Reorder ${entry.category.name}`
-                              }))}
-                              onReorder={(ordered) =>
-                                handleCategoryPillReorder(division.id, ordered)
-                              }
-                            />
-                          ) : (
-                            <span className="text-sm ro-text-muted">No categories</span>
+              <DndContext sensors={sensors} onDragEnd={handleDivisionDragEnd} autoScroll={false}>
+                <Table containerClassName="h-full">
+                  <TableHeader>
+                    <TableRow>
+                      {renderCrudTableHeader<Division, 'actions' | 'categories'>({
+                        columns,
+                        sort: sortPlaceholder,
+                        toggleSort: () => {}
+                      })}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <SortableContext
+                      items={divisionData.map((item) => item.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {divisionData.map((division) => (
+                        <SortableDivisionRow key={division.id} division={division}>
+                          {(listeners, setActivatorNodeRef) => (
+                            <>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <DragHandle
+                                    listeners={listeners}
+                                    setActivatorNodeRef={setActivatorNodeRef}
+                                    label={`Reorder ${division.name}`}
+                                  />
+                                  <span className="text-sm">{division.order}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <span className="font-medium">{division.name}</span>
+                              </TableCell>
+                              <TableCell>
+                                {division.categories.length ? (
+                                  <DraggablePillList
+                                    items={division.categories.map((entry) => ({
+                                      id: entry.category.id,
+                                      label: entry.category.name,
+                                      ariaLabel: `Reorder ${entry.category.name}`
+                                    }))}
+                                    onReorder={(ordered) =>
+                                      handleCategoryPillReorder(division.id, ordered)
+                                    }
+                                  />
+                                ) : (
+                                  <span className="text-sm ro-text-muted">No categories</span>
+                                )}
+                              </TableCell>
+                              <TableCell align="right">
+                                <CrudTableActions
+                                  actions={[
+                                    {
+                                      label: `View ${division.name}`,
+                                      icon: <FiEye />,
+                                      onClick: () => openDetails(division)
+                                    },
+                                    {
+                                      label: `Edit ${division.name}`,
+                                      icon: <FiEdit2 />,
+                                      onClick: () => openEditModal(division)
+                                    },
+                                    {
+                                      label: `Delete ${division.name}`,
+                                      icon: <FiTrash2 />,
+                                      onClick: () => requestDelete(division),
+                                      tone: 'danger'
+                                    }
+                                  ]}
+                                />
+                              </TableCell>
+                            </>
                           )}
-                        </TableCell>
-                        <TableCell align="right">
-                          <CrudTableActions
-                            actions={[
-                              {
-                                label: `View ${division.name}`,
-                                icon: <FiEye />,
-                                onClick: () => openDetails(division)
-                              },
-                              {
-                                label: `Edit ${division.name}`,
-                                icon: <FiEdit2 />,
-                                onClick: () => openEditModal(division)
-                              },
-                              {
-                                label: `Delete ${division.name}`,
-                                icon: <FiTrash2 />,
-                                onClick: () => requestDelete(division),
-                                tone: 'danger'
-                              }
-                            ]}
-                          />
-                        </TableCell>
-                      </>
-                    )}
-                  </DragDropTable>
-                </TableBody>
-              </Table>
+                        </SortableDivisionRow>
+                      ))}
+                    </SortableContext>
+                  </TableBody>
+                </Table>
+              </DndContext>
             </div>
           </div>
         )}
@@ -404,5 +454,29 @@ export function DivisionsSection() {
         }
       />
     </>
+  )
+}
+
+type SortableDivisionRowProps = {
+  division: Division
+  children: (
+    listeners: ReturnType<typeof useSortable>['listeners'],
+    setActivatorNodeRef: ReturnType<typeof useSortable>['setActivatorNodeRef']
+  ) => React.ReactNode
+}
+
+function SortableDivisionRow({ division, children }: SortableDivisionRowProps) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition } =
+    useSortable({ id: division.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition
+  }
+
+  return (
+    <TableRow ref={setNodeRef} style={style} className="transition-opacity" {...attributes}>
+      {children(listeners, setActivatorNodeRef)}
+    </TableRow>
   )
 }
