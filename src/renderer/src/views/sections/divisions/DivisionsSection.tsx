@@ -14,7 +14,11 @@ import { Button } from '@renderer/components/ui/button'
 import { DragDropTable, DragHandle } from '@renderer/components/dnd/DragDropTable'
 import { ConfirmDialog } from '@renderer/components/ConfirmDialog'
 import { DraggablePillList } from '@renderer/components/dnd/DraggablePillList'
-import { DivisionFormModal, type DivisionFormValues } from './DivisionFormModal'
+import {
+  DivisionFormModal,
+  type DivisionCategorySelection,
+  type DivisionFormValues
+} from './DivisionFormModal'
 import { DivisionDetailsModal } from './DivisionDetailsModal'
 import { Pill } from '@renderer/components/ui/pill'
 import { useCategoriesQuery } from '@renderer/queries/categories'
@@ -100,10 +104,10 @@ export function DivisionsSection() {
           async () => {
             const payload: NewDivision = { name: values.name }
             const divisionId: string = await window.api.divisions.create(payload)
-            if (values.categoryIds.length) {
+            if (values.categories.length) {
               await Promise.all(
-                values.categoryIds.map((categoryId, index) =>
-                  window.api.divisions.addCategory(divisionId, categoryId, 1, index + 1)
+                values.categories.map((entry, index) =>
+                  window.api.divisions.addCategory(divisionId, entry.categoryId, entry.depth, index + 1)
                 )
               )
             }
@@ -120,22 +124,49 @@ export function DivisionsSection() {
         const patch: PatchDivision = {}
         if (values.name !== division.name) patch.name = values.name
 
-        const prevIds = division.categories.map((entry) => entry.category.id)
-        const prevSet = new Set(prevIds)
-        const nextSet = new Set(values.categoryIds)
-        const toAdd = values.categoryIds.filter((id) => !prevSet.has(id))
-        const toRemove = prevIds.filter((id) => !nextSet.has(id))
-        const desiredOrder = new Map(values.categoryIds.map((id, index) => [id, index + 1]))
-        const orderChanges = division.categories.filter((entry) => {
-          const desired = desiredOrder.get(entry.category.id)
-          return desired !== undefined && desired !== entry.order
-        })
+        const prevMap = new Map(
+          division.categories.map((entry) => [
+            entry.category.id,
+            { order: entry.order, depth: entry.depth }
+          ])
+        )
+        const desiredOrder = new Map(
+          values.categories.map((entry, index) => [entry.categoryId, index + 1])
+        )
+        const desiredDepth = new Map(
+          values.categories.map((entry) => [entry.categoryId, entry.depth])
+        )
+
+        const toAdd: DivisionCategorySelection[] = []
+        const toRemove: string[] = []
+        const linkPatches: Array<{ id: string; patch: { order?: number; depth?: number } }> = []
+
+        for (const [categoryId, prev] of prevMap) {
+          const order = desiredOrder.get(categoryId)
+          const depth = desiredDepth.get(categoryId)
+          if (order === undefined || depth === undefined) {
+            toRemove.push(categoryId)
+            continue
+          }
+          const patch: { order?: number; depth?: number } = {}
+          if (order !== prev.order) patch.order = order
+          if (depth !== prev.depth) patch.depth = depth
+          if (Object.keys(patch).length) {
+            linkPatches.push({ id: categoryId, patch })
+          }
+        }
+
+        for (const entry of values.categories) {
+          if (!prevMap.has(entry.categoryId)) {
+            toAdd.push(entry)
+          }
+        }
 
         if (
           !Object.keys(patch).length &&
           !toAdd.length &&
           !toRemove.length &&
-          !orderChanges.length
+          !linkPatches.length
         ) {
           toast.info('No changes to save')
           setFormState({ status: 'closed' })
@@ -149,21 +180,19 @@ export function DivisionsSection() {
               if (!updated) throw new Error('Update returned false')
             }
 
-            if (toAdd.length || toRemove.length || orderChanges.length) {
+            if (toAdd.length || toRemove.length || linkPatches.length) {
               await Promise.all([
-                ...toAdd.map((id) =>
+                ...toAdd.map((entry, index) =>
                   window.api.divisions.addCategory(
                     division.id,
-                    id,
-                    1,
-                    desiredOrder.get(id) ?? values.categoryIds.indexOf(id) + 1
+                    entry.categoryId,
+                    entry.depth,
+                    desiredOrder.get(entry.categoryId) ?? index + 1
                   )
                 ),
                 ...toRemove.map((id) => window.api.divisions.removeCategory(division.id, id)),
-                ...orderChanges.map((entry) =>
-                  window.api.divisions.updateCategoryLink(division.id, entry.category.id, {
-                    order: desiredOrder.get(entry.category.id)
-                  })
+                ...linkPatches.map((entry) =>
+                  window.api.divisions.updateCategoryLink(division.id, entry.id, entry.patch)
                 )
               ])
             }
@@ -238,10 +267,7 @@ export function DivisionsSection() {
 
   const editModalDivision = useMemo(() => {
     if (formState.status !== 'editing') return undefined
-    return {
-      ...formState.division,
-      categoryIds: formState.division.categories.map((entry) => entry.category.id)
-    }
+    return formState.division
   }, [formState])
 
   return (
