@@ -165,9 +165,7 @@ export const podiumEvent = sqliteTable(
     playerId: text('player_id')
       .notNull()
       .references(() => player.id, { onUpdate: 'cascade', onDelete: 'cascade' }),
-    payload: text('payload', { mode: 'json' })
-      .$type<Record<string, unknown> | null>()
-      .default(null)
+    payload: text('payload', { mode: 'json' }).$type<Record<string, unknown> | null>().default(null)
   },
   (t) => [
     index('podium_event_division_category').on(t.divisionId, t.categoryId),

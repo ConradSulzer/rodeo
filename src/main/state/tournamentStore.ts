@@ -4,10 +4,7 @@ import { buildResults, type Results } from '@core/tournaments/results'
 import { listDivisions } from '@core/tournaments/divisions'
 import { listViewablePlayers, type PlayerViewable } from '@core/players/players'
 import type { AppDatabase } from '@core/db/db'
-import type {
-  SerializableTournamentState,
-  SerializedResults
-} from '@core/tournaments/state'
+import type { SerializableTournamentState, SerializedResults } from '@core/tournaments/state'
 import type { DivisionStanding } from '@core/tournaments/standings'
 import { reduceEvent } from '@core/events/eventReducer'
 import type { ULID } from 'ulid'
