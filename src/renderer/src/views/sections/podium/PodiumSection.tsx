@@ -281,6 +281,7 @@ export function PodiumSection() {
         open={isAdjustmentsOpen}
         onClose={() => setAdjustmentsOpen(false)}
         title="Podium Adjustments"
+        contentClassName="max-h-full w-[900px]"
       >
         {adjustmentsList.length ? (
           <div className="flex flex-col gap-3">
